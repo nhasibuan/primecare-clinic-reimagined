@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 
 const assets = {
-  logo: "/manus-storage/primecare-logo_874b2e36.png",
+  logo: "/manus-storage/klinik-berkat-insani-logo_d6e42d2d.jpg",
   careMark: "/manus-storage/care-orbit-mark_3642fa2e.png",
   hero: "/manus-storage/clinic-hero-family_4a05f017.jpg",
   motherChild: "/manus-storage/mother-child-care_204ea094.jpg",
@@ -101,8 +101,8 @@ export default function Home() {
     <div className="min-h-screen overflow-hidden bg-white text-[#173047]">
       <header className="sticky top-0 z-50 border-b border-[#173047]/10 bg-white/95 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1400px] items-center justify-between px-5 lg:px-10">
-          <a href="#top" className="flex items-center" aria-label="Primecare home">
-            <img src={assets.logo} alt="Primecare Clinic" className="h-9 w-auto object-contain" />
+          <a href="#top" className="flex items-center" aria-label="Klinik Berkat Insani home">
+            <img src={assets.logo} alt="Klinik Berkat Insani" className="h-14 w-14 rounded-xl object-contain sm:h-[62px] sm:w-[62px]" />
           </a>
 
           <nav className="hidden items-center gap-7 lg:flex" aria-label="Primary navigation">
@@ -400,7 +400,7 @@ export default function Home() {
       <footer id="locations" className="bg-[#007f98] text-white">
         <div className="mx-auto grid max-w-[1400px] gap-12 px-5 py-16 lg:grid-cols-[1.05fr_2fr] lg:px-10 lg:py-20">
           <div>
-            <img src={assets.logo} alt="Primecare Clinic" className="h-12 w-auto brightness-0 invert" />
+            <img src={assets.logo} alt="Klinik Berkat Insani" className="h-24 w-24 rounded-2xl bg-white object-contain p-1.5" />
             <p className="mt-5 max-w-sm text-sm leading-7 text-white/76">A refreshed digital care experience inspired by the supplied clinic reference. All visible copy in this concept has been newly written.</p>
             <button onClick={reserve} className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/35 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-[#007f98] active:scale-[.97]">
               <Phone size={16} /> Start a conversation
