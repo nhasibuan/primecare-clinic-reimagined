@@ -15,3 +15,10 @@
 - [x] Cross-check material facts against independent public sources and identify claims that should not be presented as confirmed.
 - [x] Replace the concept content with original paraphrases grounded in the verified source record.
 - [x] Validate the revised site and publish an updated checkpoint.
+
+## Supplied clinic-content review
+
+- [x] Separate confirmed clinician, clinic, schedule, and service details from marketing proposals, unsupported market claims, and testimonial suggestions.
+- [x] Cross-check the supplied schedules, contact number, address, and clinician information against publicly available sources.
+- [x] Add only verified clinic details to the website in paraphrased Indonesian copy, without fabricating testimonials or outcomes.
+- [x] Validate the revised layout and publish the reviewed update.
