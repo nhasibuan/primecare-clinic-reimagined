@@ -8,3 +8,10 @@
 
 - [x] Merge the duplicate header style attributes into one valid JSX declaration while retaining the intended 200px square logo size.
 - [x] Confirm the 100px footer logo size and verify the desktop layout, then save a refreshed checkpoint.
+
+## Klinik Berkat Insani content update
+
+- [x] Review the public Instagram profile and capture services, location, contacts, and stated positioning relevant to the website.
+- [x] Cross-check material facts against independent public sources and identify claims that should not be presented as confirmed.
+- [x] Replace the concept content with original paraphrases grounded in the verified source record.
+- [x] Validate the revised site and publish an updated checkpoint.
