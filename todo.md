@@ -92,3 +92,11 @@
 - [x] Apply a no-match filter in the authenticated CMS and verify the filtered empty-state message before final release.
 - [x] Inspect the authenticated desktop and mobile populated-filter captures to confirm the staff-facing controls and filtered cards are visibly rendered.
 - [x] Inspect the authenticated no-match capture and confirm its protected filtered query returned zero activity rows.
+
+## Appointment emergency-guidance wording
+
+- [x] Verify the revised non-emergency guidance exactly matches the requested wording change.
+- [x] Validate the revised public appointment form on desktop and mobile, then run production checks.
+- [x] Capture and review the mobile appointment-request dialog with the revised emergency guidance before publishing.
+- [x] Inspect the captured mobile dialog and record confirmation that the revised emergency guidance is visible and legible.
+- [ ] Save and publish the verified wording update.
