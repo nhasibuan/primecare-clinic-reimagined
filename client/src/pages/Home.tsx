@@ -267,10 +267,10 @@ export default function Home() {
             </div>
 
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              {careCards.map((card, index) => (
-                <article key={card.title} className={`group overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(23,48,71,.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(23,48,71,.12)] ${index === 1 ? "xl:mt-10" : ""}`}>
-                  <div className="relative aspect-[1.35] overflow-hidden">
-                    <img src={card.image} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]" />
+              {careCards.map((card) => (
+                <article key={card.title} className="group overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(23,48,71,.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(23,48,71,.12)]">
+                  <div className="relative h-56 overflow-hidden sm:h-60 xl:h-56">
+                    <img src={card.image} alt="" className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.05]" />
                     <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.1em] text-[#007f98] backdrop-blur">{card.tag}</div>
                   </div>
                   <div className="p-6">

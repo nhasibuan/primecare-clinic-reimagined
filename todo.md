@@ -22,3 +22,9 @@
 - [x] Cross-check the supplied schedules, contact number, address, and clinician information against publicly available sources.
 - [x] Add only verified clinic details to the website in paraphrased Indonesian copy, without fabricating testimonials or outcomes.
 - [x] Validate the revised layout and publish the reviewed update.
+
+## Service-card image normalization
+
+- [x] Inspect the current care-card image wrapper and identify why visual heights appear inconsistent.
+- [x] Apply one explicit responsive height and `object-cover` crop treatment to all service-card images.
+- [x] Verify desktop and mobile card image consistency, then publish the correction.
