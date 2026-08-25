@@ -50,3 +50,9 @@
 - [x] Create the appointment-request database table and protected backend procedures for staff review.
 - [x] Add a public appointment-request form and an administrator-only request queue in the clinic CMS.
 - [x] Validate public submission, database persistence, staff-only access, and responsive form usability before publishing.
+
+## WhatsApp appointment follow-up
+
+- [x] Define a data-minimized staff message that includes only name, service, and preferred date while excluding free-text notes.
+- [x] Add an administrator-only WhatsApp follow-up action to appointment requests with manual message review before sending.
+- [x] Validate generated WhatsApp links, status updates, and CMS responsiveness before publishing.

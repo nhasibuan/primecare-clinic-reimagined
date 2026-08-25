@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import WhatsAppFollowUpDialog from "@/components/WhatsAppFollowUpDialog";
 import { trpc } from "@/lib/trpc";
 import { CheckCircle2, ExternalLink, Loader2, MessageCircle, Plus, Save, UploadCloud } from "lucide-react";
 import { ChangeEvent, useEffect, useState } from "react";
@@ -31,6 +32,7 @@ export default function ClinicAdmin() {
   const [service, setService] = useState({ name: "", summary: "", imageUrl: "" });
   const [assetAlt, setAssetAlt] = useState("");
   const [assetCategory, setAssetCategory] = useState<"brand" | "service" | "clinician" | "facility" | "document">("service");
+  const [followUpRequest, setFollowUpRequest] = useState<{ fullName: string; contactNumber: string; service: string; preferredDate: string } | null>(null);
 
   useEffect(() => {
     if (data?.profile) {
@@ -43,6 +45,20 @@ export default function ClinicAdmin() {
       });
     }
   }, [data?.profile]);
+
+  useEffect(() => {
+    const followUpId = Number(new URLSearchParams(window.location.search).get("followup"));
+    if (!followUpId || !appointmentRequests?.length) return;
+    const request = appointmentRequests.find(item => item.id === followUpId);
+    if (request) {
+      setFollowUpRequest({
+        fullName: request.fullName,
+        contactNumber: request.contactNumber,
+        service: request.service,
+        preferredDate: request.preferredDate,
+      });
+    }
+  }, [appointmentRequests]);
 
   const updateProfile = trpc.clinic.updateProfile.useMutation({
     onSuccess: async () => {
@@ -160,7 +176,7 @@ export default function ClinicAdmin() {
                   <article key={request.id} className="rounded-2xl border border-[#173047]/10 bg-[#fbfaf5] p-5">
                     <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-display text-xl font-semibold">{request.fullName}</p><p className="mt-1 text-sm text-[#607684]">{request.service} · Pilihan tanggal: {new Date(`${request.preferredDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${request.status === "new" ? "bg-amber-100 text-amber-800" : request.status === "contacted" ? "bg-[#eaf9fb] text-[#007f98]" : "bg-slate-100 text-slate-600"}`}>{request.status === "new" ? "Baru" : request.status === "contacted" ? "Dihubungi" : "Selesai"}</span></div>
                     {request.note ? <p className="mt-4 rounded-xl bg-white p-3 text-sm leading-6 text-[#395568]">{request.note}</p> : null}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><a href={`https://wa.me/${request.contactNumber.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-[#007f98] transition hover:text-[#039CB7]"><MessageCircle size={16} /> {request.contactNumber}</a><label className="flex items-center gap-2 text-sm font-bold text-[#395568]">Status<select value={request.status} disabled={updateAppointmentStatus.isPending} onChange={event => updateAppointmentStatus.mutate({ id: request.id, status: event.target.value as "new" | "contacted" | "closed" })} className="rounded-lg border border-[#173047]/15 bg-white px-2 py-1.5 text-sm font-medium outline-none focus:border-[#039CB7]"><option value="new">Baru</option><option value="contacted">Dihubungi</option><option value="closed">Selesai</option></select></label></div>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><button onClick={() => setFollowUpRequest({ fullName: request.fullName, contactNumber: request.contactNumber, service: request.service, preferredDate: request.preferredDate })} className="inline-flex items-center gap-2 rounded-full bg-[#eaf9fb] px-4 py-2 text-sm font-bold text-[#007f98] transition hover:bg-[#d7f4f7]"><MessageCircle size={16} /> Draf WhatsApp</button><label className="flex items-center gap-2 text-sm font-bold text-[#395568]">Status<select value={request.status} disabled={updateAppointmentStatus.isPending} onChange={event => updateAppointmentStatus.mutate({ id: request.id, status: event.target.value as "new" | "contacted" | "closed" })} className="rounded-lg border border-[#173047]/15 bg-white px-2 py-1.5 text-sm font-medium outline-none focus:border-[#039CB7]"><option value="new">Baru</option><option value="contacted">Dihubungi</option><option value="closed">Selesai</option></select></label></div>
                   </article>
                 )) : <div className="rounded-2xl bg-[#f5fafb] p-6 text-sm leading-6 text-[#607684]"><CheckCircle2 className="mr-2 inline-block h-4 w-4 text-[#039CB7]" />Belum ada permintaan kunjungan yang tersimpan.</div>}
               </div>
@@ -197,6 +213,7 @@ export default function ClinicAdmin() {
             </section>
           </>
         )}
+        <WhatsAppFollowUpDialog request={followUpRequest} onOpenChange={open => { if (!open) setFollowUpRequest(null); }} />
       </div>
     </DashboardLayout>
   );
