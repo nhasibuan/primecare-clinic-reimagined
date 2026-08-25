@@ -69,8 +69,22 @@ export const mediaAssets = mysqlTable("media_assets", {
   uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
 });
 
+export const appointmentRequests = mysqlTable("appointment_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  fullName: varchar("fullName", { length: 160 }).notNull(),
+  contactNumber: varchar("contactNumber", { length: 40 }).notNull(),
+  service: varchar("service", { length: 160 }).notNull(),
+  preferredDate: varchar("preferredDate", { length: 10 }).notNull(),
+  note: varchar("note", { length: 600 }),
+  consentedAt: timestamp("consentedAt").defaultNow().notNull(),
+  status: mysqlEnum("status", ["new", "contacted", "closed"]).default("new").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type ClinicProfile = typeof clinicProfiles.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type AppointmentRequest = typeof appointmentRequests.$inferSelect;

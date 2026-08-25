@@ -2,12 +2,16 @@ import { z } from "zod";
 import { COOKIE_NAME } from "../shared/const";
 import { normalizeAssetFileName, decodeMediaUpload } from "./clinicContent";
 import {
+  createAppointmentRequest,
   createMediaAsset,
   getAdminClinicContent,
+  getAppointmentRequests,
   getPublicClinicContent,
   saveClinicProfile,
   saveService,
+  updateAppointmentRequestStatus,
 } from "./db";
+import { isAutomatedAppointmentRequest, normalizeAppointmentNote } from "./appointmentRequest";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
@@ -30,6 +34,16 @@ const serviceInput = z.object({
   isPublished: z.boolean(),
 });
 
+const appointmentInput = z.object({
+  fullName: z.string().trim().min(2).max(160),
+  contactNumber: z.string().trim().min(8).max(40).regex(/^[0-9+()\-\s]+$/, "Use a valid phone or WhatsApp number."),
+  service: z.string().trim().min(2).max(160),
+  preferredDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid preferred date."),
+  note: z.string().trim().max(600).optional(),
+  consent: z.literal(true),
+  website: z.string().max(255).optional(),
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -39,6 +53,23 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+  appointments: router({
+    create: publicProcedure.input(appointmentInput).mutation(async ({ input }) => {
+      if (isAutomatedAppointmentRequest(input.website)) return { success: true, requestId: null } as const;
+      const request = await createAppointmentRequest({
+        fullName: input.fullName,
+        contactNumber: input.contactNumber,
+        service: input.service,
+        preferredDate: input.preferredDate,
+        note: normalizeAppointmentNote(input.note),
+      });
+      return { success: true, requestId: request.id } as const;
+    }),
+    list: adminProcedure.query(() => getAppointmentRequests()),
+    updateStatus: adminProcedure
+      .input(z.object({ id: z.number().int().positive(), status: z.enum(["new", "contacted", "closed"]) }))
+      .mutation(({ input }) => updateAppointmentRequestStatus(input.id, input.status)),
   }),
   clinic: router({
     publicContent: publicProcedure.query(() => getPublicClinicContent()),

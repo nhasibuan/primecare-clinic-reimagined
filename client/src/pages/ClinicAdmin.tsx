@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
-import { ExternalLink, Loader2, Plus, Save, UploadCloud } from "lucide-react";
+import { CheckCircle2, ExternalLink, Loader2, MessageCircle, Plus, Save, UploadCloud } from "lucide-react";
 import { ChangeEvent, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -26,6 +26,7 @@ export default function ClinicAdmin() {
   const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.clinic.adminContent.useQuery(undefined, { enabled: isAdmin });
+  const { data: appointmentRequests, isLoading: appointmentRequestsLoading } = trpc.appointments.list.useQuery(undefined, { enabled: isAdmin });
   const [profile, setProfile] = useState<ProfileForm>(emptyProfile);
   const [service, setService] = useState({ name: "", summary: "", imageUrl: "" });
   const [assetAlt, setAssetAlt] = useState("");
@@ -65,6 +66,14 @@ export default function ClinicAdmin() {
       await utils.clinic.adminContent.invalidate();
       setAssetAlt("");
       toast.success("File disimpan ke managed storage.");
+    },
+    onError: error => toast.error(error.message),
+  });
+
+  const updateAppointmentStatus = trpc.appointments.updateStatus.useMutation({
+    onSuccess: async () => {
+      await utils.appointments.list.invalidate();
+      toast.success("Status permintaan diperbarui.");
     },
     onError: error => toast.error(error.message),
   });
@@ -139,6 +148,22 @@ export default function ClinicAdmin() {
                 <label className="grid gap-2 text-sm font-bold text-[#395568] md:col-span-2">Alamat publik<textarea value={profile.address} onChange={e => setProfile(current => ({ ...current, address: e.target.value }))} rows={3} className="rounded-xl border border-[#173047]/15 bg-white px-4 py-3 text-sm font-medium text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10" /></label>
               </div>
               <button onClick={() => updateProfile.mutate({ ...profile, instagramUrl: profile.instagramUrl || null })} disabled={updateProfile.isPending} className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#039CB7] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#007f98] disabled:opacity-60"><Save size={16} /> {updateProfile.isPending ? "Menyimpan..." : "Simpan profil"}</button>
+            </section>
+
+            <section className="rounded-[28px] border border-[#173047]/10 bg-white p-6 shadow-[0_12px_30px_rgba(23,48,71,.05)] sm:p-8">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div><p className="eyebrow">Permintaan kunjungan</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.035em]">Antrean yang perlu ditindaklanjuti</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#607684]">Data ini hanya untuk menghubungi pemohon terkait jadwal. Jangan menambahkan catatan klinis atau data medis di luar proses yang disetujui.</p></div>
+                <span className="rounded-full bg-[#eef8f8] px-3 py-1.5 text-xs font-bold text-[#007f98]">{appointmentRequests?.length ?? 0} tersimpan</span>
+              </div>
+              <div className="mt-7 grid gap-4">
+                {appointmentRequestsLoading ? <div className="grid min-h-28 place-items-center rounded-2xl bg-[#f5fafb]"><Loader2 className="animate-spin text-[#039CB7]" /></div> : appointmentRequests?.length ? appointmentRequests.map(request => (
+                  <article key={request.id} className="rounded-2xl border border-[#173047]/10 bg-[#fbfaf5] p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-display text-xl font-semibold">{request.fullName}</p><p className="mt-1 text-sm text-[#607684]">{request.service} · Pilihan tanggal: {new Date(`${request.preferredDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${request.status === "new" ? "bg-amber-100 text-amber-800" : request.status === "contacted" ? "bg-[#eaf9fb] text-[#007f98]" : "bg-slate-100 text-slate-600"}`}>{request.status === "new" ? "Baru" : request.status === "contacted" ? "Dihubungi" : "Selesai"}</span></div>
+                    {request.note ? <p className="mt-4 rounded-xl bg-white p-3 text-sm leading-6 text-[#395568]">{request.note}</p> : null}
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><a href={`https://wa.me/${request.contactNumber.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-[#007f98] transition hover:text-[#039CB7]"><MessageCircle size={16} /> {request.contactNumber}</a><label className="flex items-center gap-2 text-sm font-bold text-[#395568]">Status<select value={request.status} disabled={updateAppointmentStatus.isPending} onChange={event => updateAppointmentStatus.mutate({ id: request.id, status: event.target.value as "new" | "contacted" | "closed" })} className="rounded-lg border border-[#173047]/15 bg-white px-2 py-1.5 text-sm font-medium outline-none focus:border-[#039CB7]"><option value="new">Baru</option><option value="contacted">Dihubungi</option><option value="closed">Selesai</option></select></label></div>
+                  </article>
+                )) : <div className="rounded-2xl bg-[#f5fafb] p-6 text-sm leading-6 text-[#607684]"><CheckCircle2 className="mr-2 inline-block h-4 w-4 text-[#039CB7]" />Belum ada permintaan kunjungan yang tersimpan.</div>}
+              </div>
             </section>
 
             <section className="grid gap-8 lg:grid-cols-[1.05fr_.95fr]">

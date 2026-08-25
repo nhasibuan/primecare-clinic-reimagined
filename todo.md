@@ -43,3 +43,10 @@
 - [x] Verify database persistence, file storage, and public-site compatibility before publishing.
 - [x] Upload a verification image through the managed storage helper, persist its metadata, and confirm its stored URL resolves.
 - [x] Confirm the stored asset is visible in the CMS after refresh and include the evidence in final validation.
+
+## Persistent appointment requests
+
+- [x] Define a data-minimized appointment-request model with consent, retention, and non-emergency guardrails.
+- [x] Create the appointment-request database table and protected backend procedures for staff review.
+- [x] Add a public appointment-request form and an administrator-only request queue in the clinic CMS.
+- [x] Validate public submission, database persistence, staff-only access, and responsive form usability before publishing.

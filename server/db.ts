@@ -1,6 +1,7 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  appointmentRequests,
   clinicProfiles,
   InsertUser,
   mediaAssets,
@@ -26,6 +27,14 @@ export type ServiceInput = {
   imageUrl: string;
   sortOrder: number;
   isPublished: boolean;
+};
+
+export type AppointmentRequestInput = {
+  fullName: string;
+  contactNumber: string;
+  service: string;
+  preferredDate: string;
+  note?: string | null;
 };
 
 export async function getDb() {
@@ -133,4 +142,26 @@ export async function createMediaAsset(input: {
   await db.insert(mediaAssets).values(input);
   const [asset] = await db.select().from(mediaAssets).where(eq(mediaAssets.storageKey, input.storageKey)).limit(1);
   return asset!;
+}
+
+export async function createAppointmentRequest(input: AppointmentRequestInput) {
+  const db = requireDb(await getDb());
+  const inserted = await db.insert(appointmentRequests).values({
+    ...input,
+    note: input.note ?? null,
+    consentedAt: new Date(),
+  });
+  return { id: Number(inserted[0].insertId) };
+}
+
+export async function getAppointmentRequests() {
+  const db = requireDb(await getDb());
+  return db.select().from(appointmentRequests).orderBy(desc(appointmentRequests.createdAt));
+}
+
+export async function updateAppointmentRequestStatus(id: number, status: "new" | "contacted" | "closed") {
+  const db = requireDb(await getDb());
+  await db.update(appointmentRequests).set({ status }).where(eq(appointmentRequests.id, id));
+  const [request] = await db.select().from(appointmentRequests).where(eq(appointmentRequests.id, id)).limit(1);
+  return request;
 }

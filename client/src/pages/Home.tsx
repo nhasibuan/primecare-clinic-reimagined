@@ -2,7 +2,7 @@
  * Calm Clinical Editorial — an Indonesian Klinik Berkat Insani experience using verified
  * Kotabaru location details and carefully paraphrased public-facing clinic positioning.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import AppointmentRequestDialog from "@/components/AppointmentRequestDialog";
 
 const assets = {
   logo: "/manus-storage/klinik-berkat-insani-logo_d6e42d2d.jpg",
@@ -93,14 +94,19 @@ const locations = [
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [appointmentOpen, setAppointmentOpen] = useState(false);
   const { data: persistedClinic } = trpc.clinic.publicContent.useQuery(undefined, { staleTime: 60_000 });
   const activeWhatsappUrl = persistedClinic?.profile?.whatsappUrl ?? whatsappUrl;
   const activeCareCards = persistedClinic?.services.length
     ? persistedClinic.services.map(service => ({ title: service.name, text: service.summary, image: service.imageUrl, tag: "Layanan" }))
     : careCards;
 
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("request") === "1") setAppointmentOpen(true);
+  }, []);
+
   const reserve = () => {
-    window.open(activeWhatsappUrl, "_blank", "noopener,noreferrer");
+    setAppointmentOpen(true);
   };
 
   const explore = (title: string) => {
@@ -138,7 +144,7 @@ export default function Home() {
 
           <button onClick={reserve} className="hidden items-center gap-2 rounded-full bg-[#039CB7] px-5 py-3 text-xs font-bold text-white shadow-[0_8px_22px_rgba(3,156,183,.25)] transition hover:-translate-y-0.5 hover:bg-[#007f98] active:scale-[.97] sm:flex">
             <CalendarDays size={15} />
-            Daftar via WhatsApp
+            Ajukan kunjungan
           </button>
 
           <button
@@ -173,7 +179,7 @@ export default function Home() {
               ))}
             </nav>
             <button onClick={reserve} className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#039CB7] px-5 py-3.5 text-sm font-bold text-white active:scale-[.97]">
-              <CalendarDays size={16} /> Daftar via WhatsApp
+              <CalendarDays size={16} /> Ajukan kunjungan
             </button>
           </div>
         )}
@@ -199,7 +205,7 @@ export default function Home() {
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <button onClick={reserve} className="group inline-flex items-center gap-3 rounded-full bg-[#039CB7] px-6 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(3,156,183,.28)] transition hover:-translate-y-0.5 hover:bg-[#007f98] active:scale-[.97]">
-                  Daftar via WhatsApp <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
+                  Ajukan kunjungan <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
                 </button>
                 <a href="#care" className="inline-flex items-center gap-2 rounded-full border border-[#173047]/15 bg-white/55 px-6 py-4 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#039CB7]">
                   Lihat alur kunjungan <ChevronRight size={17} />
@@ -215,7 +221,7 @@ export default function Home() {
               [HeartHandshake, "Melayani dengan kasih", "Pendekatan yang hangat untuk kebutuhan kesehatan keluarga"],
               [Stethoscope, "Poli Kandungan", "Pemeriksaan kehamilan, USG, dan konsultasi kandungan"],
               [ShieldCheck, "Poli Umum & Gigi", "Pilihan layanan untuk keluhan kesehatan dan kebutuhan gigi"],
-              [Clock3, "Konfirmasi jadwal", "Daftar melalui WhatsApp sebelum datang ke klinik"],
+              [Clock3, "Konfirmasi jadwal", "Ajukan permintaan kunjungan atau gunakan WhatsApp sebagai alternatif"],
             ].map(([Icon, title, detail], i) => {
               const CareIcon = Icon as typeof HeartHandshake;
               return (
@@ -282,8 +288,8 @@ export default function Home() {
                   <div className="p-6">
                     <h3 className="font-display text-2xl font-semibold leading-tight tracking-[-.025em] text-[#173047]">{card.title}</h3>
                     <p className="mt-3 text-sm leading-6 text-[#607684]">{card.text}</p>
-                    <button onClick={() => explore(card.title)} className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">
-                      Daftar via WhatsApp <ArrowRight size={16} />
+                    <button onClick={reserve} className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">
+                      Ajukan kunjungan <ArrowRight size={16} />
                     </button>
                   </div>
                 </article>
@@ -300,19 +306,19 @@ export default function Home() {
           <div className="max-w-xl">
             <p className="eyebrow">Sebelum berkunjung</p>
             <span className="section-rule" />
-            <h2 className="mt-5 font-display text-4xl font-semibold leading-[.98] tracking-[-.045em] text-[#173047] lg:text-5xl">Konfirmasi jadwal, lalu datang dengan informasi yang Anda perlukan.</h2>
+            <h2 className="mt-5 font-display text-4xl font-semibold leading-[.98] tracking-[-.045em] text-[#173047] lg:text-5xl">Ajukan tanggal pilihan, lalu datang dengan informasi yang Anda perlukan.</h2>
             <p className="mt-7 text-[17px] leading-8 text-[#5c7180]">
-              Jadwal praktik dapat berubah berdasarkan layanan dan dokter yang bertugas. Gunakan WhatsApp klinik untuk mengonfirmasi sebelum datang, lalu siapkan keluhan utama dan pertanyaan Anda.
+              Ajukan layanan dan tanggal pilihan Anda melalui formulir singkat. Staf klinik akan menghubungi Anda untuk mengonfirmasi ketersediaan sebelum kunjungan.
             </p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              {["Konfirmasi jadwal lewat WhatsApp", "Siapkan informasi keluhan", "Catat obat yang sedang digunakan", "Tanyakan langkah selanjutnya"].map((item) => (
+              {["Ajukan layanan dan tanggal pilihan", "Siapkan informasi keluhan", "Catat obat yang sedang digunakan", "Tanyakan langkah selanjutnya"].map((item) => (
                 <div key={item} className="flex gap-3 rounded-2xl bg-[#f5fafb] p-4 text-sm font-bold leading-5 text-[#395568]">
                   <CheckCircle2 className="shrink-0 text-[#039CB7]" size={18} /> {item}
                 </div>
               ))}
             </div>
             <button onClick={reserve} className="mt-9 inline-flex items-center gap-2 rounded-full bg-[#173047] px-6 py-4 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#244861] active:scale-[.97]">
-              Chat WhatsApp klinik <ArrowRight size={17} />
+              Ajukan permintaan kunjungan <ArrowRight size={17} />
             </button>
           </div>
         </section>
@@ -328,7 +334,7 @@ export default function Home() {
                 Poli Kandungan bersama dr. Syaiful Aspiannur, Sp.OG diinformasikan menyediakan pemeriksaan kehamilan, USG, konsultasi kandungan, pemantauan ibu dan janin, serta konsultasi program hamil.
               </p>
               <button onClick={reserve} className="mt-9 inline-flex items-center gap-3 rounded-full bg-white px-6 py-4 text-sm font-extrabold text-[#007f98] transition hover:-translate-y-0.5 hover:bg-[#eafdff] active:scale-[.97]">
-                Konfirmasi jadwal kandungan <ArrowRight size={17} />
+                Ajukan kunjungan kandungan <ArrowRight size={17} />
               </button>
             </div>
             <div className="relative">
@@ -381,7 +387,7 @@ export default function Home() {
                 <p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#039CB7]">Poli Kandungan</p>
                 <h3 className="mt-3 font-display text-3xl font-semibold leading-[1.03] tracking-[-.035em] text-[#173047]">Pemeriksaan kehamilan, USG, dan konsultasi kandungan.</h3>
                 <p className="mt-4 text-sm leading-6 text-[#607684]">Sampaikan kebutuhan pemeriksaan, pemantauan ibu dan janin, atau pertanyaan terkait program hamil saat melakukan reservasi.</p>
-                <button onClick={reserve} className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">Konfirmasi jadwal <ArrowRight size={16} /></button>
+                <button onClick={reserve} className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">Ajukan kunjungan <ArrowRight size={16} /></button>
               </div>
             </article>
             <div className="grid gap-6 lg:col-span-5">
@@ -401,7 +407,7 @@ export default function Home() {
                 <p className="relative text-[10px] font-extrabold uppercase tracking-[.15em] text-[#84e2ec]">Poli Gigi</p>
                 <div className="relative mt-4 flex flex-wrap items-end justify-between gap-6">
                   <h3 className="max-w-sm font-display text-3xl font-semibold leading-[1.02] tracking-[-.035em]">Tanyakan layanan pemeriksaan dan perawatan gigi yang tersedia.</h3>
-                  <button onClick={reserve} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#039CB7] text-white transition hover:scale-105 active:scale-[.95]" aria-label="Chat WhatsApp klinik"><ArrowRight size={18} /></button>
+                  <button onClick={reserve} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#039CB7] text-white transition hover:scale-105 active:scale-[.95]" aria-label="Ajukan kunjungan"><ArrowRight size={18} /></button>
                 </div>
               </article>
             </div>
@@ -439,6 +445,7 @@ export default function Home() {
       <button onClick={reserve} aria-label="Tanya layanan" className="fixed bottom-5 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#039CB7] text-white shadow-[0_12px_28px_rgba(3,156,183,.38)] transition hover:-translate-y-1 hover:bg-[#007f98] active:scale-[.94]">
         <CalendarDays size={22} />
       </button>
+      <AppointmentRequestDialog open={appointmentOpen} onOpenChange={setAppointmentOpen} services={activeCareCards.map(card => card.title).filter(title => title !== "Daftar via WhatsApp")} whatsappUrl={activeWhatsappUrl} />
     </div>
   );
 }
