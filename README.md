@@ -34,16 +34,16 @@ Notes:
 
 ## Repository layout
 ```
-client/                # Frontend source (TSX pages, components, styles)
+client/ # Frontend source (TSX pages, components, styles)
   src/
-    pages/             # Page entry points: Home.tsx, ClinicAdmin.tsx, ComponentShowcase.tsx
-    components/        # Reusable UI components and dialogs (AIChatBox, Map, AppointmentRequestDialog, etc.)
+    pages/ # Page entry points: Home.tsx, ClinicAdmin.tsx, ComponentShowcase.tsx
+    components/ # Reusable UI components and dialogs (AIChatBox, Map, AppointmentRequestDialog, etc.)
     main.tsx, index.css # App bootstrap and global styles
-server/                # Small TypeScript API and integration tests (index.ts, routers.ts, db.ts, storage.ts)
-shared/                # Types and shared domain logic (appointmentFollowUp.ts, types.ts, whatsappMessageMetrics.ts)
-drizzle/               # DB-related files and schema
+server/ # Small TypeScript API and integration tests (index.ts, routers.ts, db.ts, storage.ts)
+shared/ # Types and shared domain logic (appointmentFollowUp.ts, types.ts, whatsappMessageMetrics.ts)
+drizzle/ # DB-related files and schema
 package.json, pnpm-lock.yaml, vite.config.ts, tsconfig*.json, vitest.config.ts
-docs/                  # Design and planning markdown files: appointment_*.md, persistence_plan.md, ideas.md, etc.
+docs/ # Design and planning markdown files: appointment_*.md, persistence_plan.md, ideas.md, etc.
 template.json, components.json # Helper/manifest files
 ```
 
