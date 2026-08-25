@@ -12,12 +12,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 type WhatsAppFollowUpDialogProps = {
-  request: AppointmentFollowUpDetails | null;
+  request: (AppointmentFollowUpDetails & { id: number }) | null;
   signatureTemplate: string;
   onOpenChange: (open: boolean) => void;
+  onRecordActivity: (activity: { appointmentRequestId: number; messageStatus: "draft_copied" | "whatsapp_opened"; finalDraftLength: number }) => void;
 };
 
-export default function WhatsAppFollowUpDialog({ request, signatureTemplate, onOpenChange }: WhatsAppFollowUpDialogProps) {
+export default function WhatsAppFollowUpDialog({ request, signatureTemplate, onOpenChange, onRecordActivity }: WhatsAppFollowUpDialogProps) {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function WhatsAppFollowUpDialog({ request, signatureTemplate, onO
   const copyMessage = async () => {
     try {
       await navigator.clipboard.writeText(message);
+      if (request) onRecordActivity({ appointmentRequestId: request.id, messageStatus: "draft_copied", finalDraftLength: getWhatsAppDraftMetrics(message).characterCount });
       toast.success("Draf pesan disalin.");
     } catch {
       toast.error("Pesan tidak dapat disalin. Silakan salin secara manual.");
@@ -35,6 +37,7 @@ export default function WhatsAppFollowUpDialog({ request, signatureTemplate, onO
 
   const openWhatsApp = () => {
     if (!request) return;
+    onRecordActivity({ appointmentRequestId: request.id, messageStatus: "whatsapp_opened", finalDraftLength: getWhatsAppDraftMetrics(message).characterCount });
     window.open(buildWhatsAppFollowUpUrl(request, message), "_blank", "noopener,noreferrer");
   };
 

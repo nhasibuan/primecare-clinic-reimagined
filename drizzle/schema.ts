@@ -82,6 +82,15 @@ export const appointmentRequests = mysqlTable("appointment_requests", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const whatsappFollowUpActivities = mysqlTable("whatsapp_follow_up_activities", {
+  id: int("id").autoincrement().primaryKey(),
+  appointmentRequestId: int("appointmentRequestId").notNull(),
+  messageStatus: mysqlEnum("messageStatus", ["draft_copied", "whatsapp_opened"]).notNull(),
+  finalDraftLength: int("finalDraftLength").notNull(),
+  recordedBy: int("recordedBy").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
 export const whatsappSignatureTemplates = mysqlTable("whatsapp_signature_templates", {
   id: int("id").autoincrement().primaryKey(),
   content: varchar("content", { length: 1000 }).notNull(),
@@ -95,4 +104,5 @@ export type ClinicProfile = typeof clinicProfiles.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type AppointmentRequest = typeof appointmentRequests.$inferSelect;
+export type WhatsAppFollowUpActivity = typeof whatsappFollowUpActivities.$inferSelect;
 export type WhatsAppSignatureTemplate = typeof whatsappSignatureTemplates.$inferSelect;

@@ -4,9 +4,11 @@ import { normalizeAssetFileName, decodeMediaUpload } from "./clinicContent";
 import {
   createAppointmentRequest,
   createMediaAsset,
+  createWhatsAppFollowUpActivity,
   getAdminClinicContent,
   getAppointmentRequests,
   getPublicClinicContent,
+  getWhatsAppFollowUpActivities,
   saveClinicProfile,
   saveService,
   saveWhatsAppSignatureTemplate,
@@ -17,6 +19,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
+import { MAX_WHATSAPP_DRAFT_LENGTH } from "../shared/whatsappMessageMetrics";
 
 const profileInput = z.object({
   name: z.string().min(2).max(160),
@@ -71,6 +74,14 @@ export const appRouter = router({
     updateStatus: adminProcedure
       .input(z.object({ id: z.number().int().positive(), status: z.enum(["new", "contacted", "closed"]) }))
       .mutation(({ input }) => updateAppointmentRequestStatus(input.id, input.status)),
+    listFollowUpActivities: adminProcedure.query(() => getWhatsAppFollowUpActivities()),
+    recordFollowUpActivity: adminProcedure
+      .input(z.object({
+        appointmentRequestId: z.number().int().positive(),
+        messageStatus: z.enum(["draft_copied", "whatsapp_opened"]),
+        finalDraftLength: z.number().int().min(0).max(MAX_WHATSAPP_DRAFT_LENGTH),
+      }))
+      .mutation(({ ctx, input }) => createWhatsAppFollowUpActivity({ ...input, recordedBy: ctx.user.id })),
     updateSignatureTemplate: adminProcedure
       .input(z.object({ content: z.string().trim().min(2).max(1000) }))
       .mutation(({ ctx, input }) => saveWhatsAppSignatureTemplate(input.content, ctx.user.id)),

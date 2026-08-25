@@ -7,6 +7,7 @@ import {
   mediaAssets,
   services,
   users,
+  whatsappFollowUpActivities,
   whatsappSignatureTemplates,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -36,6 +37,13 @@ export type AppointmentRequestInput = {
   service: string;
   preferredDate: string;
   note?: string | null;
+};
+
+export type WhatsAppFollowUpActivityInput = {
+  appointmentRequestId: number;
+  messageStatus: "draft_copied" | "whatsapp_opened";
+  finalDraftLength: number;
+  recordedBy: number;
 };
 
 export async function getDb() {
@@ -166,6 +174,20 @@ export async function updateAppointmentRequestStatus(id: number, status: "new" |
   await db.update(appointmentRequests).set({ status }).where(eq(appointmentRequests.id, id));
   const [request] = await db.select().from(appointmentRequests).where(eq(appointmentRequests.id, id)).limit(1);
   return request;
+}
+
+export async function createWhatsAppFollowUpActivity(input: WhatsAppFollowUpActivityInput) {
+  const db = requireDb(await getDb());
+  const [request] = await db.select({ id: appointmentRequests.id }).from(appointmentRequests).where(eq(appointmentRequests.id, input.appointmentRequestId)).limit(1);
+  if (!request) throw new Error("Permintaan kunjungan tidak ditemukan.");
+  const inserted = await db.insert(whatsappFollowUpActivities).values(input);
+  const [activity] = await db.select().from(whatsappFollowUpActivities).where(eq(whatsappFollowUpActivities.id, Number(inserted[0].insertId))).limit(1);
+  return activity!;
+}
+
+export async function getWhatsAppFollowUpActivities() {
+  const db = requireDb(await getDb());
+  return db.select().from(whatsappFollowUpActivities).orderBy(desc(whatsappFollowUpActivities.createdAt));
 }
 
 export async function saveWhatsAppSignatureTemplate(content: string, updatedBy: number) {

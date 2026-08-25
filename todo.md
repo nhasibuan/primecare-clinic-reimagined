@@ -69,3 +69,15 @@
 - [x] Define a clear recommended character length and user-facing guidance for staff follow-up drafts.
 - [x] Add a live character counter, length status, and formatted preview to the protected WhatsApp dialog.
 - [x] Validate counter accuracy and preview usability across desktop and mobile before publishing.
+
+## WhatsApp follow-up activity history
+
+- [x] Define activity records that store only appointment reference, final draft length, workflow status, staff actor, and timestamp.
+- [x] Create the activity-history table and administrator-only record/list procedures without storing draft text or patient notes.
+- [x] Record the final draft metrics from the WhatsApp dialog and display operational history in the protected CMS.
+- [x] Validate activity persistence, staff-only access, and responsive history presentation before publishing.
+- [x] Create and clean up a temporary QA request while verifying recorded activity rows persist without message content or notes.
+- [x] Capture the populated activity history on desktop and mobile, verifying status labels, final character counts, and timestamps.
+- [x] Re-run protected-access and final production validation after end-to-end activity verification.
+- [x] Capture authenticated desktop and mobile views of populated activity cards, then verify the final labels, counts, and timestamps before publishing.
+- [x] Restart the CMS preview and capture settled authenticated populated-history views without relying on stale missing-session log entries.
