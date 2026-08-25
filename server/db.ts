@@ -1,4 +1,4 @@
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   appointmentRequests,
@@ -44,6 +44,12 @@ export type WhatsAppFollowUpActivityInput = {
   messageStatus: "draft_copied" | "whatsapp_opened";
   finalDraftLength: number;
   recordedBy: number;
+};
+
+export type WhatsAppFollowUpActivityFilters = {
+  messageStatus?: "draft_copied" | "whatsapp_opened";
+  startAt?: Date;
+  endAt?: Date;
 };
 
 export async function getDb() {
@@ -185,9 +191,17 @@ export async function createWhatsAppFollowUpActivity(input: WhatsAppFollowUpActi
   return activity!;
 }
 
-export async function getWhatsAppFollowUpActivities() {
+export async function getWhatsAppFollowUpActivities(filters: WhatsAppFollowUpActivityFilters = {}) {
   const db = requireDb(await getDb());
-  return db.select().from(whatsappFollowUpActivities).orderBy(desc(whatsappFollowUpActivities.createdAt));
+  const conditions: SQL[] = [];
+  if (filters.messageStatus) conditions.push(eq(whatsappFollowUpActivities.messageStatus, filters.messageStatus));
+  if (filters.startAt) conditions.push(gte(whatsappFollowUpActivities.createdAt, filters.startAt));
+  if (filters.endAt) conditions.push(lte(whatsappFollowUpActivities.createdAt, filters.endAt));
+
+  const query = db.select().from(whatsappFollowUpActivities);
+  return conditions.length
+    ? query.where(and(...conditions)).orderBy(desc(whatsappFollowUpActivities.createdAt))
+    : query.orderBy(desc(whatsappFollowUpActivities.createdAt));
 }
 
 export async function saveWhatsAppSignatureTemplate(content: string, updatedBy: number) {

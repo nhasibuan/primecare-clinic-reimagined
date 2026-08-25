@@ -48,6 +48,16 @@ const appointmentInput = z.object({
   website: z.string().max(255).optional(),
 });
 
+const followUpActivityFilterInput = z.object({
+  messageStatus: z.enum(["draft_copied", "whatsapp_opened"]).optional(),
+  startAt: z.date().optional(),
+  endAt: z.date().optional(),
+}).superRefine((input, context) => {
+  if (input.startAt && input.endAt && input.startAt > input.endAt) {
+    context.addIssue({ code: "custom", message: "Tanggal mulai tidak boleh setelah tanggal akhir.", path: ["endAt"] });
+  }
+});
+
 export const appRouter = router({
   system: systemRouter,
   auth: router({
@@ -74,7 +84,7 @@ export const appRouter = router({
     updateStatus: adminProcedure
       .input(z.object({ id: z.number().int().positive(), status: z.enum(["new", "contacted", "closed"]) }))
       .mutation(({ input }) => updateAppointmentRequestStatus(input.id, input.status)),
-    listFollowUpActivities: adminProcedure.query(() => getWhatsAppFollowUpActivities()),
+    listFollowUpActivities: adminProcedure.input(followUpActivityFilterInput.optional()).query(({ input }) => getWhatsAppFollowUpActivities(input)),
     recordFollowUpActivity: adminProcedure
       .input(z.object({
         appointmentRequestId: z.number().int().positive(),

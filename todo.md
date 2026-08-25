@@ -81,3 +81,14 @@
 - [x] Re-run protected-access and final production validation after end-to-end activity verification.
 - [x] Capture authenticated desktop and mobile views of populated activity cards, then verify the final labels, counts, and timestamps before publishing.
 - [x] Restart the CMS preview and capture settled authenticated populated-history views without relying on stale missing-session log entries.
+
+## WhatsApp activity-history filters
+
+- [x] Define administrator-only date-range and activity-status filter inputs, including an unfiltered default and clear empty state.
+- [x] Extend the protected activity-history query to apply validated date and status filters.
+- [x] Add responsive filter controls, filtered summary metrics, and reset behavior to the CMS activity history.
+- [x] Validate filter accuracy, protected access, empty results, and desktop/mobile layout before publishing.
+- [x] Capture authenticated desktop and mobile activity-history filters with populated results and verify the status/date controls render for staff.
+- [x] Apply a no-match filter in the authenticated CMS and verify the filtered empty-state message before final release.
+- [x] Inspect the authenticated desktop and mobile populated-filter captures to confirm the staff-facing controls and filtered cards are visibly rendered.
+- [x] Inspect the authenticated no-match capture and confirm its protected filtered query returned zero activity rows.

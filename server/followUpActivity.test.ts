@@ -3,6 +3,7 @@ import type { TrpcContext } from "./_core/context";
 
 const dbMocks = vi.hoisted(() => ({
   createWhatsAppFollowUpActivity: vi.fn(),
+  getWhatsAppFollowUpActivities: vi.fn(),
 }));
 
 vi.mock("./db", async importOriginal => {
@@ -10,6 +11,7 @@ vi.mock("./db", async importOriginal => {
   return {
     ...actual,
     createWhatsAppFollowUpActivity: dbMocks.createWhatsAppFollowUpActivity,
+    getWhatsAppFollowUpActivities: dbMocks.getWhatsAppFollowUpActivities,
   };
 });
 
@@ -36,6 +38,7 @@ function createContext(role: "admin" | "user" = "admin"): TrpcContext {
 describe("WhatsApp follow-up activity", () => {
   beforeEach(() => {
     dbMocks.createWhatsAppFollowUpActivity.mockReset();
+    dbMocks.getWhatsAppFollowUpActivities.mockReset();
   });
 
   it("records only the final length, activity status, appointment reference, and staff actor", async () => {
@@ -71,5 +74,26 @@ describe("WhatsApp follow-up activity", () => {
     const caller = appRouter.createCaller(createContext("user"));
 
     await expect(caller.appointments.listFollowUpActivities()).rejects.toThrow();
+  });
+
+  it("forwards validated activity status and date-range filters to the protected history query", async () => {
+    dbMocks.getWhatsAppFollowUpActivities.mockResolvedValue([]);
+    const caller = appRouter.createCaller(createContext());
+    const startAt = new Date("2030-01-01T00:00:00.000Z");
+    const endAt = new Date("2030-01-31T23:59:59.999Z");
+
+    await caller.appointments.listFollowUpActivities({ messageStatus: "whatsapp_opened", startAt, endAt });
+
+    expect(dbMocks.getWhatsAppFollowUpActivities).toHaveBeenCalledWith({ messageStatus: "whatsapp_opened", startAt, endAt });
+  });
+
+  it("rejects a date range whose end precedes its start", async () => {
+    const caller = appRouter.createCaller(createContext());
+
+    await expect(caller.appointments.listFollowUpActivities({
+      startAt: new Date("2030-02-01T00:00:00.000Z"),
+      endAt: new Date("2030-01-01T00:00:00.000Z"),
+    })).rejects.toThrow();
+    expect(dbMocks.getWhatsAppFollowUpActivities).not.toHaveBeenCalled();
   });
 });

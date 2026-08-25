@@ -2,8 +2,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import WhatsAppFollowUpDialog from "@/components/WhatsAppFollowUpDialog";
 import { trpc } from "@/lib/trpc";
-import { CheckCircle2, ExternalLink, History, Loader2, MessageCircle, Plus, Save, UploadCloud } from "lucide-react";
-import { ChangeEvent, useEffect, useState } from "react";
+import { CheckCircle2, ExternalLink, History, Loader2, MessageCircle, Plus, RotateCcw, Save, SlidersHorizontal, UploadCloud } from "lucide-react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type ProfileForm = {
@@ -24,19 +24,51 @@ const emptyProfile: ProfileForm = {
 
 const defaultSignature = "Salam hangat,\nTim Klinik Berkat Insani\nKelumpang Hilir, Kotabaru";
 
+type FollowUpActivityStatusFilter = "all" | "draft_copied" | "whatsapp_opened";
+
+function getInitialActivityStatusFilter(): FollowUpActivityStatusFilter {
+  const value = new URLSearchParams(window.location.search).get("activityStatus");
+  return value === "draft_copied" || value === "whatsapp_opened" ? value : "all";
+}
+
 export default function ClinicAdmin() {
   const { user, loading } = useAuth();
   const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.clinic.adminContent.useQuery(undefined, { enabled: isAdmin });
   const { data: appointmentRequests, isLoading: appointmentRequestsLoading } = trpc.appointments.list.useQuery(undefined, { enabled: isAdmin });
-  const { data: followUpActivities, isLoading: followUpActivitiesLoading } = trpc.appointments.listFollowUpActivities.useQuery(undefined, { enabled: isAdmin });
   const [profile, setProfile] = useState<ProfileForm>(emptyProfile);
   const [service, setService] = useState({ name: "", summary: "", imageUrl: "" });
   const [assetAlt, setAssetAlt] = useState("");
   const [assetCategory, setAssetCategory] = useState<"brand" | "service" | "clinician" | "facility" | "document">("service");
   const [followUpRequest, setFollowUpRequest] = useState<{ id: number; fullName: string; contactNumber: string; service: string; preferredDate: string } | null>(null);
   const [signatureTemplate, setSignatureTemplate] = useState(defaultSignature);
+  const [activityStatusFilter, setActivityStatusFilter] = useState<FollowUpActivityStatusFilter>(getInitialActivityStatusFilter);
+  const [activityStartDate, setActivityStartDate] = useState(() => new URLSearchParams(window.location.search).get("activityStart") ?? "");
+  const [activityEndDate, setActivityEndDate] = useState(() => new URLSearchParams(window.location.search).get("activityEnd") ?? "");
+
+  const activityDateRangeInvalid = Boolean(activityStartDate && activityEndDate && activityStartDate > activityEndDate);
+  const activityHistoryQueryInput = useMemo(() => ({
+    messageStatus: activityStatusFilter === "all" ? undefined : activityStatusFilter,
+    startAt: activityStartDate ? new Date(`${activityStartDate}T00:00:00`) : undefined,
+    endAt: activityEndDate ? new Date(`${activityEndDate}T23:59:59.999`) : undefined,
+  }), [activityEndDate, activityStartDate, activityStatusFilter]);
+  const { data: followUpActivities, isLoading: followUpActivitiesLoading } = trpc.appointments.listFollowUpActivities.useQuery(
+    activityHistoryQueryInput,
+    { enabled: isAdmin && !activityDateRangeInvalid },
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (activityStatusFilter === "all") params.delete("activityStatus");
+    else params.set("activityStatus", activityStatusFilter);
+    if (activityStartDate) params.set("activityStart", activityStartDate);
+    else params.delete("activityStart");
+    if (activityEndDate) params.set("activityEnd", activityEndDate);
+    else params.delete("activityEnd");
+    const query = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  }, [activityEndDate, activityStartDate, activityStatusFilter]);
 
   useEffect(() => {
     if (data?.profile) {
@@ -128,6 +160,12 @@ export default function ClinicAdmin() {
   const averageFollowUpDraftLength = followUpActivitySummary?.count
     ? Math.round(followUpActivitySummary.totalLength / followUpActivitySummary.count)
     : 0;
+  const hasActivityFilters = activityStatusFilter !== "all" || Boolean(activityStartDate) || Boolean(activityEndDate);
+  const resetActivityFilters = () => {
+    setActivityStatusFilter("all");
+    setActivityStartDate("");
+    setActivityEndDate("");
+  };
 
   const handleUpload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -226,15 +264,23 @@ export default function ClinicAdmin() {
             <section className="rounded-[28px] border border-[#173047]/10 bg-[#eef8f8] p-6 shadow-[0_12px_30px_rgba(23,48,71,.05)] sm:p-8">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div><p className="eyebrow">Riwayat tindak lanjut WhatsApp</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.035em]">Aktivitas dan panjang draf akhir</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#607684]">Riwayat ini mencatat status tindakan dan jumlah karakter saat staf menyalin draf atau membuka WhatsApp. Isi pesan dan catatan pemohon tidak disimpan.</p></div>
-                <div className="flex gap-2"><span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#007f98]">{followUpActivities?.length ?? 0} aktivitas</span><span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#173047]">Rata-rata {averageFollowUpDraftLength.toLocaleString("id-ID")} karakter</span></div>
+                <div className="flex flex-wrap gap-2"><span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#007f98]">{followUpActivities?.length ?? 0} aktivitas {hasActivityFilters ? "terfilter" : "tersimpan"}</span><span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#173047]">Rata-rata {averageFollowUpDraftLength.toLocaleString("id-ID")} karakter</span></div>
               </div>
+              <fieldset className="mt-6 grid gap-3 rounded-2xl border border-[#173047]/10 bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_auto] lg:items-end">
+                <legend className="flex items-center gap-2 px-1 text-sm font-bold text-[#173047]"><SlidersHorizontal size={15} className="text-[#007f98]" /> Filter aktivitas</legend>
+                <label className="grid gap-1.5 text-xs font-bold text-[#395568]">Status aktivitas<select value={activityStatusFilter} onChange={event => setActivityStatusFilter(event.target.value as FollowUpActivityStatusFilter)} className="rounded-xl border border-[#173047]/15 bg-white px-3 py-2.5 text-sm font-medium text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10"><option value="all">Semua status</option><option value="draft_copied">Draf disalin</option><option value="whatsapp_opened">WhatsApp dibuka</option></select></label>
+                <label className="grid gap-1.5 text-xs font-bold text-[#395568]">Dari tanggal<input type="date" value={activityStartDate} onChange={event => setActivityStartDate(event.target.value)} className="rounded-xl border border-[#173047]/15 bg-white px-3 py-2.5 text-sm font-medium text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10" /></label>
+                <label className="grid gap-1.5 text-xs font-bold text-[#395568]">Sampai tanggal<input type="date" value={activityEndDate} onChange={event => setActivityEndDate(event.target.value)} className="rounded-xl border border-[#173047]/15 bg-white px-3 py-2.5 text-sm font-medium text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10" /></label>
+                <button type="button" onClick={resetActivityFilters} disabled={!hasActivityFilters} className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#173047]/15 px-4 py-2.5 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#007f98] disabled:cursor-not-allowed disabled:opacity-45"><RotateCcw size={15} /> Reset</button>
+              </fieldset>
+              {activityDateRangeInvalid ? <p className="mt-3 rounded-xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">Tanggal mulai tidak boleh setelah tanggal akhir.</p> : null}
               <div className="mt-7 grid gap-3">
                 {followUpActivitiesLoading ? <div className="grid min-h-24 place-items-center rounded-2xl bg-white"><Loader2 className="animate-spin text-[#039CB7]" /></div> : followUpActivities?.length ? followUpActivities.map(activity => (
                   <article key={activity.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#173047]/10 bg-white p-4">
                     <div className="flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#eaf9fb] text-[#007f98]"><History size={17} /></div><div><p className="text-sm font-bold text-[#173047]">{activity.messageStatus === "draft_copied" ? "Draf disalin" : "WhatsApp dibuka"}</p><p className="mt-1 text-xs text-[#607684]">Permintaan #{activity.appointmentRequestId} · {new Date(activity.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</p></div></div>
                     <div className="text-right"><p className="text-sm font-bold text-[#173047]">{activity.finalDraftLength.toLocaleString("id-ID")} karakter</p><p className="mt-1 text-xs font-semibold text-[#007f98]">Status pesan tercatat</p></div>
                   </article>
-                )) : <div className="rounded-2xl bg-white p-6 text-sm leading-6 text-[#607684]"><CheckCircle2 className="mr-2 inline-block h-4 w-4 text-[#039CB7]" />Belum ada aktivitas tindak lanjut. Riwayat dibuat saat staf menyalin draf atau membuka WhatsApp.</div>}
+                )) : <div className="rounded-2xl bg-white p-6 text-sm leading-6 text-[#607684]"><CheckCircle2 className="mr-2 inline-block h-4 w-4 text-[#039CB7]" />{hasActivityFilters ? "Tidak ada aktivitas yang sesuai dengan filter saat ini." : "Belum ada aktivitas tindak lanjut. Riwayat dibuat saat staf menyalin draf atau membuka WhatsApp."}</div>}
               </div>
             </section>
 
