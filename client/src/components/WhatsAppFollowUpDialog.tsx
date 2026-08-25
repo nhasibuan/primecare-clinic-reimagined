@@ -12,15 +12,16 @@ import { toast } from "sonner";
 
 type WhatsAppFollowUpDialogProps = {
   request: AppointmentFollowUpDetails | null;
+  signatureTemplate: string;
   onOpenChange: (open: boolean) => void;
 };
 
-export default function WhatsAppFollowUpDialog({ request, onOpenChange }: WhatsAppFollowUpDialogProps) {
+export default function WhatsAppFollowUpDialog({ request, signatureTemplate, onOpenChange }: WhatsAppFollowUpDialogProps) {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    setMessage(request ? buildAppointmentFollowUpMessage(request) : "");
-  }, [request]);
+    setMessage(request ? buildAppointmentFollowUpMessage(request, signatureTemplate) : "");
+  }, [request, signatureTemplate]);
 
   const copyMessage = async () => {
     try {
@@ -47,7 +48,7 @@ export default function WhatsAppFollowUpDialog({ request, onOpenChange }: WhatsA
           </DialogHeader>
         </div>
         <div className="space-y-5 p-6 sm:p-8">
-          <div className="rounded-2xl bg-[#eef8f8] px-4 py-3 text-sm leading-6 text-[#395568]"><ShieldCheck className="mr-2 inline-block h-4 w-4 align-text-bottom text-[#007f98]" />Draf hanya menggunakan nama, layanan, dan tanggal pilihan. Catatan bebas pemohon tidak disertakan.</div>
+          <div className="rounded-2xl bg-[#eef8f8] px-4 py-3 text-sm leading-6 text-[#395568]"><ShieldCheck className="mr-2 inline-block h-4 w-4 align-text-bottom text-[#007f98]" />Draf hanya menggunakan nama, layanan, tanggal pilihan, dan template tanda tangan klinik. Catatan bebas pemohon tidak disertakan.</div>
           <label className="grid gap-2 text-sm font-bold text-[#395568]">Draf pesan yang dapat diedit
             <textarea value={message} onChange={event => setMessage(event.target.value)} rows={7} className="resize-y rounded-xl border border-[#173047]/15 bg-white px-4 py-3 text-sm font-medium leading-6 text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10" />
           </label>

@@ -7,6 +7,7 @@ import {
   mediaAssets,
   services,
   users,
+  whatsappSignatureTemplates,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -96,7 +97,8 @@ export async function getAdminClinicContent() {
   const [profile] = await db.select().from(clinicProfiles).limit(1);
   const allServices = await db.select().from(services).orderBy(asc(services.sortOrder));
   const assets = await db.select().from(mediaAssets).orderBy(asc(mediaAssets.uploadedAt));
-  return { profile: profile ?? null, services: allServices, mediaAssets: assets };
+  const [signatureTemplate] = await db.select().from(whatsappSignatureTemplates).limit(1);
+  return { profile: profile ?? null, services: allServices, mediaAssets: assets, signatureTemplate: signatureTemplate ?? null };
 }
 
 export async function saveClinicProfile(input: ClinicProfileInput) {
@@ -164,4 +166,16 @@ export async function updateAppointmentRequestStatus(id: number, status: "new" |
   await db.update(appointmentRequests).set({ status }).where(eq(appointmentRequests.id, id));
   const [request] = await db.select().from(appointmentRequests).where(eq(appointmentRequests.id, id)).limit(1);
   return request;
+}
+
+export async function saveWhatsAppSignatureTemplate(content: string, updatedBy: number) {
+  const db = requireDb(await getDb());
+  const [existing] = await db.select({ id: whatsappSignatureTemplates.id }).from(whatsappSignatureTemplates).limit(1);
+  if (existing) {
+    await db.update(whatsappSignatureTemplates).set({ content, updatedBy }).where(eq(whatsappSignatureTemplates.id, existing.id));
+  } else {
+    await db.insert(whatsappSignatureTemplates).values({ content, updatedBy });
+  }
+  const [template] = await db.select().from(whatsappSignatureTemplates).limit(1);
+  return template!;
 }

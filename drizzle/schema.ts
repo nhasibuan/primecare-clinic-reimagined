@@ -82,9 +82,17 @@ export const appointmentRequests = mysqlTable("appointment_requests", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
+export const whatsappSignatureTemplates = mysqlTable("whatsapp_signature_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  content: varchar("content", { length: 1000 }).notNull(),
+  updatedBy: int("updatedBy").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type ClinicProfile = typeof clinicProfiles.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type AppointmentRequest = typeof appointmentRequests.$inferSelect;
+export type WhatsAppSignatureTemplate = typeof whatsappSignatureTemplates.$inferSelect;

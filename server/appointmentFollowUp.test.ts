@@ -14,10 +14,11 @@ describe("WhatsApp appointment follow-up", () => {
   });
 
   it("generates a data-minimized editable follow-up message", () => {
-    const message = buildAppointmentFollowUpMessage(request);
+    const message = buildAppointmentFollowUpMessage(request, "Salam hangat,\nTim Klinik Berkat Insani");
     expect(message).toContain("Rani Putri");
     expect(message).toContain("Poli Kandungan");
     expect(message).toContain("15 Januari 2030");
+    expect(message).toContain("Salam hangat,\nTim Klinik Berkat Insani");
     expect(buildWhatsAppFollowUpUrl(request, message)).toContain("https://wa.me/6281234567890?text=");
   });
 });

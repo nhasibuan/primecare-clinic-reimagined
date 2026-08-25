@@ -9,6 +9,7 @@ import {
   getPublicClinicContent,
   saveClinicProfile,
   saveService,
+  saveWhatsAppSignatureTemplate,
   updateAppointmentRequestStatus,
 } from "./db";
 import { isAutomatedAppointmentRequest, normalizeAppointmentNote } from "./appointmentRequest";
@@ -70,6 +71,9 @@ export const appRouter = router({
     updateStatus: adminProcedure
       .input(z.object({ id: z.number().int().positive(), status: z.enum(["new", "contacted", "closed"]) }))
       .mutation(({ input }) => updateAppointmentRequestStatus(input.id, input.status)),
+    updateSignatureTemplate: adminProcedure
+      .input(z.object({ content: z.string().trim().min(2).max(1000) }))
+      .mutation(({ ctx, input }) => saveWhatsAppSignatureTemplate(input.content, ctx.user.id)),
   }),
   clinic: router({
     publicContent: publicProcedure.query(() => getPublicClinicContent()),

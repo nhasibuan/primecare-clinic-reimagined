@@ -56,3 +56,10 @@
 - [x] Define a data-minimized staff message that includes only name, service, and preferred date while excluding free-text notes.
 - [x] Add an administrator-only WhatsApp follow-up action to appointment requests with manual message review before sending.
 - [x] Validate generated WhatsApp links, status updates, and CMS responsiveness before publishing.
+
+## WhatsApp staff signature template
+
+- [x] Define a reusable clinic signature template with an approved default and clear privacy boundaries.
+- [x] Persist the signature template and make it editable only by authenticated administrators.
+- [x] Append the saved signature to editable WhatsApp follow-up drafts without including request notes.
+- [x] Validate template persistence, draft composition, and responsive CMS controls before publishing.

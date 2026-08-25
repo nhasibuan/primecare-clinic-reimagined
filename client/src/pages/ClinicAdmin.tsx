@@ -22,6 +22,8 @@ const emptyProfile: ProfileForm = {
   instagramUrl: "https://www.instagram.com/klinikberkatinsani/",
 };
 
+const defaultSignature = "Salam hangat,\nTim Klinik Berkat Insani\nKelumpang Hilir, Kotabaru";
+
 export default function ClinicAdmin() {
   const { user, loading } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -33,6 +35,7 @@ export default function ClinicAdmin() {
   const [assetAlt, setAssetAlt] = useState("");
   const [assetCategory, setAssetCategory] = useState<"brand" | "service" | "clinician" | "facility" | "document">("service");
   const [followUpRequest, setFollowUpRequest] = useState<{ fullName: string; contactNumber: string; service: string; preferredDate: string } | null>(null);
+  const [signatureTemplate, setSignatureTemplate] = useState(defaultSignature);
 
   useEffect(() => {
     if (data?.profile) {
@@ -45,6 +48,10 @@ export default function ClinicAdmin() {
       });
     }
   }, [data?.profile]);
+
+  useEffect(() => {
+    if (data?.signatureTemplate?.content) setSignatureTemplate(data.signatureTemplate.content);
+  }, [data?.signatureTemplate?.content]);
 
   useEffect(() => {
     const followUpId = Number(new URLSearchParams(window.location.search).get("followup"));
@@ -90,6 +97,14 @@ export default function ClinicAdmin() {
     onSuccess: async () => {
       await utils.appointments.list.invalidate();
       toast.success("Status permintaan diperbarui.");
+    },
+    onError: error => toast.error(error.message),
+  });
+
+  const updateSignatureTemplate = trpc.appointments.updateSignatureTemplate.useMutation({
+    onSuccess: async () => {
+      await utils.clinic.adminContent.invalidate();
+      toast.success("Template tanda tangan tersimpan.");
     },
     onError: error => toast.error(error.message),
   });
@@ -166,6 +181,12 @@ export default function ClinicAdmin() {
               <button onClick={() => updateProfile.mutate({ ...profile, instagramUrl: profile.instagramUrl || null })} disabled={updateProfile.isPending} className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#039CB7] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#007f98] disabled:opacity-60"><Save size={16} /> {updateProfile.isPending ? "Menyimpan..." : "Simpan profil"}</button>
             </section>
 
+            <section className="rounded-[28px] border border-[#173047]/10 bg-[#eef8f8] p-6 shadow-[0_12px_30px_rgba(23,48,71,.05)] sm:p-8">
+              <div className="flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">Tanda tangan WhatsApp</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.035em]">Template profesional untuk tindak lanjut</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#607684]">Template ini ditambahkan ke draf WhatsApp dan tetap dapat disunting per pesan. Jangan masukkan catatan pasien atau informasi medis.</p></div><span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#007f98]">Administrator</span></div>
+              <textarea value={signatureTemplate} onChange={event => setSignatureTemplate(event.target.value)} maxLength={1000} rows={4} className="mt-6 w-full resize-y rounded-2xl border border-[#173047]/15 bg-white px-4 py-3 text-sm font-medium leading-6 text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10" />
+              <button onClick={() => updateSignatureTemplate.mutate({ content: signatureTemplate })} disabled={updateSignatureTemplate.isPending || signatureTemplate.trim().length < 2} className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#173047] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#244861] disabled:opacity-60"><Save size={16} /> {updateSignatureTemplate.isPending ? "Menyimpan..." : "Simpan template"}</button>
+            </section>
+
             <section className="rounded-[28px] border border-[#173047]/10 bg-white p-6 shadow-[0_12px_30px_rgba(23,48,71,.05)] sm:p-8">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div><p className="eyebrow">Permintaan kunjungan</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.035em]">Antrean yang perlu ditindaklanjuti</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#607684]">Data ini hanya untuk menghubungi pemohon terkait jadwal. Jangan menambahkan catatan klinis atau data medis di luar proses yang disetujui.</p></div>
@@ -213,7 +234,7 @@ export default function ClinicAdmin() {
             </section>
           </>
         )}
-        <WhatsAppFollowUpDialog request={followUpRequest} onOpenChange={open => { if (!open) setFollowUpRequest(null); }} />
+        <WhatsAppFollowUpDialog request={followUpRequest} signatureTemplate={signatureTemplate} onOpenChange={open => { if (!open) setFollowUpRequest(null); }} />
       </div>
     </DashboardLayout>
   );
