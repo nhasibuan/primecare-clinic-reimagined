@@ -28,7 +28,7 @@ Strengths
 
 Weaknesses
 - Empty top-level README prior to this update, so onboarding and run instructions were missing.
-- Spam protection is limited to a honeypot field; there is no visible rate limiting or CAPTCHA on public endpoints, which could leave the public appointment endpoint vulnerable to targeted abuse. (See routers.ts.)
+- Spam protection is limited to a honeypot field; there’s no visible rate limiting or CAPTCHA on public endpoints, which could leave the public appointment endpoint vulnerable to targeted abuse. (See routers.ts.)
 - Role bootstrap is tied to a single owner identity (ownerOpenId) with no in-app role management UI, making multi-admin operations awkward. (See db.ts role logic.)
 - Silent database degradation: getDb() returns null on connection failures and some DB code returns early, which can mask outages rather than surface errors. (See db.ts.)
 - Platform coupling: Manus/Forge-specific environment variables and a vite-plugin-manus-runtime are used for storage and runtime behavior, reducing portability. (See storage.ts and package.json.)
@@ -44,23 +44,35 @@ Threats
 - Conflicting public source data (phone numbers, schedules) risks publishing incorrect information if guardrails are relaxed. (See klinik_berkat_content_research.md.)
 - Regulatory sensitivity: appointment requests still contain personal contact data and any expansion into clinical notes or PHI would increase privacy and compliance risk. (See persistence_plan.md.)
 - Single point of admin failure: admin privileges tied to one owner identity mean losing that account would block CMS admin flows. (See db.ts.)
-- Upstream dependency risk: reliance on Manus/Forge storage, OAuth, and hosting plugins means external outages or API changes could break uploads or authentication. (See storage.ts.)
+- Upstream dependency risk: reliance on Manus/Forge storage, OAuth, and hosting plugins means external outages or API changes could disrupt uploads or authentication. (See storage.ts.)
 
 ## Verification & review notes
 - Confirmed in-repo: RBAC, Zod validation, data-minimization choices, honeypot bot protection, presigned-upload storage flow, and unit tests are present and referenced throughout server/ and shared/ files.
 - Unverified: I could not inspect the live Manus preview runtime at the provided URL — only repository contents were read. Production runtime behavior (hosted env, live DB, OAuth flows) are outside the read-only repo audit.
 - Index limitation: some large files or generated artifacts may not have been fully indexed in my checks; for a comprehensive operational audit (including live-site checks and a full schema walkthrough), grant filesystem/browser access or run a live audit session.
 
-## Suggested README additions made in this file
-- Project overview and one-line summary (above)
-- Tech stack and verification notes
-- Quickstart: run commands found in package.json scripts (dev, build, preview, test). See package.json for exact script names.
-- Required environment variables to supply before running (examples):
-  - DATABASE_URL
-  - BUILT_IN_FORGE_API_URL
-  - BUILT_IN_FORGE_API_KEY
-  - OWNER_OPENID (owner OAuth identity used for role bootstrap)
+## Quickstart & required environment
+Run locally after cloning (exact script names confirmed in package.json):
+
+```bash
+pnpm install
+pnpm dev
+```
+
+Build & preview for production:
+
+```bash
+pnpm build
+pnpm preview
+```
+
+Scripts referenced (from package.json): dev, build, start, check, format, test, db:push
+
+Required environment variables (examples):
+- DATABASE_URL='mysql://user:pass@host:3306/dbname'
+- BUILT_IN_FORGE_API_URL='https://api.forge.manus.space'
+- BUILT_IN_FORGE_API_KEY='your-forge-api-key'
+- OWNER_OPENID='owner-oauth-identifier'
 
 ## Goal
-Improve onboarding and developer confidence by documenting architecture, setup steps, environment variables, and the repository's privacy/data-minimization posture so reviewers and contributors can evaluate and run the project safely.
-
+Improve onboarding and reviewer confidence by documenting architecture, setup steps, environment variables, and the repository's privacy/data-minimization posture so contributors can safely evaluate and run the project.
