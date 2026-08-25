@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 const assets = {
   logo: "/manus-storage/klinik-berkat-insani-logo_d6e42d2d.jpg",
@@ -92,9 +93,14 @@ const locations = [
 
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: persistedClinic } = trpc.clinic.publicContent.useQuery(undefined, { staleTime: 60_000 });
+  const activeWhatsappUrl = persistedClinic?.profile?.whatsappUrl ?? whatsappUrl;
+  const activeCareCards = persistedClinic?.services.length
+    ? persistedClinic.services.map(service => ({ title: service.name, text: service.summary, image: service.imageUrl, tag: "Layanan" }))
+    : careCards;
 
   const reserve = () => {
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    window.open(activeWhatsappUrl, "_blank", "noopener,noreferrer");
   };
 
   const explore = (title: string) => {
@@ -183,7 +189,7 @@ export default function Home() {
           <div className="relative mx-auto flex min-h-[620px] max-w-[1400px] items-center px-5 py-20 lg:min-h-[650px] lg:px-10">
             <div className="max-w-xl animate-[fade-up_.75s_var(--ease-out)_both]">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#039CB7]/20 bg-white/65 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#007f98] backdrop-blur">
-                <Sparkles size={14} /> Klinik Berkat Insani · Kotabaru
+                <Sparkles size={14} /> {persistedClinic?.profile?.tagline ?? "Klinik Berkat Insani · Kotabaru"}
               </div>
               <h1 className="max-w-[610px] font-display text-[clamp(3rem,5vw,5.55rem)] font-semibold leading-[.94] tracking-[-.05em] text-[#173047]">
                 Perhatian yang hangat untuk kesehatan ibu, bayi, dan keluarga.
@@ -267,7 +273,7 @@ export default function Home() {
             </div>
 
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              {careCards.map((card) => (
+              {activeCareCards.map((card) => (
                 <article key={card.title} className="group overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(23,48,71,.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(23,48,71,.12)]">
                   <div className="relative h-56 overflow-hidden sm:h-60 xl:h-56">
                     <img src={card.image} alt="" className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.05]" />

@@ -34,3 +34,12 @@
 - [x] Locate the existing Alur Kunjungan rule and confirm its relationship to the section paragraph.
 - [x] Move the rule beneath the paragraph and center it within the section.
 - [x] Validate the desktop and mobile placement, then publish the alignment correction.
+
+## Full-stack persistence and file storage
+
+- [x] Define a minimum persistent data model for clinic content, service details, location information, and managed media assets.
+- [x] Upgrade the project to the full-stack database and file-storage capability.
+- [x] Build an authenticated administrative foundation for managing persisted clinic content and stored assets.
+- [x] Verify database persistence, file storage, and public-site compatibility before publishing.
+- [x] Upload a verification image through the managed storage helper, persist its metadata, and confirm its stored URL resolves.
+- [x] Confirm the stored asset is visible in the CMS after refresh and include the evidence in final validation.
