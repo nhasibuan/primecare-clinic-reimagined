@@ -175,7 +175,7 @@ export default function AppointmentRequestDialog({ open, onOpenChange, services,
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#039CB7] text-white"><CalendarDays size={19} /></div>
           <DialogHeader className="mt-5 text-left">
             <DialogTitle className="font-display text-3xl font-semibold tracking-[-.035em] text-white">Ajukan kunjungan</DialogTitle>
-            <DialogDescription className="max-w-xl text-sm leading-6 text-white/75">Isi permintaan singkat ini untuk memilih layanan dan tanggal pilihan Anda. Ini bukan konfirmasi janji maupun layanan gawat darurat.</DialogDescription>
+            <DialogDescription className="max-w-xl text-sm leading-6 text-white/75">Isi formulir di bawah untuk memilih layanan dan tanggal pilihan Anda. Form tersebut bukan konfirmasi janji maupun layanan gawat darurat.</DialogDescription>
           </DialogHeader>
         </div>
 

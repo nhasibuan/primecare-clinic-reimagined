@@ -139,3 +139,8 @@
 - [x] Exercise the triggered CAPTCHA path with real Turnstile test credentials, covering invalid, solved, and honeypot paths without retaining QA appointments.
 - [x] Trigger the rate-limit state from the real public endpoint and connect it to the conditional fallback view on desktop and mobile.
 - [x] Verify an official Turnstile dummy token is accepted through the real rate-limited appointment endpoint in development, then remove all QA appointments.
+
+## Appointment-dialog wording update
+
+- [x] Verify the updated public appointment-dialog description matches the user's approved wording.
+- [x] Run regression checks and publish the verified wording revision.
