@@ -63,3 +63,9 @@
 - [x] Persist the signature template and make it editable only by authenticated administrators.
 - [x] Append the saved signature to editable WhatsApp follow-up drafts without including request notes.
 - [x] Validate template persistence, draft composition, and responsive CMS controls before publishing.
+
+## WhatsApp draft length and preview
+
+- [x] Define a clear recommended character length and user-facing guidance for staff follow-up drafts.
+- [x] Add a live character counter, length status, and formatted preview to the protected WhatsApp dialog.
+- [x] Validate counter accuracy and preview usability across desktop and mobile before publishing.
