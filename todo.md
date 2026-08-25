@@ -127,3 +127,15 @@
 - [x] Prune expired client entries from the in-memory rate-limit store to bound memory use under high-cardinality traffic.
 - [x] Add router-level appointment-create tests covering normal requests, rapid same-IP rejection, and honeypot short-circuit behavior.
 - [x] Re-run full validation after bounded-memory and endpoint-level rate-limit coverage is complete.
+
+## Appointment CAPTCHA fallback
+
+- [x] Define the rate-limit-to-CAPTCHA fallback state, provider contract, privacy boundaries, and accessible recovery path.
+- [x] Configure verified CAPTCHA site and secret credentials through managed project secrets.
+- [x] Verify CAPTCHA tokens server-side and allow a solved challenge to proceed without weakening honeypot protection.
+- [x] Add a responsive CAPTCHA fallback panel to the public appointment dialog only after a rate-limit response.
+- [x] Test normal, rate-limited, invalid-token, solved-token, and honeypot submission paths before publishing.
+- [x] Trigger the public appointment rate limit and capture the conditional CAPTCHA fallback panel on desktop and mobile.
+- [x] Exercise the triggered CAPTCHA path with real Turnstile test credentials, covering invalid, solved, and honeypot paths without retaining QA appointments.
+- [x] Trigger the rate-limit state from the real public endpoint and connect it to the conditional fallback view on desktop and mobile.
+- [x] Verify an official Turnstile dummy token is accepted through the real rate-limited appointment endpoint in development, then remove all QA appointments.

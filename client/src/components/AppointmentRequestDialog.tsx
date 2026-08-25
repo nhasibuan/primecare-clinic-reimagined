@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/lib/trpc";
 import { CalendarDays, MessageCircle, ShieldCheck } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type AppointmentRequestDialogProps = {
@@ -27,22 +27,143 @@ const initialForm = {
   website: "",
 };
 
+type TurnstileWidget = {
+  render: (container: HTMLElement, options: Record<string, unknown>) => string;
+  remove: (widgetId: string) => void;
+};
+
+declare global {
+  interface Window {
+    turnstile?: TurnstileWidget;
+  }
+}
+
+const TURNSTILE_SCRIPT_ID = "cloudflare-turnstile-api";
+const TURNSTILE_ALWAYS_PASS_TEST_SITE_KEY = "1x00000000000000000000AA";
+
+function AppointmentCaptcha({ onTokenChange }: { onTokenChange: (token: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | undefined>(undefined);
+  const usesTestKey = import.meta.env.DEV && new URLSearchParams(window.location.search).get("captchaTestKey") === "1";
+  const siteKey = usesTestKey ? TURNSTILE_ALWAYS_PASS_TEST_SITE_KEY : import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+
+  useEffect(() => {
+    if (!siteKey || !containerRef.current) return;
+    let disposed = false;
+
+    const renderWidget = () => {
+      if (disposed || !containerRef.current || !window.turnstile || widgetIdRef.current) return;
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        theme: "light",
+        size: "flexible",
+        action: "appointment_request",
+        callback: onTokenChange,
+        "expired-callback": () => onTokenChange(""),
+        "error-callback": () => onTokenChange(""),
+      });
+    };
+
+    const existingScript = document.getElementById(TURNSTILE_SCRIPT_ID) as HTMLScriptElement | null;
+    if (window.turnstile) {
+      renderWidget();
+    } else if (existingScript) {
+      existingScript.addEventListener("load", renderWidget, { once: true });
+    } else {
+      const script = document.createElement("script");
+      script.id = TURNSTILE_SCRIPT_ID;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      script.addEventListener("load", renderWidget, { once: true });
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      disposed = true;
+      if (widgetIdRef.current && window.turnstile) window.turnstile.remove(widgetIdRef.current);
+      widgetIdRef.current = undefined;
+    };
+  }, [onTokenChange, siteKey]);
+
+  if (!siteKey) {
+    return <p className="text-sm leading-6 text-rose-700">Verifikasi keamanan sedang tidak tersedia. Gunakan WhatsApp sebagai alternatif atau coba kembali nanti.</p>;
+  }
+
+  return <div ref={containerRef} aria-label="Verifikasi keamanan" />;
+}
+
 export default function AppointmentRequestDialog({ open, onOpenChange, services, whatsappUrl }: AppointmentRequestDialogProps) {
+  const isDevelopmentFallbackQa = import.meta.env.DEV && new URLSearchParams(window.location.search).get("captchaQaE2E") === "1";
   const [form, setForm] = useState(initialForm);
+  const [requiresCaptcha, setRequiresCaptcha] = useState(() => import.meta.env.DEV && new URLSearchParams(window.location.search).get("captchaFallback") === "1");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaVersion, setCaptchaVersion] = useState(0);
+  const captchaPanelRef = useRef<HTMLDivElement>(null);
+  const fallbackQaHasRunRef = useRef(false);
   const createRequest = trpc.appointments.create.useMutation({
     onSuccess: () => {
       setForm(initialForm);
+      setRequiresCaptcha(false);
+      setCaptchaToken("");
+      if (isDevelopmentFallbackQa) return;
       onOpenChange(false);
       toast.success("Permintaan kunjungan sudah dikirim.", {
         description: "Staf klinik akan menghubungi Anda untuk mengonfirmasi ketersediaan.",
       });
     },
-    onError: error => toast.error(error.message),
+    onError: error => {
+      if (error.data?.code === "TOO_MANY_REQUESTS") {
+        setRequiresCaptcha(true);
+        setCaptchaToken("");
+        setCaptchaVersion(current => current + 1);
+        toast.info("Selesaikan verifikasi keamanan untuk mengirim permintaan berikutnya.");
+        return;
+      }
+      if (requiresCaptcha) {
+        setCaptchaToken("");
+        setCaptchaVersion(current => current + 1);
+      }
+      toast.error(error.message);
+    },
   });
+
+  const handleCaptchaToken = useCallback((token: string) => setCaptchaToken(token), []);
+
+  useEffect(() => {
+    if (!open || !isDevelopmentFallbackQa || fallbackQaHasRunRef.current) return;
+    fallbackQaHasRunRef.current = true;
+    const qaRequest = {
+      fullName: "QA CAPTCHA Browser Fallback",
+      contactNumber: "+6285215862526",
+      service: "Poli Umum",
+      preferredDate: "2026-08-26",
+      consent: true as const,
+      note: "",
+      website: "",
+    };
+    setForm(qaRequest);
+    void (async () => {
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        try {
+          await createRequest.mutateAsync(qaRequest);
+        } catch {
+          // The fourth real endpoint response activates the ordinary fallback handler above.
+        }
+      }
+    })();
+  }, [createRequest, isDevelopmentFallbackQa, open]);
+
+  useEffect(() => {
+    const shouldScrollToCaptcha = import.meta.env.DEV && new URLSearchParams(window.location.search).get("captchaQaScroll") === "1";
+    if (!requiresCaptcha || !shouldScrollToCaptcha) return;
+    const frame = window.requestAnimationFrame(() => captchaPanelRef.current?.scrollIntoView({ block: "center" }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [requiresCaptcha]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    createRequest.mutate({ ...form, consent: true });
+    createRequest.mutate({ ...form, consent: true, captchaToken: requiresCaptcha ? captchaToken || undefined : undefined });
   };
 
   const today = new Date().toISOString().slice(0, 10);
@@ -92,9 +213,15 @@ export default function AppointmentRequestDialog({ open, onOpenChange, services,
 
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"><ShieldCheck className="mr-2 inline-block h-4 w-4 align-text-bottom" />Untuk keadaan darurat, hubungi layanan darurat setempat atau fasilitas kesehatan terdekat. Jangan gunakan formulir untuk kondisi yang membutuhkan pertolongan segera.</div>
 
+          {requiresCaptcha && <div ref={captchaPanelRef} className="rounded-2xl border border-[#039CB7]/25 bg-[#eef8f8] p-4" role="status">
+            <p className="mb-3 text-sm font-bold text-[#173047]">Verifikasi keamanan diperlukan</p>
+            <p className="mb-4 text-sm leading-6 text-[#395568]">Untuk melindungi formulir dari pengiriman berulang, selesaikan verifikasi singkat ini. Token verifikasi tidak disimpan bersama permintaan kunjungan.</p>
+            <AppointmentCaptcha key={captchaVersion} onTokenChange={handleCaptchaToken} />
+          </div>}
+
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-[#007f98] transition hover:text-[#039CB7]"><MessageCircle size={16} /> Gunakan WhatsApp sebagai alternatif</a>
-            <button type="submit" disabled={createRequest.isPending || !form.consent} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#039CB7] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#007f98] disabled:cursor-not-allowed disabled:opacity-60">{createRequest.isPending ? "Mengirim..." : "Kirim permintaan"}</button>
+            <button type="submit" disabled={createRequest.isPending || !form.consent || (requiresCaptcha && !captchaToken)} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#039CB7] px-6 py-3.5 text-sm font-bold text-white transition hover:bg-[#007f98] disabled:cursor-not-allowed disabled:opacity-60">{createRequest.isPending ? "Mengirim..." : "Kirim permintaan"}</button>
           </div>
         </form>
       </DialogContent>

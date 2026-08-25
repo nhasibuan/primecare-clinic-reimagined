@@ -25,6 +25,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
 import { storagePut } from "./storage";
+import { getTurnstileVerificationSecret, verifyTurnstileToken } from "./turnstile";
 import { MAX_WHATSAPP_DRAFT_LENGTH } from "../shared/whatsappMessageMetrics";
 
 const profileInput = z.object({
@@ -52,6 +53,7 @@ const appointmentInput = z.object({
   note: z.string().trim().max(600).optional(),
   consent: z.literal(true),
   website: z.string().max(255).optional(),
+  captchaToken: z.string().trim().max(2048).optional(),
 });
 
 const followUpActivityFilterInput = z.object({
@@ -77,12 +79,26 @@ export const appRouter = router({
   appointments: router({
     create: publicProcedure.input(appointmentInput).mutation(async ({ ctx, input }) => {
       if (isAutomatedAppointmentRequest(input.website)) return { success: true, requestId: null } as const;
-      const limit = appointmentSubmissionRateLimiter.attempt(getClientIp(ctx.req));
+      const clientIp = getClientIp(ctx.req);
+      const limit = appointmentSubmissionRateLimiter.attempt(clientIp);
       if (!limit.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message: "Terlalu banyak permintaan kunjungan. Silakan coba lagi dalam sekitar satu menit.",
-        });
+        if (!input.captchaToken) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: "Terlalu banyak permintaan kunjungan. Selesaikan verifikasi keamanan untuk melanjutkan.",
+          });
+        }
+
+        const verification = await verifyTurnstileToken(input.captchaToken, clientIp, getTurnstileVerificationSecret());
+        if (!verification.success) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Verifikasi keamanan tidak berhasil. Silakan coba lagi.",
+          });
+        }
+
+        // The solved token is single-use at the provider. It is intentionally
+        // neither persisted nor included in the appointment request.
       }
       const request = await createAppointmentRequest({
         fullName: input.fullName,
