@@ -144,3 +144,8 @@
 
 - [x] Verify the updated public appointment-dialog description matches the user's approved wording.
 - [x] Run regression checks and publish the verified wording revision.
+
+## Appointment consent wording update
+
+- [x] Verify the updated public appointment consent statement matches the user's approved wording.
+- [x] Run regression checks and publish the verified consent revision.

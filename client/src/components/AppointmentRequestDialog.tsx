@@ -208,7 +208,7 @@ export default function AppointmentRequestDialog({ open, onOpenChange, services,
 
           <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-[#eef8f8] p-4 text-sm leading-6 text-[#395568]">
             <input required type="checkbox" checked={form.consent} onChange={e => setForm(current => ({ ...current, consent: e.target.checked }))} className="mt-1 h-4 w-4 accent-[#039CB7]" />
-            <span>Saya setuju Klinik Berkat Insani menggunakan data di atas untuk menanggapi permintaan kunjungan ini. Saya memahami bahwa permintaan ini bukan konfirmasi jadwal.</span>
+            <span>Saya setuju Klinik Berkat Insani menggunakan data di atas untuk menanggapi pengajuan kunjungan. Saya memahami bahwa pengajuan tersebut bukan konfirmasi jadwal.</span>
           </label>
 
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900"><ShieldCheck className="mr-2 inline-block h-4 w-4 align-text-bottom" />Untuk keadaan darurat, hubungi layanan darurat setempat atau fasilitas kesehatan terdekat. Jangan gunakan formulir untuk kondisi yang membutuhkan pertolongan segera.</div>
