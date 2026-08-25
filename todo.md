@@ -28,3 +28,9 @@
 - [x] Inspect the current care-card image wrapper and identify why visual heights appear inconsistent.
 - [x] Apply one explicit responsive height and `object-cover` crop treatment to all service-card images.
 - [x] Verify desktop and mobile card image consistency, then publish the correction.
+
+## Alur Kunjungan divider alignment
+
+- [x] Locate the existing Alur Kunjungan rule and confirm its relationship to the section paragraph.
+- [x] Move the rule beneath the paragraph and center it within the section.
+- [x] Validate the desktop and mobile placement, then publish the alignment correction.

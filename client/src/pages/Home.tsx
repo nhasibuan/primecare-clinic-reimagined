@@ -338,9 +338,9 @@ export default function Home() {
         <section className="bg-[#eef8f8] py-24 lg:py-28">
           <div className="mx-auto max-w-[1100px] px-5 text-center lg:px-10">
             <p className="eyebrow">Alur kunjungan</p>
-            <span className="section-rule" />
             <h2 className="mx-auto mt-5 max-w-3xl font-display text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[#173047] lg:text-5xl">Persiapan sederhana membantu proses konsultasi lebih terarah.</h2>
             <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-8 text-[#5c7180]">Kunjungan dapat dimulai dari pendaftaran, dilanjutkan pemeriksaan awal dan konsultasi dokter, kemudian pengambilan obat sesuai proses klinik.</p>
+            <span className="section-rule mx-auto mt-7" />
             <div className="mt-12 grid gap-5 md:grid-cols-3">
               {[
                 ["Daftar lebih dulu", "Konfirmasi layanan dan jadwal melalui WhatsApp klinik."],
