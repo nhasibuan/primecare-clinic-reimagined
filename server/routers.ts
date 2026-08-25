@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { COOKIE_NAME } from "../shared/const";
+import { TRPCError } from "@trpc/server";
 import { normalizeAssetFileName, decodeMediaUpload } from "./clinicContent";
 import {
   createAppointmentRequest,
@@ -14,7 +15,12 @@ import {
   saveWhatsAppSignatureTemplate,
   updateAppointmentRequestStatus,
 } from "./db";
-import { isAutomatedAppointmentRequest, normalizeAppointmentNote } from "./appointmentRequest";
+import {
+  appointmentSubmissionRateLimiter,
+  getClientIp,
+  isAutomatedAppointmentRequest,
+  normalizeAppointmentNote,
+} from "./appointmentRequest";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
@@ -69,8 +75,15 @@ export const appRouter = router({
     }),
   }),
   appointments: router({
-    create: publicProcedure.input(appointmentInput).mutation(async ({ input }) => {
+    create: publicProcedure.input(appointmentInput).mutation(async ({ ctx, input }) => {
       if (isAutomatedAppointmentRequest(input.website)) return { success: true, requestId: null } as const;
+      const limit = appointmentSubmissionRateLimiter.attempt(getClientIp(ctx.req));
+      if (!limit.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Terlalu banyak permintaan kunjungan. Silakan coba lagi dalam sekitar satu menit.",
+        });
+      }
       const request = await createAppointmentRequest({
         fullName: input.fullName,
         contactNumber: input.contactNumber,

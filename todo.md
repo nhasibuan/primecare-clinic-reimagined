@@ -109,3 +109,21 @@
 - [x] Confirm non-admin access remains denied and all temporary QA data is cleaned up before reporting results.
 - [x] Record the final administrator verification result for the user.
 
+## Latest CMS dashboard and login check
+
+- [x] Confirm the production `/admin` route loads its protected dashboard entry state correctly.
+- [x] Verify the sign-in flow and current administrator authorization state for berkatinsani2000@gmail.com.
+- [x] Report the dashboard and login verification result.
+- [x] Complete a real authenticated browser login for berkatinsani2000@gmail.com and confirm the CMS dashboard renders.
+- [x] Run a protected CMS query or action within that authenticated browser session and record the result.
+- [x] Deliver the final dashboard and login verification summary after the authenticated browser check.
+
+## Public appointment rate limiting
+
+- [x] Define the IP-keyed submission window, threshold, trusted-proxy behavior, and retry response without collecting additional patient data.
+- [x] Implement server-side appointment rate-limit logic while preserving the existing honeypot behavior.
+- [x] Add unit tests that allow normal submissions and reject rapid repeated requests from the same IP.
+- [x] Validate tests, types, production build, and protected endpoint behavior before publishing.
+- [x] Prune expired client entries from the in-memory rate-limit store to bound memory use under high-cardinality traffic.
+- [x] Add router-level appointment-create tests covering normal requests, rapid same-IP rejection, and honeypot short-circuit behavior.
+- [x] Re-run full validation after bounded-memory and endpoint-level rate-limit coverage is complete.
