@@ -52,6 +52,15 @@ export type WhatsAppFollowUpActivityFilters = {
   endAt?: Date;
 };
 
+export function resolveUserRole(
+  incomingRole: InsertUser["role"],
+  existingRole: "admin" | "user" | undefined,
+  openId: string,
+  ownerOpenId: string | undefined,
+): "admin" | "user" {
+  return incomingRole ?? existingRole ?? (openId === ownerOpenId ? "admin" : "user");
+}
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -74,16 +83,16 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  const values: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? new Date() };
-  const updateSet: Record<string, unknown> = { lastSignedIn: values.lastSignedIn };
+  const [existing] = await db.select({ role: users.role }).from(users).where(eq(users.openId, user.openId)).limit(1);
+  const role = resolveUserRole(user.role, existing?.role, user.openId, ENV.ownerOpenId);
+  const values: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? new Date(), role };
+  const updateSet: Record<string, unknown> = { lastSignedIn: values.lastSignedIn, role };
   for (const field of ["name", "email", "loginMethod"] as const) {
     if (user[field] !== undefined) {
       values[field] = user[field] ?? null;
       updateSet[field] = user[field] ?? null;
     }
   }
-  values.role = user.role ?? (user.openId === ENV.ownerOpenId ? "admin" : "user");
-  updateSet.role = values.role;
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
 

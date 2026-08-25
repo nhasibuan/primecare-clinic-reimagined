@@ -99,4 +99,13 @@
 - [x] Validate the revised public appointment form on desktop and mobile, then run production checks.
 - [x] Capture and review the mobile appointment-request dialog with the revised emergency guidance before publishing.
 - [x] Inspect the captured mobile dialog and record confirmation that the revised emergency guidance is visible and legible.
-- [ ] Save and publish the verified wording update.
+- [x] Save and publish the verified wording update.
+
+## Administrator access verification
+
+- [x] Verify berkatinsani2000@gmail.com authenticates as an administrator on the protected Klinik CMS.
+- [x] Test editing a temporary clinic profile value and confirm the protected admin procedure persists it.
+- [x] Test managed-file upload and listing with a temporary QA asset, then remove the asset and restore the profile.
+- [x] Confirm non-admin access remains denied and all temporary QA data is cleaned up before reporting results.
+- [x] Record the final administrator verification result for the user.
+
