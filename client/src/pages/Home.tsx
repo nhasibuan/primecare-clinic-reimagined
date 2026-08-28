@@ -92,6 +92,64 @@ const locations = [
   },
 ];
 
+const instagramPosts = [
+  "https://www.instagram.com/p/DbklrsSzKPd/",
+  "https://www.instagram.com/p/Db0AxbfTaPH/",
+  "https://www.instagram.com/p/Db0CdwHzfBD/",
+];
+
+declare global {
+  interface Window {
+    instgrm?: { Embeds: { process: () => void } };
+  }
+}
+
+function InstagramEmbeds() {
+  useEffect(() => {
+    const processEmbeds = () => window.instgrm?.Embeds.process();
+    const existingScript = document.querySelector<HTMLScriptElement>("script[data-klinik-instagram-embed]");
+    if (window.instgrm) {
+      processEmbeds();
+      return;
+    }
+    if (existingScript) {
+      existingScript.addEventListener("load", processEmbeds, { once: true });
+      return () => existingScript.removeEventListener("load", processEmbeds);
+    }
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://www.instagram.com/embed.js";
+    script.dataset.klinikInstagramEmbed = "true";
+    script.addEventListener("load", processEmbeds, { once: true });
+    document.body.appendChild(script);
+  }, []);
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      {instagramPosts.map((permalink, index) => (
+        <div key={permalink} className="min-w-0">
+          <blockquote
+            className="instagram-media m-0 w-full min-w-0 overflow-hidden rounded-[24px] bg-white shadow-[0_10px_25px_rgba(23,48,71,.06)]"
+            data-instgrm-captioned="true"
+            data-instgrm-permalink={permalink}
+            data-instgrm-version="14"
+            aria-label={`Posting Instagram Klinik Berkat Insani ${index + 1}`}
+            style={{ maxWidth: 540, minWidth: 0, width: "100%" }}
+          >
+            <a href={permalink} target="_blank" rel="noreferrer">
+              Lihat postingan Instagram Klinik Berkat Insani
+            </a>
+          </blockquote>
+          <a href={permalink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm font-extrabold text-[#007f98] transition hover:text-[#039CB7]">
+            Buka postingan di Instagram <ArrowRight size={15} className="ml-1" />
+          </a>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [appointmentOpen, setAppointmentOpen] = useState(false);
@@ -378,39 +436,8 @@ export default function Home() {
             </div>
             <button onClick={() => explore("informasi kunjungan")} className="inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">Tanya informasi <ArrowRight size={16} /></button>
           </div>
-          <div className="mt-12 grid gap-6 lg:grid-cols-12">
-            <article className="group grid overflow-hidden rounded-[30px] bg-[#f3faf8] lg:col-span-7 sm:grid-cols-[1.04fr_.96fr]">
-              <div className="min-h-[300px] overflow-hidden">
-                <img src={assets.motherChild} alt="Ibu dan anak dalam suasana konsultasi yang hangat" className="h-full w-full object-cover object-[62%_center] transition duration-500 group-hover:scale-[1.04]" />
-              </div>
-              <div className="flex flex-col justify-center p-7 sm:p-8 lg:p-10">
-                <p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#039CB7]">Poli Kandungan</p>
-                <h3 className="mt-3 font-display text-3xl font-semibold leading-[1.03] tracking-[-.035em] text-[#173047]">Pemeriksaan kehamilan, USG, dan konsultasi kandungan.</h3>
-                <p className="mt-4 text-sm leading-6 text-[#607684]">Sampaikan kebutuhan pemeriksaan, pemantauan ibu dan janin, atau pertanyaan terkait program hamil saat melakukan reservasi.</p>
-                <button onClick={reserve} className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">Ajukan kunjungan <ArrowRight size={16} /></button>
-              </div>
-            </article>
-            <div className="grid gap-6 lg:col-span-5">
-              <article className="group grid min-h-[220px] overflow-hidden rounded-[30px] bg-[#fbfaf5] sm:grid-cols-[.95fr_1.05fr]">
-                <div className="relative overflow-hidden">
-                  <img src={assets.facilityStay} alt="Suasana klinik yang bersih dan nyaman" className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]" />
-                  <div className="absolute inset-0 bg-[#173047]/10" />
-                </div>
-                <div className="p-7">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#039CB7]">Poli Umum</p>
-                  <h3 className="mt-3 font-display text-2xl font-semibold leading-tight tracking-[-.025em] text-[#173047]">Konsultasi keluhan kesehatan sehari-hari.</h3>
-                  <button onClick={reserve} className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-[#173047] transition hover:text-[#039CB7]">Tanya jadwal dr. Suriani <ArrowRight size={15} /></button>
-                </div>
-              </article>
-              <article className="relative overflow-hidden rounded-[30px] bg-[#173047] p-8 text-white sm:p-9">
-                <img src={assets.careMark} alt="" className="absolute -bottom-9 -right-6 h-44 w-44 opacity-15 brightness-0 invert" />
-                <p className="relative text-[10px] font-extrabold uppercase tracking-[.15em] text-[#84e2ec]">Poli Gigi</p>
-                <div className="relative mt-4 flex flex-wrap items-end justify-between gap-6">
-                  <h3 className="max-w-sm font-display text-3xl font-semibold leading-[1.02] tracking-[-.035em]">Tanyakan layanan pemeriksaan dan perawatan gigi yang tersedia.</h3>
-                  <button onClick={reserve} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#039CB7] text-white transition hover:scale-105 active:scale-[.95]" aria-label="Ajukan kunjungan"><ArrowRight size={18} /></button>
-                </div>
-              </article>
-            </div>
+          <div className="mt-12">
+            <InstagramEmbeds />
           </div>
         </section>
       </main>

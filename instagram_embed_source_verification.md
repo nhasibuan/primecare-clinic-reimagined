@@ -1,0 +1,5 @@
+# Instagram Embed Source Verification
+
+On 28 August 2026, the supplied Instagram URLs were opened directly in the browser. `DbklrsSzKPd`, `Db0AxbfTaPH`, and `Db0CdwHzfBD` each resolved to Instagram pages associated with `@klinikberkatinsani`. The first page exposed public post text for Poli Umum; the third exposed public post text for Poli Kandungan; the second resolved to the public post page and its related content. The browser displayed Instagram's sign-up/login overlay, so the sandbox preview did not provide a clean hydrated embed capture. The implementation therefore preserves the official `instagram-media` blockquote markup and includes a direct “Buka postingan di Instagram” fallback link for each supplied permalink, without reproducing or fabricating post content.
+
+The live preview DOM was inspected after navigation to `#journal`: the official `https://www.instagram.com/embed.js` script was present, three Instagram iframes had hydrated, and all three direct fallback links resolved to the supplied post URLs. The embed blockquotes had been transformed by Instagram into iframes, so the zero remaining blockquote count is expected.

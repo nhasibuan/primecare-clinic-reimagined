@@ -149,3 +149,15 @@
 
 - [x] Verify the updated public appointment consent statement matches the user's approved wording.
 - [x] Run regression checks and publish the verified consent revision.
+
+## Instagram post embeds
+
+- [x] Replace the target Home-page content block with the three supplied Instagram post embeds.
+- [x] Verify responsive rendering and Instagram script hydration, or document third-party preview limitations; production build is verified.
+- [x] Save and publish the verified Instagram embed revision.
+
+## Instagram embed QA notes
+
+- [x] Confirm the three supplied Instagram permalinks are present as external embed markup without fabricating post content.
+
+- [x] Inspect desktop and mobile captures: the three Instagram embed containers stack responsively, and each post exposes a visible direct Instagram link when the external embed script does not hydrate in the preview capture.
