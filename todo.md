@@ -171,3 +171,8 @@
 - [x] Inspect desktop and mobile captures after removal: the Home-page header and hero remain intact and responsive, with no layout break caused by deleting the direct Instagram fallback anchor.
 
 - [x] Confirm post-removal DOM state in the live preview: three Instagram iframes remain hydrated, zero “Buka postingan di Instagram” fallback anchors remain, and the desktop grid resolves to three equal columns.
+
+## No-change verification request
+
+- [x] Confirm the current working tree has no unreviewed visual-edit changes and the existing Home-page Instagram revision remains intact.
+- [x] Run regression checks and publish the verified current revision as a new checkpoint.
