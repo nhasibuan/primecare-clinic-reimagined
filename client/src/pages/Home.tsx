@@ -271,7 +271,7 @@ export default function Home() {
             {[
               [HeartHandshake, "Melayani dengan kasih", "Pendekatan yang hangat untuk kebutuhan kesehatan keluarga"],
               [Stethoscope, "Tenaga Profesional", "Pemeriksaan kehamilan, USG, dan konsultasi kandungan"],
-              [ShieldCheck, "Poli Umum & Gigi", "Pilihan layanan untuk keluhan kesehatan dan kebutuhan gigi"],
+              [ShieldCheck, "Layanan Kesehatan", "Pilihan layanan untuk keluhan kesehatan dan kebutuhan gigi"],
               [Clock3, "Konfirmasi jadwal", "Ajukan permintaan kunjungan atau gunakan WhatsApp sebagai alternatif"],
             ].map(([Icon, title, detail], i) => {
               const CareIcon = Icon as typeof HeartHandshake;

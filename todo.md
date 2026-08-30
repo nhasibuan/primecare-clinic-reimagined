@@ -218,3 +218,13 @@
 - [x] Confirm live DOM: exactly one Tenaga Profesional label is rendered, the old hero Poli Kandungan label is absent, and the supporting examination description remains present.
 
 - [x] Confirm 375px mobile DOM: Tenaga Profesional renders in the service strip, and the responsive `sm:grid-cols-2 lg:grid-cols-4` class remains intact for mobile stacking and larger breakpoints.
+
+## Home-page service label update: Layanan Kesehatan
+
+- [x] Identify the exact “Poli Umum & Gigi” label targeted at the reported Home-page location.
+- [x] Replace the targeted label with “Layanan Kesehatan” and verify the affected desktop/mobile section.
+- [x] Run regression checks and publish the verified label revision.
+
+- [x] Confirm live DOM: exactly one Layanan Kesehatan label and one Tenaga Profesional label render, while the old Poli Umum & Gigi label is absent.
+
+- [x] Confirm 375px mobile DOM: Layanan Kesehatan renders once, and the service strip retains its `sm:grid-cols-2 lg:grid-cols-4` responsive class.
