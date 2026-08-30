@@ -131,7 +131,6 @@ function InstagramEmbeds() {
         <div key={permalink} className="min-w-0">
           <blockquote
             className="instagram-media m-0 w-full min-w-0 overflow-hidden rounded-[24px] bg-white shadow-[0_10px_25px_rgba(23,48,71,.06)]"
-            data-instgrm-captioned="true"
             data-instgrm-permalink={permalink}
             data-instgrm-version="14"
             aria-label={`Posting Instagram Klinik Berkat Insani ${index + 1}`}

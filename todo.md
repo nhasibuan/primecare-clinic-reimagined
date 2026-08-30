@@ -176,3 +176,11 @@
 
 - [x] Confirm the current working tree has no unreviewed visual-edit changes and the existing Home-page Instagram revision remains intact.
 - [x] Run regression checks and publish the verified current revision as a new checkpoint.
+
+## Instagram captioned-attribute removal
+
+- [x] Remove `data-instgrm-captioned` from the three Instagram embed blocks.
+- [x] Verify the three embeds still hydrate and the responsive layout remains intact.
+- [x] Run regression checks and publish the verified attribute-removal revision.
+
+- [x] Confirm live preview DOM after removal: three Instagram iframes hydrate successfully and zero `data-instgrm-captioned` attributes remain.
