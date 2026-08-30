@@ -270,7 +270,7 @@ export default function Home() {
           <div className="grid overflow-hidden rounded-[30px] bg-[#039CB7] text-white shadow-[0_18px_45px_rgba(3,156,183,.24)] sm:grid-cols-2 lg:grid-cols-4">
             {[
               [HeartHandshake, "Melayani dengan kasih", "Pendekatan yang hangat untuk kebutuhan kesehatan keluarga"],
-              [Stethoscope, "Poli Kandungan", "Pemeriksaan kehamilan, USG, dan konsultasi kandungan"],
+              [Stethoscope, "Tenaga Profesional", "Pemeriksaan kehamilan, USG, dan konsultasi kandungan"],
               [ShieldCheck, "Poli Umum & Gigi", "Pilihan layanan untuk keluhan kesehatan dan kebutuhan gigi"],
               [Clock3, "Konfirmasi jadwal", "Ajukan permintaan kunjungan atau gunakan WhatsApp sebagai alternatif"],
             ].map(([Icon, title, detail], i) => {

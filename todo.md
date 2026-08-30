@@ -206,3 +206,15 @@
 - [x] Confirm live hero DOM after removal: zero care-mark images remain, the original hero headline is present, seven booking buttons remain across the page, and all seven main sections are intact.
 
 - [x] Confirm a 375px headless-browser render after removal: the care-mark asset is absent, the original hero headline and booking controls remain in the rendered DOM, and the Instagram embeds hydrate with the mobile one-column layout.
+
+## Home-page service label update
+
+- [x] Identify the exact “Poli Kandungan” label targeted at the reported Home-page location.
+- [x] Replace the targeted label with “Tenaga Profesional” and verify the affected desktop/mobile section.
+- [x] Run regression checks and publish the verified label revision.
+
+- [x] Inspect desktop and mobile captures: the hero service-card strip remains aligned and the Tenaga Profesional label fits cleanly within the responsive presentation.
+
+- [x] Confirm live DOM: exactly one Tenaga Profesional label is rendered, the old hero Poli Kandungan label is absent, and the supporting examination description remains present.
+
+- [x] Confirm 375px mobile DOM: Tenaga Profesional renders in the service strip, and the responsive `sm:grid-cols-2 lg:grid-cols-4` class remains intact for mobile stacking and larger breakpoints.
