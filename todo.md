@@ -184,3 +184,13 @@
 - [x] Run regression checks and publish the verified attribute-removal revision.
 
 - [x] Confirm live preview DOM after removal: three Instagram iframes hydrate successfully and zero `data-instgrm-captioned` attributes remain.
+
+## Home-page button removal
+
+- [x] Identify the exact button intended for removal at the reported Home-page location.
+- [x] Remove only the requested button and verify the affected desktop/mobile layout.
+- [x] Run regression checks and publish the verified button-removal revision.
+
+- [x] Confirm live DOM after removal: zero buttons contain “Tanya informasi”, three Instagram iframes remain hydrated, and the desktop journal grid still uses three equal columns.
+
+- [x] Inspect the full-page mobile capture after removal: the Informasi layanan heading flows without the deleted button and the three Instagram cards remain stacked and reachable.

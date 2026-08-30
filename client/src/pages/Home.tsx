@@ -430,7 +430,6 @@ export default function Home() {
               <span className="section-rule" />
               <h2 className="mt-4 font-display text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[#173047] lg:text-5xl">Kenali layanan yang dapat Anda tanyakan sebelum datang.</h2>
             </div>
-            <button onClick={() => explore("informasi kunjungan")} className="inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">Tanya informasi <ArrowRight size={16} /></button>
           </div>
           <div className="mt-12">
             <InstagramEmbeds />
