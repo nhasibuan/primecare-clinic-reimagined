@@ -194,3 +194,15 @@
 - [x] Confirm live DOM after removal: zero buttons contain “Tanya informasi”, three Instagram iframes remain hydrated, and the desktop journal grid still uses three equal columns.
 
 - [x] Inspect the full-page mobile capture after removal: the Informasi layanan heading flows without the deleted button and the three Instagram cards remain stacked and reachable.
+
+## Home-page container removal
+
+- [x] Identify the exact div intended for removal at the reported Home-page location.
+- [x] Remove only the requested div and verify the affected desktop/mobile layout.
+- [x] Run regression checks and publish the verified container-removal revision.
+
+- [x] Inspect desktop and mobile hero captures: the decorative care-mark container is absent, while the hero image, overlay, navigation, headline, and booking controls remain clean and responsive.
+
+- [x] Confirm live hero DOM after removal: zero care-mark images remain, the original hero headline is present, seven booking buttons remain across the page, and all seven main sections are intact.
+
+- [x] Confirm a 375px headless-browser render after removal: the care-mark asset is absent, the original hero headline and booking controls remain in the rendered DOM, and the Instagram embeds hydrate with the mobile one-column layout.

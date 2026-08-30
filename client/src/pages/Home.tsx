@@ -243,9 +243,6 @@ export default function Home() {
         <section className="relative isolate min-h-[620px] overflow-hidden bg-[#e6f6f8] lg:min-h-[650px]">
           <img src={assets.hero} alt="Keluarga dalam suasana konsultasi kesehatan yang hangat" className="absolute inset-0 h-full w-full object-cover object-[67%_center]" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#e6f6f8] via-[#e6f6f8]/95 via-38% to-transparent" />
-          <div className="absolute bottom-10 right-[9%] hidden h-28 w-28 rounded-full border border-[#039CB7]/25 bg-white/35 p-5 backdrop-blur-sm lg:block">
-            <img src={assets.careMark} alt="" className="h-full w-full object-contain opacity-75" />
-          </div>
           <div className="relative mx-auto flex min-h-[620px] max-w-[1400px] items-center px-5 py-20 lg:min-h-[650px] lg:px-10">
             <div className="max-w-xl animate-[fade-up_.75s_var(--ease-out)_both]">
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#039CB7]/20 bg-white/65 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#007f98] backdrop-blur">
