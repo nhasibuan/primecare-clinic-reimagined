@@ -161,3 +161,13 @@
 - [x] Confirm the three supplied Instagram permalinks are present as external embed markup without fabricating post content.
 
 - [x] Inspect desktop and mobile captures: the three Instagram embed containers stack responsively, and each post exposes a visible direct Instagram link when the external embed script does not hydrate in the preview capture.
+
+## Home-page Instagram fallback link removal
+
+- [x] Identify the exact Instagram fallback link intended for removal from the Home page.
+- [x] Remove only the requested link and verify the affected desktop/mobile layout.
+- [x] Run regression checks and publish the verified link-removal revision.
+
+- [x] Inspect desktop and mobile captures after removal: the Home-page header and hero remain intact and responsive, with no layout break caused by deleting the direct Instagram fallback anchor.
+
+- [x] Confirm post-removal DOM state in the live preview: three Instagram iframes remain hydrated, zero “Buka postingan di Instagram” fallback anchors remain, and the desktop grid resolves to three equal columns.

@@ -141,9 +141,6 @@ function InstagramEmbeds() {
               Lihat postingan Instagram Klinik Berkat Insani
             </a>
           </blockquote>
-          <a href={permalink} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-sm font-extrabold text-[#007f98] transition hover:text-[#039CB7]">
-            Buka postingan di Instagram <ArrowRight size={15} className="ml-1" />
-          </a>
         </div>
       ))}
     </div>
