@@ -40,7 +40,7 @@ const whatsappUrl = "https://wa.me/6285215862526";
 const serviceTabs = [
   "Laboratorium",
   "Radiology",
-  "Poli Gigi",
+  "Rehabilitasi Medik",
   "Optik",
 ];
 

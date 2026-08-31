@@ -262,3 +262,11 @@
 - [x] Run regression checks and publish the verified option-label revision.
 
 - [x] Confirm live DOM: Laboratorium, Radiology, Poli Gigi, and Optik each render exactly once as service-tab buttons, with the old Poli Kandungan tab label absent.
+
+## Home-page service option update: Rehabilitasi Medik
+
+- [x] Identify the exact “Poli Gigi” option targeted at the reported Home-page location.
+- [x] Replace the targeted option label with “Rehabilitasi Medik” and verify the affected desktop/mobile section.
+- [x] Run regression checks and publish the verified option-label revision.
+
+- [x] Confirm live DOM: Laboratorium, Radiology, Rehabilitasi Medik, and Optik each render exactly once as service-tab buttons, while the old Poli Gigi tab label is absent.
