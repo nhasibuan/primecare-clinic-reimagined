@@ -228,3 +228,21 @@
 - [x] Confirm live DOM: exactly one Layanan Kesehatan label and one Tenaga Profesional label render, while the old Poli Umum & Gigi label is absent.
 
 - [x] Confirm 375px mobile DOM: Layanan Kesehatan renders once, and the service strip retains its `sm:grid-cols-2 lg:grid-cols-4` responsive class.
+
+## Home-page service description update
+
+- [x] Identify the exact service description targeted at the reported Home-page location.
+- [x] Replace it with the supplied facilities wording and verify the affected desktop/mobile section.
+- [x] Run regression checks and publish the verified description revision.
+
+- [x] Inspect desktop and mobile captures: the updated facilities description remains contained in the service-card strip, with no visible clipping or layout break in the reviewed captures.
+
+## Home-page service option update: Optik
+
+- [x] Identify the exact “Daftar via WhatsApp” option targeted at the reported Home-page location.
+- [x] Replace the targeted option label with “Optik” and verify the affected desktop/mobile section.
+- [x] Run regression checks and publish the verified option-label revision.
+
+- [x] Confirm live DOM: exactly one Optik service-tab button renders, zero Daftar via WhatsApp tab buttons remain, and the separate Daftar via WhatsApp care card is preserved.
+
+- [x] Confirm 375px mobile DOM: the service-tab button at Home.tsx:304 is Optik, the old tab label is absent, and the separate Daftar via WhatsApp card remains at Home.tsx:340.
