@@ -246,3 +246,11 @@
 - [x] Confirm live DOM: exactly one Optik service-tab button renders, zero Daftar via WhatsApp tab buttons remain, and the separate Daftar via WhatsApp care card is preserved.
 
 - [x] Confirm 375px mobile DOM: the service-tab button at Home.tsx:304 is Optik, the old tab label is absent, and the separate Daftar via WhatsApp card remains at Home.tsx:340.
+
+## Home-page service option update: Laboratorium
+
+- [x] Identify the exact “Poli Umum” option targeted at the reported Home-page location.
+- [x] Replace the targeted option label with “Laboratorium” and verify the affected desktop/mobile section.
+- [x] Run regression checks and publish the verified option-label revision.
+
+- [x] Confirm live DOM: Laboratorium, Poli Kandungan, Poli Gigi, and Optik each render exactly once as service-tab buttons.

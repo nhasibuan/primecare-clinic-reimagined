@@ -38,7 +38,7 @@ const assets = {
 const whatsappUrl = "https://wa.me/6285215862526";
 
 const serviceTabs = [
-  "Poli Umum",
+  "Laboratorium",
   "Poli Kandungan",
   "Poli Gigi",
   "Optik",
