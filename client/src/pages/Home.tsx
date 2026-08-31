@@ -39,7 +39,7 @@ const whatsappUrl = "https://wa.me/6285215862526";
 
 const serviceTabs = [
   "Laboratorium",
-  "Poli Kandungan",
+  "Radiology",
   "Poli Gigi",
   "Optik",
 ];
