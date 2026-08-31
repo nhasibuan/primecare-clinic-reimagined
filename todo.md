@@ -270,3 +270,11 @@
 - [x] Run regression checks and publish the verified option-label revision.
 
 - [x] Confirm live DOM: Laboratorium, Radiology, Rehabilitasi Medik, and Optik each render exactly once as service-tab buttons, while the old Poli Gigi tab label is absent.
+
+## Home-page link-anchor removal
+
+- [x] Identify the exact anchor targeted at the reported Home-page location.
+- [x] Remove only the requested link anchor and verify the affected desktop/mobile layout.
+- [x] Run regression checks and publish the verified link-removal revision.
+
+- [x] Confirm live DOM: zero “Lihat alur kunjungan” anchors remain and seven Ajukan kunjungan buttons are still present across the page.

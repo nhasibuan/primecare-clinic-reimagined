@@ -258,9 +258,6 @@ export default function Home() {
                 <button onClick={reserve} className="group inline-flex items-center gap-3 rounded-full bg-[#039CB7] px-6 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(3,156,183,.28)] transition hover:-translate-y-0.5 hover:bg-[#007f98] active:scale-[.97]">
                   Ajukan kunjungan <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
                 </button>
-                <a href="#care" className="inline-flex items-center gap-2 rounded-full border border-[#173047]/15 bg-white/55 px-6 py-4 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#039CB7]">
-                  Lihat alur kunjungan <ChevronRight size={17} />
-                </a>
               </div>
             </div>
           </div>
