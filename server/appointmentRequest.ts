@@ -1,3 +1,7 @@
+import { InMemoryRateLimiter, type RateLimiter } from "./rateLimiter";
+
+export type { RateLimitResult } from "./rateLimiter";
+
 export function normalizeAppointmentNote(note?: string | null) {
   const normalized = note?.trim().replace(/\s+/g, " ") ?? "";
   return normalized || null;
@@ -15,76 +19,43 @@ type RequestIpSource = {
   socket?: { remoteAddress?: string | undefined };
 };
 
-type RateLimitEntry = {
-  count: number;
-  windowStartedAt: number;
-};
-
-export type RateLimitResult = {
-  allowed: boolean;
-  retryAfterMs: number;
-};
-
 /**
  * Uses Express's resolved `req.ip`, which respects the app's trusted-proxy
  * setting. The address is held only in process memory for the active window
  * and is never saved with appointment data.
+ *
+ * Rejects obviously spoofed values that don't look like IPs.
  */
 export function getClientIp(request: RequestIpSource): string {
-  const ip = request.ip?.trim() || request.socket?.remoteAddress?.trim();
-  return ip || "unknown";
+  const raw = request.ip?.trim() || request.socket?.remoteAddress?.trim();
+  if (!raw) return "unknown";
+  // Basic validation: IPv4, IPv6, or IPv4-mapped IPv6.
+  if (/^[\d.:a-fA-F]+$/.test(raw) && raw.length <= 45) return raw;
+  return "unknown";
 }
 
-export class AppointmentSubmissionRateLimiter {
-  private readonly entries = new Map<string, RateLimitEntry>();
-
+/**
+ * @deprecated Use `InMemoryRateLimiter` from `./rateLimiter` directly.
+ * Retained for backwards compatibility with existing tests.
+ */
+export class AppointmentSubmissionRateLimiter extends InMemoryRateLimiter {
   constructor(
-    private readonly maxRequests = APPOINTMENT_RATE_LIMIT_MAX_REQUESTS,
-    private readonly windowMs = APPOINTMENT_RATE_LIMIT_WINDOW_MS,
-    private readonly maxEntries = 10_000,
-  ) {}
-
-  attempt(clientIp: string, now = Date.now()): RateLimitResult {
-    this.pruneExpired(now);
-    const key = clientIp || "unknown";
-    const existing = this.entries.get(key);
-
-    if (!existing || now - existing.windowStartedAt >= this.windowMs) {
-      if (!existing && this.entries.size >= this.maxEntries) this.evictOldestEntry();
-      this.entries.set(key, { count: 1, windowStartedAt: now });
-      return { allowed: true, retryAfterMs: 0 };
-    }
-
-    const retryAfterMs = Math.max(0, this.windowMs - (now - existing.windowStartedAt));
-    if (existing.count >= this.maxRequests) {
-      return { allowed: false, retryAfterMs };
-    }
-
-    existing.count += 1;
-    return { allowed: true, retryAfterMs: 0 };
+    maxRequests = APPOINTMENT_RATE_LIMIT_MAX_REQUESTS,
+    windowMs = APPOINTMENT_RATE_LIMIT_WINDOW_MS,
+    maxEntries = 10_000,
+  ) {
+    super({ maxRequests, windowMs, maxKeys: maxEntries });
   }
 
-  reset() {
-    this.entries.clear();
-  }
-
+  /** @deprecated Use `activeKeyCount` instead. */
   get activeClientCount() {
-    return this.entries.size;
-  }
-
-  private pruneExpired(now: number) {
-    const expiredClientIps = Array.from(this.entries.entries())
-      .filter(([, entry]) => now - entry.windowStartedAt >= this.windowMs)
-      .map(([clientIp]) => clientIp);
-    expiredClientIps.forEach(clientIp => this.entries.delete(clientIp));
-  }
-
-  private evictOldestEntry() {
-    const oldest = this.entries.keys().next().value;
-    if (oldest) this.entries.delete(oldest);
+    return this.activeKeyCount;
   }
 }
 
 // Per-process protection for the only public write endpoint. On autoscaling
 // deployments each instance enforces its own short window without persisting IPs.
-export const appointmentSubmissionRateLimiter = new AppointmentSubmissionRateLimiter();
+export const appointmentSubmissionRateLimiter: RateLimiter = new InMemoryRateLimiter({
+  maxRequests: APPOINTMENT_RATE_LIMIT_MAX_REQUESTS,
+  windowMs: APPOINTMENT_RATE_LIMIT_WINDOW_MS,
+});

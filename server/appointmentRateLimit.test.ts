@@ -25,10 +25,14 @@ import { appRouter } from "./routers";
 
 const input = {
   fullName: "QA Rate Limit",
-  contactNumber: "+6285215862526",
+  contactNumber: "+628123456789",
   service: "Poli Umum",
   preferredDate: "2026-08-26",
+  preferredHour: "10",
+  preferredMinute: "00",
+  preferredPeriod: "AM" as const,
   consent: true as const,
+  captchaToken: "test-captcha-token",
 };
 
 function createContext(ip: string): TrpcContext {
@@ -58,20 +62,29 @@ describe("appointment create rate limiting", () => {
     expect(dbMocks.createAppointmentRequest).toHaveBeenCalledTimes(3);
   });
 
-  it("allows a verified CAPTCHA fallback after rate limiting and rejects an invalid token", async () => {
+  it("rejects submission without captcha token", async () => {
+    const caller = appRouter.createCaller(createContext("203.0.113.99"));
+    const inputWithoutCaptcha = { ...input, captchaToken: undefined };
+    await expect(caller.appointments.create(inputWithoutCaptcha)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(dbMocks.createAppointmentRequest).not.toHaveBeenCalled();
+  });
+
+  it("rejects submission with invalid captcha token", async () => {
+    turnstileMocks.verifyTurnstileToken.mockResolvedValueOnce({ success: false, errorCodes: ["invalid-input-response"] });
+    const caller = appRouter.createCaller(createContext("203.0.113.100"));
+    await expect(caller.appointments.create({ ...input, captchaToken: "invalid-token" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(dbMocks.createAppointmentRequest).not.toHaveBeenCalled();
+  });
+
+  it("rate limits after captcha verification succeeds", async () => {
     const caller = appRouter.createCaller(createContext("203.0.113.88"));
     await caller.appointments.create(input);
     await caller.appointments.create(input);
     await caller.appointments.create(input);
 
-    await expect(caller.appointments.create({ ...input, captchaToken: "verified-token" })).resolves.toEqual({
-      success: true,
-      requestId: 150001,
-    });
-    expect(turnstileMocks.verifyTurnstileToken).toHaveBeenCalledWith("verified-token", "203.0.113.88", "test-secret");
-
-    turnstileMocks.verifyTurnstileToken.mockResolvedValueOnce({ success: false, errorCodes: ["invalid-input-response"] });
-    await expect(caller.appointments.create({ ...input, captchaToken: "invalid-token" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // Fourth submission should be rate-limited (even with valid captcha)
+    await expect(caller.appointments.create(input)).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    expect(dbMocks.createAppointmentRequest).toHaveBeenCalledTimes(3);
   });
 
   it("keeps the honeypot short-circuit intact without consuming a rate-limit slot", async () => {
@@ -83,6 +96,7 @@ describe("appointment create rate limiting", () => {
     });
     expect(dbMocks.createAppointmentRequest).not.toHaveBeenCalled();
 
+    // Verify honeypot doesn't consume rate limit slots
     await caller.appointments.create(input);
     await caller.appointments.create(input);
     await caller.appointments.create(input);

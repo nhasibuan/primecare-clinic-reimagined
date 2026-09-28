@@ -1,0 +1,8 @@
+ALTER TABLE `appointment_requests` ADD `preferredTime` varchar(8);--> statement-breakpoint
+ALTER TABLE `clinic_profiles` ADD `captchaEnabled` boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE `media_assets` ADD CONSTRAINT `media_assets_uploadedBy_users_id_fk` FOREIGN KEY (`uploadedBy`) REFERENCES `users`(`id`) ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `opening_schedules` ADD CONSTRAINT `opening_schedules_clinicianId_clinicians_id_fk` FOREIGN KEY (`clinicianId`) REFERENCES `clinicians`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `opening_schedules` ADD CONSTRAINT `opening_schedules_serviceId_services_id_fk` FOREIGN KEY (`serviceId`) REFERENCES `services`(`id`) ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `whatsapp_follow_up_activities` ADD CONSTRAINT `whatsapp_follow_up_activities_appointmentRequestId_appointment_requests_id_fk` FOREIGN KEY (`appointmentRequestId`) REFERENCES `appointment_requests`(`id`) ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `whatsapp_follow_up_activities` ADD CONSTRAINT `whatsapp_follow_up_activities_recordedBy_users_id_fk` FOREIGN KEY (`recordedBy`) REFERENCES `users`(`id`) ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `whatsapp_signature_templates` ADD CONSTRAINT `whatsapp_signature_templates_updatedBy_users_id_fk` FOREIGN KEY (`updatedBy`) REFERENCES `users`(`id`) ON DELETE restrict ON UPDATE no action;

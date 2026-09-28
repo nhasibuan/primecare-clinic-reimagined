@@ -2,7 +2,7 @@
  * Calm Clinical Editorial — an Indonesian Klinik Berkat Insani experience using verified
  * Kotabaru location details and carefully paraphrased public-facing clinic positioning.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -13,7 +13,6 @@ import {
   Menu,
   Phone,
   ShieldCheck,
-  Sparkles,
   Stethoscope,
   X,
 } from "lucide-react";
@@ -22,13 +21,13 @@ import { trpc } from "@/lib/trpc";
 import AppointmentRequestDialog from "@/components/AppointmentRequestDialog";
 
 const assets = {
-  logo: "/manus-storage/klinik-berkat-insani-logo_d6e42d2d.jpg",
+  logo: "https://i.imgur.com/aIAPMx7.png",
   careMark: "/manus-storage/care-orbit-mark_3642fa2e.png",
-  hero: "/manus-storage/clinic-hero-family_4a05f017.jpg",
-  motherChild: "/manus-storage/mother-child-care_204ea094.jpg",
-  dentalStudio: "/manus-storage/dental-studio_efab33ee.jpg",
-  homecare: "/manus-storage/homecare-visit_252ccbea.jpg",
-  facilityStay: "/manus-storage/facility-stay_e52bacd3.png",
+  hero: "https://iili.io/ndJxdmv.md.png",
+  motherChild: "https://i.imgur.com/2ejfunG.jpeg",
+  dentalStudio: "https://i.imgur.com/uS0RNM0.jpeg",
+  homecare: "https://i.imgur.com/O1fJpCK.jpeg",
+  facilityStay: "https://i.imgur.com/7WEnaqE.jpeg",
   delivery: "/manus-storage/delivery-room_77732972.png",
   blueLight: "/manus-storage/blue-light_f1a96e26.png",
   dentalDigital: "/manus-storage/dental-digital_dee1ece8.webp",
@@ -64,10 +63,16 @@ const careCards = [
     tag: "Kesehatan gigi",
   },
   {
-    title: "Daftar via WhatsApp",
+    title: "Poli Penyakit Dalam",
     text: "Hubungi Klinik Berkat Insani melalui WhatsApp untuk menanyakan layanan dan mengonfirmasi jadwal praktik terkini.",
     image: assets.dentalStudio,
-    tag: "Reservasi",
+    tag: "Penyakit Dalam",
+  },
+  {
+    title: "Poli Bedah",
+    text: "Dr. Uwais Sp.B. Senin - Minggu, Jam 09.00 - 21.00 WITA (Sesuai perjanjian).",
+    image: assets.facilityStay,
+    tag: "Bedah umum",
   },
 ];
 
@@ -147,6 +152,7 @@ function InstagramEmbeds() {
 }
 
 export default function Home() {
+  const labSlideshowRef = useRef<HTMLImageElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [appointmentOpen, setAppointmentOpen] = useState(false);
   const { data: persistedClinic } = trpc.clinic.publicContent.useQuery(undefined, { staleTime: 60_000 });
@@ -159,11 +165,46 @@ export default function Home() {
     if (new URLSearchParams(window.location.search).get("request") === "1") setAppointmentOpen(true);
   }, []);
 
+  const [activeTab, setActiveTab] = useState(0);
+
+  const tabContent: Record<number, { images: string[]; text: React.ReactNode }> = {
+    0: {
+      images: ["https://i.imgur.com/1UzBjsx.png", "https://i.imgur.com/SUTGKRV.png"],
+      text: <>Klinik Berkat Insani menyediakan laboratorium hematologi, urine, kimia klinik imunoserologi, dan swab antigen.</>,
+    },
+    1: {
+      images: ["https://i.imgur.com/aDOdWLV.png"],
+      text: <>Klinik Berkat Insani dilengkapi dengan berbagai layanan yang siap melayani Anda selama 24 jam tanpa henti. Ada layanan Laboratorium yang melayani permintaan pemeriksaan dari internal maupun rujukan dari luar klinik. Ada Instalasi Gawat Darurat (IGD), yang siap melayani pasien dengan ketersediaan dokter IGD setiap saat.</>,
+    },
+    2: {
+      images: ["https://i.imgur.com/cxHqzT0.png", "https://i.imgur.com/CMSPNVr.png"],
+      text: <>Rawat Inap — layanan rawat inap dengan fasilitas kamar yang nyaman dan perawatan profesional selama masa pemulihan.</>,
+    },
+    3: {
+      images: ["https://i.imgur.com/sO0pWoB.png"],
+      text: <>Apotek — layanan obat dan konsultasi farmasi dengan staf apoteker yang berpengalaman.</>,
+    },
+  };
+
+  const currentContent = tabContent[activeTab] ?? tabContent[0];
+
+  useEffect(() => {
+    const images = currentContent.images;
+    if (!labSlideshowRef.current || images.length < 2) return;
+    let index = 0;
+    const interval = setInterval(() => {
+      index = (index + 1) % images.length;
+      labSlideshowRef.current!.src = images[index];
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [activeTab]);
+
   const reserve = () => {
     setAppointmentOpen(true);
   };
 
-  const explore = (title: string) => {
+  const explore = (title: string, index: number) => {
+    setActiveTab(index);
     toast("Informasi layanan", {
       description: `Halaman detail ${title} dapat dihubungkan setelah informasi layanan klinik dikonfirmasi.`,
     });
@@ -240,13 +281,27 @@ export default function Home() {
       </header>
 
       <main id="top">
-        <section className="relative isolate min-h-[620px] overflow-hidden bg-[#e6f6f8] lg:min-h-[650px]">
-          <img src={assets.hero} alt="Keluarga dalam suasana konsultasi kesehatan yang hangat" className="absolute inset-0 h-full w-full object-cover object-[67%_center]" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#e6f6f8] via-[#e6f6f8]/95 via-38% to-transparent" />
-          <div className="relative mx-auto flex min-h-[620px] max-w-[1400px] items-center px-5 py-20 lg:min-h-[650px] lg:px-10">
-            <div className="max-w-xl animate-[fade-up_.75s_var(--ease-out)_both]">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#039CB7]/20 bg-white/65 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#007f98] backdrop-blur">
-                <Sparkles size={14} /> {persistedClinic?.profile?.tagline ?? "Klinik Berkat Insani · Kotabaru"}
+        <section className="relative isolate min-h-[480px] overflow-hidden selection:bg-[#C8E6F5]" style={{background:"radial-gradient(120% 120% at 20% 10%, #E8F4FD 0%, #F5FBFF 35%, #FFFFFF 60%, #FFF8E7 100%)"}}>
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-[30%] -left-[10%] w-[60%] h-[70%] rounded-full blur-[90px] opacity-60" style={{background:"#D6EDFA"}} />
+            <div className="absolute -bottom-[20%] -right-[10%] w-[55%] h-[60%] rounded-full blur-[80px] opacity-50" style={{background:"#FFF1C9"}} />
+          </div>
+          <div className="relative z-10 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20 relative min-h-[480px] overflow-hidden">
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute -top-[30%] -left-[10%] w-[60%] h-[70%] rounded-full blur-[90px] opacity-60" style={{background:"#D6EDFA"}} />
+              <div className="absolute -bottom-[20%] -right-[10%] w-[55%] h-[60%] rounded-full blur-[80px] opacity-50" style={{background:"#FFF1C9"}} />
+            </div>
+            <div className="relative w-full flex items-start min-h-[360px]">
+              <div className="flex flex-col items-start justify-center w-[60%] py-14 sm:py-16">
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#039CB7]/20 bg-white/65 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[.14em] text-[#007f98] backdrop-blur">
+                  {persistedClinic?.profile?.tagline ?? "Klinik Berkat Insani · Kotabaru"}
+                </div>
+                <h1 className="font-display text-[clamp(2.4rem,4vw,3.5rem)] font-semibold leading-[1.05] tracking-[-.025em] text-[#173047] text-balance">
+                  Perhatian yang hangat untuk kesehatan ibu, bayi, dan keluarga.
+                </h1>
+                <p className="mt-4 max-w-md text-[15px] leading-7 text-[#496273]">
+                  Di Kelumpang Hilir, Kotabaru, Klinik Berkat Insani menghadirkan Poli Umum, Poli Kandungan, dan Poli Gigi dengan akses pendaftaran melalui WhatsApp.
+                </p>
               </div>
               <h1 className="max-w-[610px] font-display text-[clamp(3rem,5vw,5.55rem)] font-semibold leading-[.94] tracking-[-.05em] text-[#173047]">
                 Perhatian yang hangat untuk kesehatan ibu, bayi, dan keluarga.
@@ -262,6 +317,29 @@ export default function Home() {
             </div>
           </div>
         </section>
+          <style>{`
+            @keyframes scroll-ltr {
+              0% { transform: translateX(-50%); }
+              100% { transform: translateX(0); }
+            }
+            @keyframes img-fade {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            .animate-scroll-left-to-right {
+              animation: scroll-ltr 25s linear infinite;
+            }
+            @media (max-width: 640px) {
+              .animate-scroll-left-to-right {
+                animation-duration: 20s;
+              }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .animate-scroll-left-to-right {
+                animation-duration: 60s;
+              }
+            }
+          `}</style>
 
         <div className="relative z-10 mx-auto -mt-9 max-w-[1328px] px-5 lg:-mt-11 lg:px-10">
           <div className="grid overflow-hidden rounded-[30px] bg-[#039CB7] text-white shadow-[0_18px_45px_rgba(3,156,183,.24)] sm:grid-cols-2 lg:grid-cols-4">
@@ -279,17 +357,16 @@ export default function Home() {
                     <p className="text-sm font-extrabold leading-tight">{title as string}</p>
                     <p className="mt-1 text-xs leading-5 text-white/78">{detail as string}</p>
                   </div>
-                </div>
-              );
+                </div>              );
             })}
           </div>
         </div>
 
+
         <section id="care" className="mx-auto max-w-[1400px] px-5 py-24 lg:px-10 lg:py-32">
           <div className="grid gap-12 lg:grid-cols-[.9fr_2.1fr] lg:gap-20">
             <div>
-              <p className="eyebrow">Layanan klinik</p>
-              <span className="section-rule" />
+              <p className="eyebrow">Layanan 24 Jam</p>
               <h2 className="mt-5 font-display text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[#173047] lg:text-5xl">Pilih layanan yang sesuai, lalu siapkan kunjungan Anda.</h2>
               <p className="mt-6 max-w-sm text-[15px] leading-7 text-[#5c7180]">
                 Sebelum datang, konfirmasi layanan dan jadwal melalui WhatsApp agar kebutuhan Anda dapat diarahkan dengan lebih tepat.
@@ -298,17 +375,31 @@ export default function Home() {
             <div>
               <div className="flex flex-wrap gap-x-6 gap-y-3 border-b border-[#173047]/10 pb-4">
                 {serviceTabs.map((tab, index) => (
-                  <button key={tab} onClick={() => explore(tab)} className={`relative pb-2 text-sm font-bold ${index === 0 ? "text-[#039CB7] after:absolute after:bottom-[-17px] after:left-0 after:h-0.5 after:w-full after:bg-[#039CB7]" : "text-[#78909e] hover:text-[#173047]"}`}>
+                  <button key={tab} onClick={() => explore(tab, index)} className={`relative pb-2 text-sm font-bold ${index === activeTab ? "text-[#039CB7] after:absolute after:bottom-[-1px] after:left-0 after:h-0.5 after:w-full after:bg-[#039CB7]" : "text-[#78909e] hover:text-[#173047]"}`}>
                     {tab}
                   </button>
                 ))}
               </div>
-              <p className="mt-7 max-w-3xl text-[17px] leading-8 text-[#506776]">
-                Klinik Berkat Insani menyediakan Poli Umum, Poli Kandungan, dan Poli Gigi. Untuk kandungan, informasi publik klinik mencantumkan pemeriksaan kehamilan, USG, konsultasi, serta pemantauan ibu dan janin.
-              </p>
-              <button onClick={() => explore("layanan klinik")} className="mt-8 inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">
-                Lihat layanan yang tersedia <ArrowRight size={16} />
-              </button>
+              <div className="relative mt-7 flex gap-4 rounded-2xl border border-[#173047]/10 overflow-hidden">
+                <div className="relative w-[55%] overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#e6f6f8]/70 via-[#e6f6f8]/40 to-transparent" />
+                  <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-[6%] bg-gradient-to-r from-white via-white/80 to-transparent" />
+                <img
+                  key={activeTab}
+                  ref={labSlideshowRef}
+                  src={currentContent.images[0]}
+                  alt=""
+                  className="w-full h-auto object-contain object-top"
+                  style={{maxHeight:'300px', animation:'img-fade 0.5s ease-out forwards'}}
+                  loading="eager"
+                />
+
+                </div>
+                <p className="w-[45%] text-[17px] leading-8 text-[#506776] flex flex-col justify-center">
+                  {currentContent.text}
+                </p>
+              </div>
+
             </div>
           </div>
         </section>
@@ -318,27 +409,20 @@ export default function Home() {
             <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
               <div>
                 <p className="eyebrow">Informasi layanan</p>
-                <span className="section-rule" />
                 <h2 className="mt-4 max-w-xl font-display text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[#173047] lg:text-5xl">Ruang untuk membahas kebutuhan kesehatan dengan lebih nyaman.</h2>
               </div>
-              <button onClick={() => explore("All care paths")} className="inline-flex items-center gap-2 rounded-full border border-[#173047]/15 px-5 py-3 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#039CB7]">
-                Tanyakan pilihan layanan <ArrowRight size={16} />
-              </button>
             </div>
 
             <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
               {activeCareCards.map((card) => (
                 <article key={card.title} className="group overflow-hidden rounded-[24px] bg-white shadow-[0_10px_28px_rgba(23,48,71,.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(23,48,71,.12)]">
                   <div className="relative h-56 overflow-hidden sm:h-60 xl:h-56">
-                    <img src={card.image} alt="" className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.05]" />
+                    <img src={card.image} alt="" className="h-full w-full object-contain object-center transition duration-500 group-hover:scale-[1.05]" />
                     <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.1em] text-[#007f98] backdrop-blur">{card.tag}</div>
                   </div>
                   <div className="p-6">
                     <h3 className="font-display text-2xl font-semibold leading-tight tracking-[-.025em] text-[#173047]">{card.title}</h3>
                     <p className="mt-3 text-sm leading-6 text-[#607684]">{card.text}</p>
-                    <button onClick={reserve} className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-[#039CB7] transition hover:gap-3">
-                      Ajukan kunjungan <ArrowRight size={16} />
-                    </button>
                   </div>
                 </article>
               ))}
@@ -353,7 +437,6 @@ export default function Home() {
           </div>
           <div className="max-w-xl">
             <p className="eyebrow">Sebelum berkunjung</p>
-            <span className="section-rule" />
             <h2 className="mt-5 font-display text-4xl font-semibold leading-[.98] tracking-[-.045em] text-[#173047] lg:text-5xl">Ajukan tanggal pilihan, lalu datang dengan informasi yang Anda perlukan.</h2>
             <p className="mt-7 text-[17px] leading-8 text-[#5c7180]">
               Ajukan layanan dan tanggal pilihan Anda melalui formulir singkat. Staf klinik akan menghubungi Anda untuk mengonfirmasi ketersediaan sebelum kunjungan.
@@ -365,9 +448,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <button onClick={reserve} className="mt-9 inline-flex items-center gap-2 rounded-full bg-[#173047] px-6 py-4 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:bg-[#244861] active:scale-[.97]">
-              Ajukan permintaan kunjungan <ArrowRight size={17} />
-            </button>
           </div>
         </section>
 
@@ -376,14 +456,10 @@ export default function Home() {
           <div className="relative mx-auto grid max-w-[1400px] gap-12 px-5 lg:grid-cols-[1fr_.9fr] lg:items-center lg:gap-20 lg:px-10">
             <div>
               <p className="text-[11px] font-extrabold uppercase tracking-[.16em] text-white/70">Klinik Berkat Insani</p>
-              <span className="section-rule section-rule--light" />
               <h2 className="mt-5 max-w-2xl font-display text-4xl font-semibold leading-[.96] tracking-[-.045em] lg:text-6xl">Kesehatan ibu dan bayi mendapat perhatian yang lebih dekat.</h2>
               <p className="mt-7 max-w-xl text-[17px] leading-8 text-white/80">
                 Poli Kandungan bersama dr. Syaiful Aspiannur, Sp.OG diinformasikan menyediakan pemeriksaan kehamilan, USG, konsultasi kandungan, pemantauan ibu dan janin, serta konsultasi program hamil.
               </p>
-              <button onClick={reserve} className="mt-9 inline-flex items-center gap-3 rounded-full bg-white px-6 py-4 text-sm font-extrabold text-[#007f98] transition hover:-translate-y-0.5 hover:bg-[#eafdff] active:scale-[.97]">
-                Ajukan kunjungan kandungan <ArrowRight size={17} />
-              </button>
             </div>
             <div className="relative">
               <img src={assets.facilityStay} alt="Ruang klinik yang bersih dan nyaman" className="aspect-[1.13] w-full rounded-[30px] object-cover shadow-[0_24px_50px_rgba(0,0,0,.18)]" />
@@ -400,7 +476,6 @@ export default function Home() {
             <p className="eyebrow">Alur kunjungan</p>
             <h2 className="mx-auto mt-5 max-w-3xl font-display text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[#173047] lg:text-5xl">Persiapan sederhana membantu proses konsultasi lebih terarah.</h2>
             <p className="mx-auto mt-6 max-w-2xl text-[17px] leading-8 text-[#5c7180]">Kunjungan dapat dimulai dari pendaftaran, dilanjutkan pemeriksaan awal dan konsultasi dokter, kemudian pengambilan obat sesuai proses klinik.</p>
-            <span className="section-rule mx-auto mt-7" />
             <div className="mt-12 grid gap-5 md:grid-cols-3">
               {[
                 ["Daftar lebih dulu", "Konfirmasi layanan dan jadwal melalui WhatsApp klinik."],
@@ -421,7 +496,6 @@ export default function Home() {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <p className="eyebrow">Informasi layanan</p>
-              <span className="section-rule" />
               <h2 className="mt-4 font-display text-4xl font-semibold leading-[.98] tracking-[-.04em] text-[#173047] lg:text-5xl">Kenali layanan yang dapat Anda tanyakan sebelum datang.</h2>
             </div>
           </div>
@@ -461,7 +535,7 @@ export default function Home() {
       <button onClick={reserve} aria-label="Tanya layanan" className="fixed bottom-5 right-5 z-40 grid h-14 w-14 place-items-center rounded-full bg-[#039CB7] text-white shadow-[0_12px_28px_rgba(3,156,183,.38)] transition hover:-translate-y-1 hover:bg-[#007f98] active:scale-[.94]">
         <CalendarDays size={22} />
       </button>
-      <AppointmentRequestDialog open={appointmentOpen} onOpenChange={setAppointmentOpen} services={activeCareCards.map(card => card.title).filter(title => title !== "Daftar via WhatsApp")} whatsappUrl={activeWhatsappUrl} />
+      <AppointmentRequestDialog open={appointmentOpen} onOpenChange={setAppointmentOpen} services={activeCareCards.map(card => card.title)} whatsappUrl={activeWhatsappUrl} />
     </div>
   );
 }

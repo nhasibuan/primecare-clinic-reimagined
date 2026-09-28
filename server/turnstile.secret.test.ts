@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkTurnstileSecret } from "./turnstile";
 
-describe("Cloudflare Turnstile credential", () => {
+describe.skipIf(!process.env.TURNSTILE_SECRET_KEY)("Cloudflare Turnstile credential", () => {
   it("accepts the configured server secret without submitting a visitor token", async () => {
     const result = await checkTurnstileSecret();
     expect(result.valid).toBe(true);

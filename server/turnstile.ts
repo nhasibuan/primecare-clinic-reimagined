@@ -19,8 +19,19 @@ export type TurnstileVerification = {
   errorCodes: string[];
 };
 
+/**
+ * Returns the Turnstile secret to use for verification.
+ * In production, always uses the real secret key.
+ * In dev/staging, uses the real secret if configured, otherwise falls back to
+ * the always-pass test key ONLY if explicitly opted in via TURNSTILE_ALLOW_TEST_KEY=true.
+ */
 export function getTurnstileVerificationSecret() {
-  return ENV.isProduction ? ENV.turnstileSecretKey : TURNSTILE_ALWAYS_PASS_TEST_SECRET;
+  if (ENV.isProduction) return ENV.turnstileSecretKey;
+  // Non-production: prefer a real key if available
+  if (ENV.turnstileSecretKey) return ENV.turnstileSecretKey;
+  // Only allow the always-pass test secret when explicitly opted in
+  if (ENV.turnstileAllowTestKey) return TURNSTILE_ALWAYS_PASS_TEST_SECRET;
+  return ENV.turnstileSecretKey; // empty string → verification will fail (safe default)
 }
 
 export async function verifyTurnstileToken(

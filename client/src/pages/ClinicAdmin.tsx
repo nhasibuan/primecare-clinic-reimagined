@@ -1,8 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
 import WhatsAppFollowUpDialog from "@/components/WhatsAppFollowUpDialog";
+import PatientDataDialog from "@/components/PatientDataDialog";
+import PatientReportDialog from "@/components/PatientReportDialog";
+import AllAppointmentsReportDialog from "@/components/AllAppointmentsReportDialog";
 import { trpc } from "@/lib/trpc";
-import { CheckCircle2, ExternalLink, History, Loader2, MessageCircle, Plus, RotateCcw, Save, SlidersHorizontal, UploadCloud } from "lucide-react";
+import { CheckCircle2, ExternalLink, History, Loader2, MessageCircle, Plus, RotateCcw, Save, Shield, ShieldOff, ShieldCheck, SlidersHorizontal, UploadCloud, Users, User, FileText, Eye } from "lucide-react";
 import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -36,6 +39,7 @@ export default function ClinicAdmin() {
   const isAdmin = user?.role === "admin";
   const utils = trpc.useUtils();
   const { data, isLoading } = trpc.clinic.adminContent.useQuery(undefined, { enabled: isAdmin });
+  const { data: usersList, isLoading: usersLoading, refetch: refetchUsers } = trpc.admin.listUsers.useQuery(undefined, { enabled: isAdmin });
   const { data: appointmentRequests, isLoading: appointmentRequestsLoading } = trpc.appointments.list.useQuery(undefined, { enabled: isAdmin });
   const [profile, setProfile] = useState<ProfileForm>(emptyProfile);
   const [service, setService] = useState({ name: "", summary: "", imageUrl: "" });
@@ -46,6 +50,9 @@ export default function ClinicAdmin() {
   const [activityStatusFilter, setActivityStatusFilter] = useState<FollowUpActivityStatusFilter>(getInitialActivityStatusFilter);
   const [activityStartDate, setActivityStartDate] = useState(() => new URLSearchParams(window.location.search).get("activityStart") ?? "");
   const [activityEndDate, setActivityEndDate] = useState(() => new URLSearchParams(window.location.search).get("activityEnd") ?? "");
+  const [patientDataDialog, setPatientDataDialog] = useState<{ id: number; data: { nik?: string; tempatLahir?: string; tanggalLahir?: string; alamatLengkap?: string; agama?: string; email?: string; instagramUrl?: string } } | null>(null);
+  const [reportDialog, setReportDialog] = useState<{ id: number; fullName: string; service: string; preferredDate: string; preferredTime?: string; data: { nik?: string; tempatLahir?: string; tanggalLahir?: string; alamatLengkap?: string; agama?: string; email?: string; instagramUrl?: string } } | null>(null);
+  const [allReportDialog, setAllReportDialog] = useState<any[]>([]);
 
   const activityDateRangeInvalid = Boolean(activityStartDate && activityEndDate && activityStartDate > activityEndDate);
   const activityHistoryQueryInput = useMemo(() => ({
@@ -134,11 +141,31 @@ export default function ClinicAdmin() {
     },
     onError: error => toast.error(error.message),
   });
-
+  // Mutation to add a patient to the OSD queue when status becomes "contacted"
+  const addQueueMutation = trpc.queue.add.useMutation({
+    onSuccess: (data) => {
+      if (data.duplicate) {
+        toast.info(`Pasien sudah ada di antrean dengan nomor ${data.queueNumber}.`);
+      } else {
+        toast.success(`Ditambahkan ke antrean dengan nomor ${data.queueNumber}.`);
+      }
+      utils.queue.list.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
   const updateSignatureTemplate = trpc.appointments.updateSignatureTemplate.useMutation({
     onSuccess: async () => {
       await utils.clinic.adminContent.invalidate();
       toast.success("Template tanda tangan tersimpan.");
+    },
+    onError: error => toast.error(error.message),
+  });
+
+  const updatePatientData = trpc.appointments.updatePatientData.useMutation({
+    onSuccess: async () => {
+      await utils.appointments.list.invalidate();
+      toast.success("Data pasien tersimpan.");
+      setPatientDataDialog(null);
     },
     onError: error => toast.error(error.message),
   });
@@ -148,6 +175,30 @@ export default function ClinicAdmin() {
       await utils.appointments.listFollowUpActivities.invalidate();
     },
     onError: error => toast.error(`Aktivitas tindak lanjut tidak tersimpan: ${error.message}`),
+  });
+
+  const promoteUserMutation = trpc.admin.promoteUser.useMutation({
+    onSuccess: async () => {
+      await refetchUsers();
+      toast.success("Pengguna berhasil dinaikkan ke administrator.");
+    },
+    onError: error => toast.error(error.message),
+  });
+
+  const demoteUserMutation = trpc.admin.demoteUser.useMutation({
+    onSuccess: async () => {
+      await refetchUsers();
+      toast.success("Pengguna berhasil diturunkan dari administrator.");
+    },
+    onError: error => toast.error(error.message),
+  });
+
+  const toggleCaptchaMutation = trpc.admin.toggleCaptcha.useMutation({
+    onSuccess: async () => {
+      await utils.clinic.adminContent.invalidate();
+      toast.success(toggleCaptchaMutation.data?.enabled ? "CAPTCHA diaktifkan." : "CAPTCHA dinonaktifkan.");
+    },
+    onError: error => toast.error(error.message),
   });
 
   const followUpActivitySummary = followUpActivities?.reduce(
@@ -224,6 +275,36 @@ export default function ClinicAdmin() {
           <>
             <section className="rounded-[28px] border border-[#173047]/10 bg-white p-6 shadow-[0_12px_30px_rgba(23,48,71,.05)] sm:p-8">
               <div className="flex flex-wrap items-end justify-between gap-4">
+                <div><p className="eyebrow">Pengelolaan administrator</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.035em]">Daftar pengguna</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#607684]">Kelola hak akses administrator. Hanya administrator yang dapat mengakses panel ini dan mengelola pengguna lain.</p></div>
+                <span className="rounded-full bg-[#eaf9fb] px-3 py-1.5 text-xs font-bold text-[#007f98]">{usersList?.filter(u => u.role === "admin").length ?? 0} admin</span>
+              </div>
+              <div className="mt-7 grid gap-3">
+                {usersLoading ? <div className="grid min-h-28 place-items-center rounded-2xl bg-[#f5fafb]"><Loader2 className="animate-spin text-[#039CB7]" /></div> : usersList?.length ? usersList.map(u => (
+                  <article key={u.id} className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#173047]/10 bg-[#fbfaf5] p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-10 w-10 place-items-center rounded-full bg-[#eaf9fb] text-[#007f98]">
+                        {u.role === "admin" ? <Shield size={17} /> : <Users size={17} />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-[#173047]">{u.name || u.email || u.openId.slice(0, 12)}</p>
+                        <p className="mt-0.5 text-xs text-[#607684]">{u.email || "—"} · Terakhir masuk: {new Date(u.lastSignedIn).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${u.role === "admin" ? "bg-[#eaf9fb] text-[#007f98]" : "bg-slate-100 text-slate-600"}`}>{u.role === "admin" ? "Administrator" : "Pengguna"}</span>
+                      {u.role === "admin" ? (
+                        <button onClick={() => demoteUserMutation.mutate({ userId: u.id })} disabled={demoteUserMutation.isPending || u.id === user?.id} className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"><ShieldOff size={13} /> Turunkan</button>
+                      ) : (
+                        <button onClick={() => promoteUserMutation.mutate({ userId: u.id })} disabled={promoteUserMutation.isPending} className="inline-flex items-center gap-1.5 rounded-full border border-[#039CB7]/30 bg-white px-3 py-1.5 text-xs font-bold text-[#007f98] transition hover:bg-[#eafdff] disabled:opacity-50"><Shield size={13} /> Naikkan</button>
+                      )}
+                    </div>
+                  </article>
+                )) : <div className="rounded-2xl bg-[#f5fafb] p-6 text-sm leading-6 text-[#607684]"><CheckCircle2 className="mr-2 inline-block h-4 w-4 text-[#039CB7]" />Belum ada pengguna yang terdaftar.</div>}
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-[#173047]/10 bg-white p-6 shadow-[0_12px_30px_rgba(23,48,71,.05)] sm:p-8">
+              <div className="flex flex-wrap items-end justify-between gap-4">
                 <div><p className="eyebrow">Identitas publik</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.035em]">Profil klinik yang tersimpan</h2></div>
                 <span className="rounded-full bg-[#eaf9fb] px-3 py-1.5 text-xs font-bold text-[#007f98]">Database</span>
               </div>
@@ -248,14 +329,17 @@ export default function ClinicAdmin() {
             <section className="rounded-[28px] border border-[#173047]/10 bg-white p-6 shadow-[0_12px_30px_rgba(23,48,71,.05)] sm:p-8">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div><p className="eyebrow">Permintaan kunjungan</p><h2 className="mt-3 font-display text-3xl font-semibold tracking-[-.035em]">Antrean yang perlu ditindaklanjuti</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#607684]">Data ini hanya untuk menghubungi pemohon terkait jadwal. Jangan menambahkan catatan klinis atau data medis di luar proses yang disetujui.</p></div>
-                <span className="rounded-full bg-[#eef8f8] px-3 py-1.5 text-xs font-bold text-[#007f98]">{appointmentRequests?.length ?? 0} tersimpan</span>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-[#eef8f8] px-3 py-1.5 text-xs font-bold text-[#007f98]">{appointmentRequests?.length ?? 0} tersimpan</span>
+                  <button onClick={() => setAllReportDialog(appointmentRequests ?? [])} disabled={!appointmentRequests?.length} className="inline-flex items-center gap-2 rounded-full border border-[#173047]/15 bg-white px-4 py-2 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#007f98] disabled:opacity-60"><FileText size={16} /> Lihat seluruh laporan</button>
+                </div>
               </div>
               <div className="mt-7 grid gap-4">
                 {appointmentRequestsLoading ? <div className="grid min-h-28 place-items-center rounded-2xl bg-[#f5fafb]"><Loader2 className="animate-spin text-[#039CB7]" /></div> : appointmentRequests?.length ? appointmentRequests.map(request => (
                   <article key={request.id} className="rounded-2xl border border-[#173047]/10 bg-[#fbfaf5] p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-display text-xl font-semibold">{request.fullName}</p><p className="mt-1 text-sm text-[#607684]">{request.service} · Pilihan tanggal: {new Date(`${request.preferredDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${request.status === "new" ? "bg-amber-100 text-amber-800" : request.status === "contacted" ? "bg-[#eaf9fb] text-[#007f98]" : "bg-slate-100 text-slate-600"}`}>{request.status === "new" ? "Baru" : request.status === "contacted" ? "Dihubungi" : "Selesai"}</span></div>
+                    <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-display text-xl font-semibold">{request.fullName}</p><p className="mt-1 text-sm text-[#607684]">{request.service} · Pilihan tanggal: {new Date(`${request.preferredDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}{request.preferredTime ? ` · Jam pilihan: ${request.preferredTime}` : ""}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${request.status === "new" ? "bg-amber-100 text-amber-800" : request.status === "contacted" ? "bg-[#eaf9fb] text-[#007f98]" : "bg-slate-100 text-slate-600"}`}>{request.status === "new" ? "Baru" : request.status === "contacted" ? "Dihubungi" : "Selesai"}</span></div>
                     {request.note ? <p className="mt-4 rounded-xl bg-white p-3 text-sm leading-6 text-[#395568]">{request.note}</p> : null}
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><button onClick={() => setFollowUpRequest({ id: request.id, fullName: request.fullName, contactNumber: request.contactNumber, service: request.service, preferredDate: request.preferredDate })} className="inline-flex items-center gap-2 rounded-full bg-[#eaf9fb] px-4 py-2 text-sm font-bold text-[#007f98] transition hover:bg-[#d7f4f7]"><MessageCircle size={16} /> Draf WhatsApp</button><label className="flex items-center gap-2 text-sm font-bold text-[#395568]">Status<select value={request.status} disabled={updateAppointmentStatus.isPending} onChange={event => updateAppointmentStatus.mutate({ id: request.id, status: event.target.value as "new" | "contacted" | "closed" })} className="rounded-lg border border-[#173047]/15 bg-white px-2 py-1.5 text-sm font-medium outline-none focus:border-[#039CB7]"><option value="new">Baru</option><option value="contacted">Dihubungi</option><option value="closed">Selesai</option></select></label></div>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><button onClick={() => setFollowUpRequest({ id: request.id, fullName: request.fullName, contactNumber: request.contactNumber, service: request.service, preferredDate: request.preferredDate })} className="inline-flex items-center gap-2 rounded-full bg-[#eaf9fb] px-4 py-2 text-sm font-bold text-[#007f98] transition hover:bg-[#d7f4f7]"><MessageCircle size={16} /> Draf WhatsApp</button><button onClick={() => setPatientDataDialog({ id: request.id, data: { nik: request.nik ?? undefined, tempatLahir: request.tempatLahir ?? undefined, tanggalLahir: request.tanggalLahir ?? undefined, alamatLengkap: request.alamatLengkap ?? undefined, agama: request.agama ?? undefined, email: request.email ?? undefined, instagramUrl: request.instagramUrl ?? undefined } })} className="inline-flex items-center gap-2 rounded-full border border-[#173047]/15 bg-white px-4 py-2 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#007f98]"><User size={16} /> Lengkapi data</button><button onClick={() => setReportDialog({ id: request.id, fullName: request.fullName, service: request.service, preferredDate: request.preferredDate, preferredTime: request.preferredTime ?? undefined, data: { nik: request.nik ?? undefined, tempatLahir: request.tempatLahir ?? undefined, tanggalLahir: request.tanggalLahir ?? undefined, alamatLengkap: request.alamatLengkap ?? undefined, agama: request.agama ?? undefined, email: request.email ?? undefined, instagramUrl: request.instagramUrl ?? undefined } })} className="inline-flex items-center gap-2 rounded-full border border-[#173047]/15 bg-white px-4 py-2 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#007f98]"><Eye size={16} /> Lihat laporan</button><label className="flex items-center gap-2 text-sm font-bold text-[#395568]">Status<select value={request.status} disabled={updateAppointmentStatus.isPending || addQueueMutation.isPending} onChange={event => { const newStatus = event.target.value as "new" | "contacted" | "closed"; updateAppointmentStatus.mutate({ id: request.id, status: newStatus }); if (newStatus === "contacted") { addQueueMutation.mutate({ patientName: request.fullName, poli: request.service, doctorName: "-", appointmentRequestId: request.id }); } }} className="rounded-lg border border-[#173047]/15 bg-white px-2 py-1.5 text-sm font-medium outline-none focus:border-[#039CB7]"><option value="new">Baru</option><option value="contacted">Dihubungi</option><option value="closed">Selesai</option></select></label></div>
                   </article>
                 )) : <div className="rounded-2xl bg-[#f5fafb] p-6 text-sm leading-6 text-[#607684]"><CheckCircle2 className="mr-2 inline-block h-4 w-4 text-[#039CB7]" />Belum ada permintaan kunjungan yang tersimpan.</div>}
               </div>
@@ -316,6 +400,37 @@ export default function ClinicAdmin() {
           </>
         )}
         <WhatsAppFollowUpDialog request={followUpRequest} signatureTemplate={signatureTemplate} onOpenChange={open => { if (!open) setFollowUpRequest(null); }} onRecordActivity={activity => recordFollowUpActivity.mutate(activity)} />
+        {patientDataDialog && (
+          <PatientDataDialog
+            requestId={patientDataDialog.id}
+            initialData={patientDataDialog.data}
+            onOpenChange={open => { if (!open) setPatientDataDialog(null); }}
+          />
+        )}
+        {reportDialog && (
+          <PatientReportDialog
+            requestId={reportDialog.id}
+            fullName={reportDialog.fullName}
+            service={reportDialog.service}
+            preferredDate={reportDialog.preferredDate}
+            preferredTime={reportDialog.preferredTime}
+            data={reportDialog.data}
+            onOpenChange={open => { if (!open) setReportDialog(null); }}
+          />
+        )}
+        {allReportDialog.length > 0 && (
+          <AllAppointmentsReportDialog
+            requests={allReportDialog}
+            totals={{
+              total: allReportDialog.length,
+              new: allReportDialog.filter((r: any) => r.status === "new").length,
+              contacted: allReportDialog.filter((r: any) => r.status === "contacted").length,
+              closed: allReportDialog.filter((r: any) => r.status === "closed").length,
+              updatedToday: 0,
+            }}
+            onOpenChange={open => { if (!open) setAllReportDialog([]); }}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

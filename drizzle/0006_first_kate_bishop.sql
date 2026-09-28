@@ -1,0 +1,3 @@
+ALTER TABLE `queue_entries` ADD `appointmentRequestId` int;--> statement-breakpoint
+ALTER TABLE `queue_entries` ADD CONSTRAINT `queue_entries_appointmentRequestId_unique` UNIQUE(`appointmentRequestId`);--> statement-breakpoint
+ALTER TABLE `queue_entries` ADD CONSTRAINT `queue_entries_appointmentRequestId_appointment_requests_id_fk` FOREIGN KEY (`appointmentRequestId`) REFERENCES `appointment_requests`(`id`) ON DELETE set null ON UPDATE no action;

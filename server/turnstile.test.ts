@@ -35,7 +35,22 @@ describe("Turnstile token verification", () => {
     ).resolves.toMatchObject({ success: true, errorCodes: [] });
   }, 15_000);
 
-  it("uses the official test secret outside production so local CAPTCHA fallback QA remains deterministic", () => {
-    expect(getTurnstileVerificationSecret()).toBe(TURNSTILE_ALWAYS_PASS_TEST_SECRET);
+  it("requires explicit opt-in via TURNSTILE_ALLOW_TEST_KEY to use the test secret in dev", () => {
+    // Without opt-in, returns empty string (safe default — verification will fail)
+    const original = process.env.TURNSTILE_ALLOW_TEST_KEY;
+    const originalSecret = process.env.TURNSTILE_SECRET_KEY;
+    try {
+      delete process.env.TURNSTILE_ALLOW_TEST_KEY;
+      delete process.env.TURNSTILE_SECRET_KEY;
+      // Re-import to pick up changed env — we test the function's logic directly
+      // Since ENV is evaluated at module load, we test the function contract:
+      // When turnstileAllowTestKey is false and turnstileSecretKey is empty,
+      // the function should NOT return the always-pass secret.
+      const secret = getTurnstileVerificationSecret();
+      expect(secret).not.toBe(TURNSTILE_ALWAYS_PASS_TEST_SECRET);
+    } finally {
+      if (original !== undefined) process.env.TURNSTILE_ALLOW_TEST_KEY = original;
+      if (originalSecret !== undefined) process.env.TURNSTILE_SECRET_KEY = originalSecret;
+    }
   });
 });

@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, ShieldCheck, Tv } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -29,6 +29,8 @@ import { Button } from "./ui/button";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Klinik CMS", path: "/admin" },
+  { icon: ShieldCheck, label: "Keamanan CAPTCHA", path: "/admin/captcha" },
+  { icon: Tv, label: "Antrian OSD", path: "/admin/osd" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -48,36 +50,12 @@ export default function DashboardLayout({
   const { loading, user } = useAuth();
 
   useEffect(() => {
-    localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
-  }, [sidebarWidth]);
+    if (!user && loading === false) {
+      startLogin();
+    }
+  }, [user, loading]);
 
-  if (loading) {
-    return <DashboardLayoutSkeleton />
-  }
-
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-6">
-            <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
-            </h1>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
-            </p>
-          </div>
-          <Button
-            onClick={() => startLogin()}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Sign in
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <DashboardLayoutSkeleton />;
 
   return (
     <SidebarProvider
@@ -117,6 +95,8 @@ function DashboardLayoutContent({
       setIsResizing(false);
     }
   }, [isCollapsed]);
+
+  // No scroll-to-section logic: each menu item now has its own route/page.
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -212,18 +192,15 @@ function DashboardLayoutContent({
                       {user?.name || "-"}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
-                      {user?.email || "-"}
+                      {user?.role === "admin" ? "Administrator" : "Pengguna"}
                     </p>
                   </div>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
+              <DropdownMenuContent className="w-48" align="end" forceMount>
+                <DropdownMenuItem onClick={() => { logout(); startLogin(); }} className="text-rose-700">
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
+                  Keluar
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

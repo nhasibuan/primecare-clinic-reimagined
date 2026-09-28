@@ -1,5 +1,19 @@
 import type { Express } from "express";
 import { ENV } from "./env";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Tiny inline 1x1 transparent PNG as fallback when forge is unavailable
+ * (development mode without BUILT_IN_FORGE_API_URL configured).
+ */
+const FALLBACK_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+  "base64",
+);
 
 export function registerStorageProxy(app: Express) {
   app.get("/manus-storage/*", async (req, res) => {
@@ -10,7 +24,26 @@ export function registerStorageProxy(app: Express) {
     }
 
     if (!ENV.forgeApiUrl || !ENV.forgeApiKey) {
-      res.status(500).send("Storage proxy not configured");
+      // Development fallback: serve favicon from public dir if present,
+      // otherwise return a tiny transparent PNG (clients don't break).
+      const publicFavicon = resolve(__dirname, "../../client/public", key);
+      if (key.endsWith(".png") || key.endsWith(".ico")) {
+        try {
+          const stat = await import("node:fs").then((fs) => fs.promises.stat(publicFavicon));
+          if (stat) {
+            const buf = await import("node:fs").then((fs) => fs.promises.readFile(publicFavicon));
+            if (buf) {
+              res.set("Content-Type", "image/png");
+              res.send(buf);
+              return;
+            }
+          }
+        } catch {
+          // file not found, fall through to inline PNG
+        }
+      }
+      res.set("Content-Type", "image/png");
+      res.send(FALLBACK_PNG);
       return;
     }
 

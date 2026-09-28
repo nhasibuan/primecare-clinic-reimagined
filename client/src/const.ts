@@ -13,6 +13,13 @@ export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 // with "invalid oauth state". It returns void by design, so there is no URL to
 // stash across renders.
 export const startLogin = () => {
+  // Dev mode: use local dev login endpoint (no Manus OAuth required)
+  if (import.meta.env.DEV) {
+    window.location.href = "/api/dev/login";
+    return;
+  }
+
+  // Production: use Manus OAuth portal
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
   const appId = import.meta.env.VITE_APP_ID;
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
