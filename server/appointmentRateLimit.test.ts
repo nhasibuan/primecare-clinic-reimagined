@@ -3,6 +3,7 @@ import type { TrpcContext } from "./_core/context";
 
 const dbMocks = vi.hoisted(() => ({
   createAppointmentRequest: vi.fn(),
+  getCaptchaEnabled: vi.fn(() => Promise.resolve(true)),
 }));
 
 const turnstileMocks = vi.hoisted(() => ({
@@ -10,9 +11,14 @@ const turnstileMocks = vi.hoisted(() => ({
   getTurnstileVerificationSecret: vi.fn(() => "test-secret"),
 }));
 
-vi.mock("./db", async importOriginal => {
-  const actual = await importOriginal<typeof import("./db")>();
+vi.mock("./repositories/appointmentRepository", async importOriginal => {
+  const actual = await importOriginal<typeof import("./repositories/appointmentRepository")>();
   return { ...actual, createAppointmentRequest: dbMocks.createAppointmentRequest };
+});
+
+vi.mock("./repositories/clinicRepository", async importOriginal => {
+  const actual = await importOriginal<typeof import("./repositories/clinicRepository")>();
+  return { ...actual, getCaptchaEnabled: dbMocks.getCaptchaEnabled };
 });
 
 vi.mock("./turnstile", () => ({

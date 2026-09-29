@@ -6,8 +6,8 @@ const dbMocks = vi.hoisted(() => ({
   getWhatsAppFollowUpActivities: vi.fn(),
 }));
 
-vi.mock("./db", async importOriginal => {
-  const actual = await importOriginal<typeof import("./db")>();
+vi.mock("./repositories/appointmentRepository", async importOriginal => {
+  const actual = await importOriginal<typeof import("./repositories/appointmentRepository")>();
   return {
     ...actual,
     createWhatsAppFollowUpActivity: dbMocks.createWhatsAppFollowUpActivity,

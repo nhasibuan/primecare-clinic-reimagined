@@ -1,7 +1,4 @@
-import { and, asc, count, desc, eq, gte, lte, type SQL } from "drizzle-orm";
-export { eq, and, asc, count, desc, gte, lte, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-export { clinicProfiles } from "../drizzle/schema";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _lastConnectionAttempt = 0;

@@ -107,3 +107,28 @@ export async function saveWhatsAppSignatureTemplate(content: string, updatedBy: 
   if (!template) throw new Error("Gagal menyimpan template tanda tangan WhatsApp.");
   return template;
 }
+
+/**
+ * Enables or disables the Turnstile CAPTCHA gate for the public appointment
+ * form.  Throws NOT_FOUND (via TRPCError-friendly message) when no clinic
+ * profile has been created yet — callers in the admin router translate this
+ * to a 404 response.
+ *
+ * Returns the updated `captchaEnabled` value so callers can echo it back
+ * without an additional round-trip.
+ */
+export async function toggleCaptchaEnabled(
+  enabled: boolean,
+): Promise<{ profileId: number; enabled: boolean }> {
+  const db = requireDb(await getDb());
+  const [profile] = await db
+    .select({ id: clinicProfiles.id })
+    .from(clinicProfiles)
+    .limit(1);
+  if (!profile) throw new Error("Profil klinik tidak ditemukan.");
+  await db
+    .update(clinicProfiles)
+    .set({ captchaEnabled: enabled })
+    .where(eq(clinicProfiles.id, profile.id));
+  return { profileId: profile.id, enabled };
+}

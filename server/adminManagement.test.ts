@@ -8,8 +8,8 @@ const dbMocks = vi.hoisted(() => ({
   countAdmins: vi.fn(),
 }));
 
-vi.mock("./db", async importOriginal => {
-  const actual = await importOriginal<typeof import("./db")>();
+vi.mock("./repositories/userRepository", async importOriginal => {
+  const actual = await importOriginal<typeof import("./repositories/userRepository")>();
   return {
     ...actual,
     listUsers: dbMocks.listUsers,
