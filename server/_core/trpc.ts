@@ -5,6 +5,22 @@ import type { TrpcContext } from "./context";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter(opts) {
+    const { shape, error } = opts;
+    const isDev = process.env.NODE_ENV !== "production";
+    
+    return {
+      ...shape,
+      message: !isDev && error.code === "INTERNAL_SERVER_ERROR"
+        ? "Internal Server Error"
+        : shape.message,
+      data: {
+        ...shape.data,
+        retryAfterMs: (error as any).retryAfterMs ?? (error.cause as any)?.retryAfterMs,
+        stack: isDev ? error.stack : undefined,
+      },
+    };
+  },
 });
 
 export const router = t.router;
@@ -19,25 +35,23 @@ const requireUser = t.middleware(async opts => {
 
   return next({
     ctx: {
-      ...ctx,
-      user: ctx.user,
+      user: ctx.user, // Let TS infer user is NonNullable
     },
   });
 });
 
 export const protectedProcedure = t.procedure.use(requireUser);
 
-export const adminProcedure = t.procedure.use(
+export const adminProcedure = protectedProcedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== 'admin') {
+    if (!ctx.user || ctx.user.role !== "admin") {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
     return next({
       ctx: {
-        ...ctx,
         user: ctx.user,
       },
     });

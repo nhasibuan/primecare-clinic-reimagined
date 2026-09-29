@@ -33,7 +33,8 @@ export function registerOAuthRoutes(app: Express) {
 
     // Open-redirect guard: only allow relative paths or same-origin redirects.
     const { redirectUri } = decodeOAuthState(state);
-    const safeRedirect = (!redirectUri || redirectUri.startsWith("/")) ? (redirectUri || "/") : "/";
+    const isSafe = redirectUri && redirectUri.startsWith("/") && !redirectUri.startsWith("//") && !redirectUri.startsWith("/\\");
+    const safeRedirect = isSafe ? redirectUri : "/";
 
     try {
       const tokenResponse = await sdk.exchangeCodeForToken(code, state);

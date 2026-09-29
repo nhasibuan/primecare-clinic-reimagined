@@ -303,17 +303,6 @@ export default function Home() {
                   Di Kelumpang Hilir, Kotabaru, Klinik Berkat Insani menghadirkan Poli Umum, Poli Kandungan, dan Poli Gigi dengan akses pendaftaran melalui WhatsApp.
                 </p>
               </div>
-              <h1 className="max-w-[610px] font-display text-[clamp(3rem,5vw,5.55rem)] font-semibold leading-[.94] tracking-[-.05em] text-[#173047]">
-                Perhatian yang hangat untuk kesehatan ibu, bayi, dan keluarga.
-              </h1>
-              <p className="mt-7 max-w-md text-[17px] leading-8 text-[#496273]">
-                Di Kelumpang Hilir, Kotabaru, Klinik Berkat Insani menghadirkan Poli Umum, Poli Kandungan, dan Poli Gigi dengan akses pendaftaran melalui WhatsApp.
-              </p>
-              <div className="mt-9 flex flex-wrap gap-3">
-                <button onClick={reserve} className="group inline-flex items-center gap-3 rounded-full bg-[#039CB7] px-6 py-4 text-sm font-bold text-white shadow-[0_12px_30px_rgba(3,156,183,.28)] transition hover:-translate-y-0.5 hover:bg-[#007f98] active:scale-[.97]">
-                  Ajukan kunjungan <ArrowRight size={17} className="transition-transform group-hover:translate-x-1" />
-                </button>
-              </div>
             </div>
           </div>
         </section>

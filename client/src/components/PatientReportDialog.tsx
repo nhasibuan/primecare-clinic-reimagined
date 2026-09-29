@@ -25,6 +25,7 @@ type PatientReportDialogProps = {
   service: string;
   preferredDate: string;
   preferredTime?: string;
+  status: string;
   data: PatientReportData;
   onOpenChange: (open: boolean) => void;
 };
@@ -45,6 +46,7 @@ export default function PatientReportDialog({
   service,
   preferredDate,
   preferredTime,
+  status,
   data,
   onOpenChange,
 }: PatientReportDialogProps) {
@@ -59,7 +61,7 @@ export default function PatientReportDialog({
       `Nama: ${fullName}`,
       `Layanan: ${service}`,
       `Tanggal pilihan: ${new Date(`${preferredDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}${preferredTime ? ` (${preferredTime})` : ""}`,
-      `Status: ${requestId % 2 === 0 ? "Dihubungi" : "Baru"}`,
+      `Status: ${status === "new" ? "Baru" : status === "contacted" ? "Dihubungi" : "Selesai"}`,
       ``,
       `DATA IDENTITAS:`,
       `NIK: ${data.nik ?? "—"}`,

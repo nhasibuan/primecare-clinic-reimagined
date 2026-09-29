@@ -18,7 +18,7 @@ import {
   Tv,
   UserPlus,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 export default function QueueAdmin() {
@@ -39,11 +39,13 @@ export default function QueueAdmin() {
   const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Load settings into form when available
-  if (settingsQuery.data && !settingsLoaded) {
-    setRunningText(settingsQuery.data.runningText);
-    setYoutubeUrl(settingsQuery.data.youtubeUrl);
-    setSettingsLoaded(true);
-  }
+  useEffect(() => {
+    if (settingsQuery.data && !settingsLoaded) {
+      setRunningText(settingsQuery.data.runningText);
+      setYoutubeUrl(settingsQuery.data.youtubeUrl);
+      setSettingsLoaded(true);
+    }
+  }, [settingsQuery.data, settingsLoaded]);
 
   // ── Mutations ──
   const addMutation = trpc.queue.add.useMutation({

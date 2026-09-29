@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, index } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -92,7 +92,9 @@ export const appointmentRequests = mysqlTable("appointment_requests", {
   agama: varchar("agama", { length: 50 }),
   email: varchar("email", { length: 255 }),
   instagramUrl: varchar("instagramUrl", { length: 255 }),
-});
+}, (table) => ({
+  statusCreatedIdx: index("appointment_requests_status_created_idx").on(table.status, table.createdAt),
+}));
 
 export const whatsappFollowUpActivities = mysqlTable("whatsapp_follow_up_activities", {
   id: int("id").autoincrement().primaryKey(),
@@ -121,7 +123,9 @@ export const queueEntries = mysqlTable("queue_entries", {
   queueDate: varchar("queueDate", { length: 10 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  dateNumIdx: index("queue_entries_date_num_idx").on(table.queueDate, table.queueNumber),
+}));
 
 export const osdSettings = mysqlTable("osd_settings", {
   id: int("id").autoincrement().primaryKey(),
@@ -139,7 +143,11 @@ export const auditLogs = mysqlTable("audit_logs", {
   detail: text("detail"),
   ipAddress: varchar("ipAddress", { length: 45 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  actionIdx: index("audit_logs_action_idx").on(table.action),
+  entityIdx: index("audit_logs_entity_idx").on(table.entityType, table.entityId),
+  createdIdx: index("audit_logs_created_idx").on(table.createdAt),
+}));
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;

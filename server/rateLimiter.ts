@@ -31,7 +31,7 @@ export interface RateLimiterConfig {
 type Entry = { count: number; windowStartedAt: number };
 
 /**
- * In-memory sliding-window rate limiter.
+ * In-memory fixed-window rate limiter.
  *
  * Suitable for single-process deployments. State is lost on restart.
  * For persistence across restarts or multi-instance coordination,
@@ -42,11 +42,18 @@ export class InMemoryRateLimiter implements RateLimiter {
   private readonly maxRequests: number;
   private readonly windowMs: number;
   private readonly maxKeys: number;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(config: RateLimiterConfig) {
+    if (config.maxRequests <= 0) throw new Error("maxRequests must be > 0");
+    if (config.windowMs <= 0) throw new Error("windowMs must be > 0");
     this.maxRequests = config.maxRequests;
     this.windowMs = config.windowMs;
     this.maxKeys = config.maxKeys ?? 10_000;
+    
+    // Background cleanup every max(1min, windowMs)
+    this.cleanupTimer = setInterval(() => this.pruneExpired(Date.now()), Math.max(60000, this.windowMs));
+    this.cleanupTimer.unref?.();
   }
 
   attempt(key: string, now = Date.now()): RateLimitResult {
@@ -54,18 +61,24 @@ export class InMemoryRateLimiter implements RateLimiter {
     const k = key || "unknown";
     const existing = this.entries.get(k);
 
-    if (!existing || now - existing.windowStartedAt >= this.windowMs) {
-      if (!existing && this.entries.size >= this.maxKeys) this.evictOldest();
+    if (existing && now - existing.windowStartedAt >= this.windowMs) {
+      this.entries.delete(k); // Lazy prune the expired key
+    }
+
+    const current = this.entries.get(k);
+
+    if (!current) {
+      if (this.entries.size >= this.maxKeys) this.evictOldest();
       this.entries.set(k, { count: 1, windowStartedAt: now });
       return { allowed: true, retryAfterMs: 0 };
     }
 
-    const retryAfterMs = Math.max(0, this.windowMs - (now - existing.windowStartedAt));
-    if (existing.count >= this.maxRequests) {
+    const retryAfterMs = Math.max(0, this.windowMs - (now - current.windowStartedAt));
+    if (current.count >= this.maxRequests) {
       return { allowed: false, retryAfterMs };
     }
 
-    existing.count += 1;
+    current.count += 1;
     return { allowed: true, retryAfterMs: 0 };
   }
 
@@ -78,14 +91,19 @@ export class InMemoryRateLimiter implements RateLimiter {
   }
 
   private pruneExpired(now: number): void {
-    const expired = Array.from(this.entries.entries())
-      .filter(([, entry]) => now - entry.windowStartedAt >= this.windowMs)
-      .map(([key]) => key);
-    expired.forEach(key => this.entries.delete(key));
+    this.entries.forEach((entry, key) => {
+      if (now - entry.windowStartedAt >= this.windowMs) {
+        this.entries.delete(key);
+      }
+    });
   }
 
   private evictOldest(): void {
     const first = this.entries.keys().next().value;
     if (first !== undefined) this.entries.delete(first);
+  }
+  
+  destroy(): void {
+    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
   }
 }

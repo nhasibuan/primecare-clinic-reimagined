@@ -65,3 +65,85 @@ export const INDONESIAN_DAYS: Record<number, string> = {
 };
 
 export const HOURS_12H = ["12", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"];
+
+export function to24Hour(hour12: string, period: "AM" | "PM"): string {
+  const h = parseInt(hour12, 10);
+  if (period === "AM") return h === 12 ? "00" : String(h).padStart(2, "0");
+  return h === 12 ? "12" : String(h + 12).padStart(2, "0");
+}
+
+export function parseTimeToMinutes(hour24: string, minute: string): number {
+  return parseInt(hour24, 10) * 60 + parseInt(minute, 10);
+}
+
+export function getScheduleStatus(
+  scheduleOrService: string | Record<string, Record<string, { start: string; end: string; note?: string }>>,
+  dateStrOrService: string,
+  hour12OrDateStr: string,
+  minuteOrHour12: string,
+  periodOrMinute: "AM" | "PM" | string,
+  periodArg?: "AM" | "PM",
+): { valid: boolean; open?: { start: string; end: string; note?: string }; dayName?: string; message?: string } {
+  let scheduleMap: Record<string, Record<string, { start: string; end: string; note?: string }>> = CLINIC_SCHEDULE;
+  let service = "";
+  let dateStr = "";
+  let hour12 = "";
+  let minute = "";
+  let period: "AM" | "PM" = "AM";
+
+  if (typeof scheduleOrService !== "string") {
+    scheduleMap = scheduleOrService;
+    service = dateStrOrService;
+    dateStr = hour12OrDateStr;
+    hour12 = minuteOrHour12;
+    minute = periodOrMinute as string;
+    period = periodArg as "AM" | "PM";
+  } else {
+    service = scheduleOrService;
+    dateStr = dateStrOrService;
+    hour12 = hour12OrDateStr;
+    minute = minuteOrHour12;
+    period = periodOrMinute as "AM" | "PM";
+  }
+
+  if (!service || !dateStr || !hour12 || !minute || !period) {
+    return { valid: false, message: "Pilih layanan, tanggal, dan jam terlebih dahulu." };
+  }
+
+  const dayScheduleMap = scheduleMap[service];
+  if (!dayScheduleMap) {
+    return { valid: false, message: "Jadwal untuk layanan ini belum tersedia." };
+  }
+
+  const date = new Date(dateStr + "T12:00:00");
+  const dayName = INDONESIAN_DAYS[date.getDay()];
+  const daySchedule = dayScheduleMap[dayName];
+
+  if (!daySchedule) {
+    return { valid: false, dayName, message: `${dayName} tidak ada janji temu untuk ${service}.` };
+  }
+
+  const hour24 = to24Hour(hour12, period);
+  const selectedMinutes = parseTimeToMinutes(hour24, minute);
+  const openMinutes = parseTimeToMinutes(
+    daySchedule.start.split(":")[0],
+    daySchedule.start.split(":")[1] || "00",
+  );
+  const closeMinutes = parseTimeToMinutes(
+    daySchedule.end.split(":")[0],
+    daySchedule.end.split(":")[1] || "00",
+  );
+
+  const withinRange = selectedMinutes >= openMinutes && selectedMinutes < closeMinutes;
+
+  if (!withinRange) {
+    return {
+      valid: false,
+      open: daySchedule,
+      dayName,
+      message: `Jam tidak tersedia. ${service} buka ${daySchedule.start}–${daySchedule.end} ${dayName}.`,
+    };
+  }
+
+  return { valid: true, open: daySchedule, dayName };
+}

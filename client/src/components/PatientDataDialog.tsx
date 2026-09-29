@@ -40,6 +40,7 @@ export default function PatientDataDialog({ requestId, initialData, onOpenChange
     onSuccess: async () => {
       await utils.appointments.list.invalidate();
       toast.success("Data pasien tersimpan.");
+      onOpenChange(false);
     },
     onError: error => toast.error(error.message),
   });
@@ -71,20 +72,7 @@ export default function PatientDataDialog({ requestId, initialData, onOpenChange
       email: form.email || undefined,
       instagramUrl: form.instagramUrl || undefined,
     });
-    onOpenChange(false);
   };
-
-  const fieldLabel = (label: string, placeholder: string) => (
-    <label className="grid gap-2 text-sm font-bold text-[#395568]">
-      {label}
-      <input
-        value={form[fieldLabel as keyof PatientData].replace as unknown as string ?? ""}
-        // We use controlled inputs below; this helper isn't used.
-        placeholder={placeholder}
-        className="rounded-xl border border-[#173047]/15 bg-white px-4 py-3 text-sm font-medium text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10"
-      />
-    </label>
-  );
 
   return (
     <Dialog open={Boolean(requestId)} onOpenChange={onOpenChange}>
