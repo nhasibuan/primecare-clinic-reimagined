@@ -21,7 +21,7 @@ WorkingDirectory=/g/primecare-clinic-reimagined
 EnvironmentFile=/g/primecare-clinic-reimagined/.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
-ExecStart=/usr/bin/node dist/index.js
+ExecStart=/usr/local/bin/node dist/index.js
 Restart=on-failure
 RestartSec=5
 # Hardening: .env and /root/secrets must stay readable; keep root for now
