@@ -368,6 +368,8 @@ pnpm check       # TypeScript type checking
 
 ## Deployment
 
+> 📋 **Deploying to production?** Read [`DEPLOYMENT_ROLLOUT.md`](./DEPLOYMENT_ROLLOUT.md) first — the new server refuses to start without `PII_ENCRYPTION_KEY`, and migration `0009` must run before encrypted writes.
+
 ### Build
 
 ```bash

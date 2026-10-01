@@ -1,0 +1,47 @@
+version: 2
+updates:
+  # Production dependencies — weekly, grouped by ecosystem tier so update PRs
+  # stay reviewable and CI-verifiable (see .github/workflows/dependencies.yml).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      react-and-ui:
+        applies-to: version-updates
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@radix-ui/*"
+          - "lucide-react"
+          - "framer-motion"
+          - "sonner"
+          - "vaul"
+          - "embla-carousel-react"
+      trpc-and-data:
+        applies-to: version-updates
+        patterns:
+          - "@trpc/*"
+          - "@tanstack/react-query"
+          - "drizzle-orm"
+          - "superjson"
+          - "axios"
+          - "ioredis"
+      tooling-and-build:
+        applies-to: version-updates
+        patterns:
+          - "vite"
+          - "esbuild"
+          - "typescript"
+          - "tailwindcss"
+          - "postcss"
+          - "autoprefixer"
+          - "vitest"
+          - "tsx"
+          - "pnpm"
+
+  # GitHub Actions used in workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
