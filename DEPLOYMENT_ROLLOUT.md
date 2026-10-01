@@ -108,6 +108,9 @@ Verification checklist:
 
 ## Key management going forward
 
+- **Key custody & recovery:** see `SECRETS_RECOVERY.md` — the PII key and
+  JWT secret are stored in a root-only GPG vault at `/root/secrets/` on the
+  VM, plus a mandatory offline master-passphrase backup.
 - The envelope format is versioned (`v1:`) for future key rotation; rotation
   tooling is not built yet — open an issue before rotation becomes urgent.
 - Backups contain ciphertext; their security reduces to custody of

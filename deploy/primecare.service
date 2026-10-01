@@ -1,0 +1,35 @@
+# systemd unit template for the PrimeCare server (production mode).
+# Install with:
+#   sudo cp deploy/primecare.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now primecare
+#
+# DO NOT switch the live site to this unit until the production env is
+# complete — see deploy/README.md. NODE_ENV=production makes startup
+# fail-fast on missing OAUTH_SERVER_URL / OWNER_OPEN_ID / BUILT_IN_FORGE_API_URL.
+
+[Unit]
+Description=PrimeCare Clinic server (production)
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/g/primecare-clinic-reimagined
+# Loads every KEY="value" line from .env (quotes are stripped by systemd).
+EnvironmentFile=/g/primecare-clinic-reimagined/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+# Hardening: .env and /root/secrets must stay readable; keep root for now
+# and tighten later if a dedicated service user is introduced.
+NoNewPrivileges=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
