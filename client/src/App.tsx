@@ -9,6 +9,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -16,6 +17,7 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/osd"} component={QueueDisplay} />
+      <Route path={"/login"} component={Login} />
       <Route path={"/admin"} component={ClinicAdmin} />
       <Route path={"/admin/captcha"} component={CaptchaAdmin} />
       <Route path={"/admin/osd"} component={QueueAdmin} />

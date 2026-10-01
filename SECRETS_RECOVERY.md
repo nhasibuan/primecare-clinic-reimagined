@@ -10,6 +10,7 @@ one is lost. It never contains the secrets themselves.
 |--------|--------------------|----------------|
 | `PII_ENCRYPTION_KEY` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
 | `JWT_SECRET` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
 | Backup passphrase (pre-0009 SQL dump) | — (only in the vault) | `/root/secrets/primecare-secrets.asc` |
 | Vault master passphrase | `/root/secrets/master-passphrase.txt` | **Your offline copy — mandatory, see below** |
 
@@ -60,6 +61,18 @@ is no backdoor by design. Restore from the offline master-passphrase copy.
 No data loss. Sessions are invalidated; generate a new 64-char key
 (`openssl rand -base64 48`), update `.env` and the vault, restart. Users just
 sign in again.
+
+### Admin password lost
+The vault stores only the **hash** (`ADMIN_PASSWORD_HASH`) — passwords are
+never recoverable by design. Generate a new one and redeploy it:
+
+```bash
+node scripts/hashPassword.mjs 'new-passphrase'
+# put the printed ADMIN_PASSWORD_HASH into .env (keep ADMIN_USERNAME), then
+sudo systemctl restart primecare
+```
+
+Update the vault copy afterwards (see "Adding or rotating a secret").
 
 ### Vault master passphrase lost
 The vault is unrecoverable — symmetric GPG has no reset. This is why the

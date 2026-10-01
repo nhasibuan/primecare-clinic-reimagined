@@ -8,6 +8,10 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerDevAuthRoutes } from "./devAuth";
 import { registerStorageProxy } from "./storageProxy";
+import { handleLocalLogin } from "../localAuth";
+import { recordAuditLog } from "../auditLog";
+import { getClientIp } from "../appointmentRequest";
+import { getSessionCookieName, getSessionCookieOptions } from "./cookies";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -81,6 +85,20 @@ async function startServer() {
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerDevAuthRoutes(app);
+  // Self-hosted admin login (production path when OAuth is not configured).
+  app.post("/api/auth/login", handleLocalLogin);
+  app.post("/api/auth/logout", (req, res) => {
+    const cookieOptions = getSessionCookieOptions(req);
+    res.clearCookie(getSessionCookieName(), { ...cookieOptions, maxAge: -1 });
+    void recordAuditLog({
+      actorId: null,
+      action: "auth.logout",
+      entityType: "session",
+      detail: "local admin logout",
+      ipAddress: getClientIp(req),
+    });
+    res.json({ success: true });
+  });
   // Health check — returns 503 when the database is unreachable.
   app.get("/healthz", async (_req, res) => {
     const { getDb } = await import("../db");

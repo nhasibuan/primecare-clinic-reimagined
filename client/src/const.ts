@@ -19,6 +19,13 @@ export const startLogin = () => {
     return;
   }
 
+  // Self-hosted admin login (default when no OAuth portal is configured via
+  // VITE_AUTH_MODE=oauth + VITE_OAUTH_PORTAL_URL).
+  if (import.meta.env.VITE_AUTH_MODE !== "oauth") {
+    window.location.href = "/login";
+    return;
+  }
+
   // Production: use Manus OAuth portal
   const oauthPortalUrl = import.meta.env.VITE_OAUTH_PORTAL_URL;
   const appId = import.meta.env.VITE_APP_ID;

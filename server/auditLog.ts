@@ -2,6 +2,8 @@ import { getDb } from "./db";
 import { auditLogs } from "../drizzle/schema";
 
 export type AuditAction =
+  | "auth.login"
+  | "auth.logout"
   | "user.promote"
   | "user.demote"
   | "captcha.toggle"
