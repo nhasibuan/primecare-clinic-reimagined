@@ -8,6 +8,7 @@
 
 import { z } from "zod";
 import { MAX_WHATSAPP_DRAFT_LENGTH } from "../../shared/whatsappMessageMetrics";
+import { AGAMA_VALUES } from "../../shared/const";
 
 // ── Clinic ────────────────────────────────────────────────────────────────────
 
@@ -124,16 +125,7 @@ export const updatePatientDataInput = z.object({
     .refine(
       (value) => {
         if (!value) return true;
-        return [
-          "Islam",
-          "Kristen",
-          "Katolik",
-          "Hindu",
-          "Buddha",
-          "Khonghucu",
-          "Tidak ada",
-          "",
-        ].includes(value);
+        return ([...AGAMA_VALUES, ""] as string[]).includes(value);
       },
       { message: "Agama tidak dikenali. Gunakan salah satu yang tersedia." },
     )

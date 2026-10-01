@@ -1,14 +1,18 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { queueEntries, osdSettings } from "../../drizzle/schema";
 import { getDb, requireDb } from "../db";
+import { decryptPii, encryptPii } from "../encryption";
 import { getTodayDateString, redactName } from "../utils/queueUtils";
 
 export async function getQueueEntries(date?: string) {
   const db = requireDb(await getDb());
   const targetDate = date ?? getTodayDateString();
-  return db.select().from(queueEntries)
+  const rows = await db.select().from(queueEntries)
     .where(eq(queueEntries.queueDate, targetDate))
     .orderBy(asc(queueEntries.queueNumber));
+  // patientName is encrypted at rest; decrypt for staff views. The public OSD
+  // path re-redacts the decrypted name (see getPublicQueueEntries).
+  return rows.map((row) => ({ ...row, patientName: decryptPii(row.patientName) ?? "" }));
 }
 
 export async function getPublicQueueEntries(date?: string) {
@@ -58,7 +62,7 @@ export async function addQueueEntry(input: { patientName: string; poli: string; 
   const nextNumber = (last?.queueNumber ?? 0) + 1;
   await db.insert(queueEntries).values({
     queueNumber: nextNumber,
-    patientName: input.patientName,
+    patientName: encryptPii(input.patientName) ?? input.patientName,
     poli: input.poli,
     doctorName: input.doctorName,
     appointmentRequestId: input.appointmentRequestId ?? null,
@@ -96,8 +100,14 @@ export async function skipQueueEntry(id: number) {
 export async function resetQueue() {
   const db = requireDb(await getDb());
   const today = getTodayDateString();
+  // Count before deleting so the audit trail records the blast radius of the
+  // reset (rows are removed permanently; there is no restore).
+  const doomed = await db
+    .select({ id: queueEntries.id })
+    .from(queueEntries)
+    .where(eq(queueEntries.queueDate, today));
   await db.delete(queueEntries).where(eq(queueEntries.queueDate, today));
-  return { success: true };
+  return { success: true, deletedCount: doomed.length };
 }
 
 export async function getOsdSettings() {

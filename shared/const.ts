@@ -1,4 +1,10 @@
 export const COOKIE_NAME = "app_session_id";
+/**
+ * Production cookie name with the `__Host-` prefix (see server/_core/cookies.ts).
+ * The prefix is enforced only in production because it requires HTTPS; dev
+ * keeps the plain name so local HTTP logins keep working.
+ */
+export const PROD_COOKIE_NAME = "__Host-app_session_id";
 export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;
 export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';
@@ -36,3 +42,25 @@ export const decodeOAuthState = (state: string): OAuthState => {
   }
   return { redirectUri: decoded };
 };
+
+/**
+ * Recognized Indonesian religion values (UU PDP / KTP standard).
+ * Single source of truth — imported by schemas/index.ts (server validation)
+ * and client form components to prevent drift between validation and UI.
+ */export const AGAMA_VALUES = [
+  "Islam",
+  "Kristen",
+  "Katolik",
+  "Hindu",
+  "Buddha",
+  "Khonghucu",
+  "Tidak ada",
+] as const;
+
+export type Agama = (typeof AGAMA_VALUES)[number];
+
+/**
+ * Minimum number of admin accounts recommended to avoid single-point lockout.
+ * When admin count drops to or below this threshold, a warning should be shown.
+ */
+export const MIN_ADMIN_COUNT_SAFE = 2;

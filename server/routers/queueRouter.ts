@@ -18,6 +18,7 @@ import {
   updateOsdSettings,
 } from "../repositories/queueRepository";
 import { getClientIp } from "../appointmentRequest";
+import { getTodayDateString } from "../utils/queueUtils";
 import { recordAuditLog } from "../auditLog";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import {
@@ -114,6 +115,7 @@ export const queueRouter = router({
       actorId: ctx.user.id,
       action: "queue.reset",
       entityType: "queue",
+      detail: `reset ${result.deletedCount} entri antrean untuk ${getTodayDateString()}`,
       ipAddress: getClientIp(ctx.req),
     });
     return result;

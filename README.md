@@ -2,7 +2,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-94%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-116%20passing-brightgreen)](#testing)
 
 A modern, full-stack TypeScript clinic management system for **Klinik Berkat Insani** — a healthcare clinic in Kotabaru, Kalimantan Selatan, Indonesia. Combines a public landing page with an admin CMS, appointment booking, WhatsApp follow-up tooling, and a patient queue management system.
 
@@ -52,6 +52,7 @@ A modern, full-stack TypeScript clinic management system for **Klinik Berkat Ins
 | **Server** | Express | 4 |
 | **ORM** | Drizzle | 0.44 |
 | **Database** | MySQL | 8+ |
+| **Distributed Rate Limiting (optional)** | ioredis / Redis | 6 |
 | **Auth** | jose (JWT/HS256) | — |
 | **Testing** | Vitest | 2 |
 | **Package Manager** | pnpm | — |
@@ -335,15 +336,16 @@ This application implements **defense-in-depth** with multiple security layers:
 |-------|---------------|
 | **CAPTCHA** | Cloudflare Turnstile on appointment form (admin-toggleable) |
 | **Honeypot** | Hidden `website` field silently drops automated submissions |
-| **IP Rate Limiting** | 3 requests / 60s per IP (pluggable `RateLimiter` interface) |
-| **Upload Rate Limiting** | 20 uploads / 5 min per user |
+| **IP Rate Limiting** | True sliding window, 3 requests / 60s per IP (pluggable `RateLimiter` interface) — enforced before the outbound CAPTCHA call; upgrades to a shared Redis-backed limiter when `REDIS_URL` is set (fail-open with throttled warnings) |
+| **Upload Rate Limiting** | 20 uploads / 5 min per user (same pluggable interface) |
 | **Input Validation** | Zod schemas on all tRPC inputs with regex patterns |
 | **RBAC** | Three procedure levels: `public`, `protected`, `admin` |
-| **Audit Logging** | All admin mutations recorded with actor, action, entity, IP |
+| **Audit Logging** | All admin mutations recorded with actor, action, entity, IP (queue resets include deleted-row count) |
 | **CSP** | Strict Content-Security-Policy headers |
 | **Security Headers** | `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, HSTS, Referrer-Policy, Permissions-Policy |
-| **OAuth + JWT** | HS256 session tokens with 1-year expiry, CSRF protection via `__Host-` prefix cookie |
-| **Production Validation** | Fail-fast startup rejects default JWT_SECRET, missing OWNER_OPEN_ID |
+| **OAuth + JWT** | HS256 session tokens with 1-year expiry; session cookie is `__Host-` prefixed in production (plus SameSite=Lax and HttpOnly) |
+| **PII Encryption at Rest** | AES-256-GCM (HKDF-derived key) for full name, phone, notes, NIK, birth place/date, address, email, and queue patient names — columns widened for envelopes, fail-fast required in production (`ALLOW_PLAINTEXT_PII=true` overrides with a loud warning) |
+| **Production Validation** | Fail-fast startup rejects default JWT_SECRET, missing OWNER_OPEN_ID, missing PII_ENCRYPTION_KEY |
 | **Data Minimization** | No clinical notes stored; patient names redacted on public OSD |
 | **Request Tracing** | Unique `x-request-id` on every request for log correlation |
 
@@ -354,7 +356,7 @@ pnpm test        # Run all tests
 pnpm check       # TypeScript type checking
 ```
 
-**94 tests across 14 test files** covering:
+**116 tests across 15 test files** covering:
 - Role resolution and admin management logic
 - Rate limiter behavior (window expiry, eviction)
 - Appointment request validation (honeypot, note normalization)
@@ -391,8 +393,12 @@ NODE_ENV=production node dist/index.js
 | `BUILT_IN_FORGE_API_URL` | ✅ | Forge storage backend URL |
 | `BUILT_IN_FORGE_API_KEY` | ✅ | Forge storage API key |
 | `TURNSTILE_SECRET_KEY` | ✅ | Cloudflare Turnstile secret |
+| `PII_ENCRYPTION_KEY` | ✅ | ≥ 32 chars; AES-256-GCM key for patient PII encryption at rest. Launch without it only by setting `ALLOW_PLAINTEXT_PII=true` (warns loudly) |
+| `REDIS_URL` | — | Optional; enables the shared Redis-backed rate limiter for multi-instance deployments |
 
 > ⚠️ **Never** set `TURNSTILE_ALLOW_TEST_KEY` in production — it bypasses CAPTCHA verification.
+>
+> ⚠️ **Never** set `ALLOW_PLAINTEXT_PII=true` in production except as a short-lived migration measure — it stores patient NIK and contact data unencrypted.
 
 ### Health Check
 
@@ -405,21 +411,21 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 
 ### Strengths
 - **End-to-End Type Safety & Contract Integrity**: Strict TypeScript 5.9 + tRPC 11 + Zod 4 + Drizzle 0.44 ensures compile-time and runtime validation spanning database entities to React UI components.
-- **Multi-Tiered Defense-in-Depth**: Six defensive layers protect public endpoints: Cloudflare Turnstile CAPTCHA, hidden honeypot traps, sliding-window IP rate limiting, authenticated upload throttling, strict input regex constraints, and hardened HTTP security headers (CSP, HSTS, X-Frame-Options).
+- **Multi-Tiered Defense-in-Depth**: Six defensive layers protect public endpoints, ordered cheapest-first: honeypot, sliding-window IP rate limiting (bounding even the outbound CAPTCHA call), pure-function schedule validation, Cloudflare Turnstile CAPTCHA, authenticated upload throttling, and hardened HTTP security headers (CSP, HSTS, X-Frame-Options).
 - **Privacy-by-Design Architecture**: Strict data minimization avoids persisting clinical diagnosis notes in the web layer; patient names are dynamically redacted on public waiting-room displays, and WhatsApp follow-up logs preserve only telemetry/metadata.
 - **Comprehensive Immutable Audit Trail**: Admin actions (user role alterations, queue resets, clinic profile updates, media uploads) are recorded with actor ID, entity reference, mutation detail, and remote IP address.
-- **Robust Automated Verification**: 94 unit/integration tests spanning 14 test suites provide high confidence in scheduling logic, role guards, and failover behavior.
+- **Robust Automated Verification**: 116 unit/integration tests spanning 15 test suites provide high confidence in scheduling logic, role guards, failover behavior, and ciphertext-envelope capacity.
 
 ### Weaknesses
-- **Volatile In-Memory Rate Limiting**: Request and upload rate counters reside in Node.js process memory; counters reset during container restarts or deployments, and do not sync horizontally across multi-instance clusters without Redis.
+- **Operational Dependency for Distributed Rate Limiting**: The Redis-backed limiter shares quota across instances but depends on a reachable Redis; a Redis outage degrades to per-instance fail-open limits with throttled warnings until connectivity returns.
 - **Platform & Vendor Coupling**: Auth callbacks and file storage are tightly coupled to Forge/Manus platform APIs; self-hosted S3/MinIO or generic OIDC requires adapter refactoring.
 - **Static Clinic Schedule**: Operating hours and poli availability are defined in code (`shared/clinicSchedule.ts`), requiring code redeployment rather than dynamic CMS modification.
-- **Direct PII Persistence Without Column Encryption**: Sensitive Indonesian identity numbers (NIK), phone numbers, and dates of birth are stored in plaintext MySQL columns rather than application-layer encrypted fields.
+- **Plaintext PII Residuals Outside Encrypted Columns**: Patient names, contact details, notes, NIK, birth details, addresses, emails, and queue patient names are AES-256-GCM encrypted at rest; the remaining plaintext columns are low-sensitivity (`agama`, `instagramUrl`, doctor/poli labels), and backup security reduces to `PII_ENCRYPTION_KEY` custody.
 
 ### Opportunities
 - **Official WhatsApp Business Platform (Cloud API)**: Transition from desktop URI links (`wa.me`) to verified template messaging with automated webhooks and bi-directional status tracking.
-- **Distributed Cache & Shared State**: Swap the in-memory rate limiter with Redis/Dragonfly via the existing pluggable `RateLimiter` interface for multi-region load balancing.
-- **Indonesian UU PDP Compliance Hardening**: Implement field-level AES-256-GCM encryption for NIK and addresses, paired with explicit consent logs and patient data deletion workflows.
+- **Rate-Limiter Observability**: The Redis-backed `RateLimiter` is implemented (sorted-set sliding window, fail-open with throttled warnings); next steps are hit-rate metrics and alerting on degradation events.
+- **Indonesian UU PDP Compliance Hardening**: Extend encryption coverage to backups and add explicit consent logs and patient data deletion workflows on top of the existing field-level AES-256-GCM.
 - **PWA & Offline Queue Display**: Enable Progressive Web App caching and service workers for the clinic waiting-room TV display to survive intermittent internet drops.
 
 ### Threats
@@ -434,8 +440,8 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 |----------|-------|-------------|
 | **SO (Strengths + Opportunities)** | Type Safety & WhatsApp API | Leverage end-to-end Zod schemas to build fully automated, typed WhatsApp Cloud API outbound queues. |
 | **ST (Strengths + Threats)** | Audit Trail & PDP Compliance | Extend audit logging to patient PII read events, demonstrating regulatory accountability under UU PDP. |
-| **WO (Weaknesses + Opportunities)** | Redis Rate Limiting | Replace the in-memory sliding window with a Redis-backed adapter using the pluggable interface. |
-| **WT (Weaknesses + Threats)** | Encryption & Key Recovery | Implement application-level column encryption for NIK/phone numbers and configure multi-admin recovery protocols. |
+| **WO (Weaknesses + Opportunities)** | Redis Rate Limiting | Implemented; extend with hit-rate metrics and degradation alerting. |
+| **WT (Weaknesses + Threats)** | Encryption & Key Recovery | `fullName`/`note`/queue names now encrypted; configure key rotation, backup encryption, and multi-admin recovery protocols. |
 
 ---
 
@@ -445,13 +451,14 @@ An exhaustive codebase verification was executed on the current workspace:
 
 | Claim / Specification | Target in Codebase | Verification Method | Status | Notes |
 |-----------------------|--------------------|---------------------|:------:|-------|
-| **Unit & Integration Tests** | 94 passing tests | `vitest run` | ✅ **Verified** | 94 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 14 test suites. |
+| **Unit & Integration Tests** | 116 passing tests | `vitest run` | ✅ **Verified** | 116 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 15 test suites. |
 | **Type Checking** | Strict TypeScript | `tsc --noEmit` | ✅ **Verified** | 0 errors across entire frontend and backend modules. |
 | **Production Build** | Client + Server bundles | `pnpm build` | ✅ **Verified** | Vite client bundle (`dist/public/`) and esbuild ESM server (`dist/index.js`) generate cleanly. |
 | **Database Schema** | 12 MySQL tables | `drizzle/schema.ts` | ✅ **Verified** | Exactly 12 relational tables: `users`, `clinic_profiles`, `services`, `media_assets`, `appointment_requests`, `whatsapp_follow_up_activities`, `whatsapp_signature_templates`, `queue_entries`, `osd_settings`, `audit_logs`, `clinic_schedules` (deprecated), `presigned_urls`. |
-| **tRPC API Procedures** | 29 API procedures | `server/routers.ts` | ✅ **Verified** | 29 procedures categorized into 6 domains (`schedule`, `captcha`, `auth`, `appointments`, `admin`, `clinic`, `queue`). |
-| **Rate Limiter Design** | Pluggable interface | `server/rateLimiter.ts` | ✅ **Verified** | Default in-memory sliding window implementation conforming to `RateLimiter` interface. |
-| **Security Headers** | CSP, HSTS, X-Frame-Options | `server/_core/index.ts` | ✅ **Verified** | Hardened Helmet / custom middleware enforcing zero iframe embedding, strict CSP, and nosniff. |
+| **tRPC API Procedures** | 29 API procedures | `server/routers/index.ts` | ✅ **Verified** | 29 procedures across 7 domain sub-routers (`schedule`, `captcha`, `auth`, `appointments`, `clinic`, `queue`, `admin`) plus the built-in system router. |
+| **Rate Limiter Design** | Pluggable interface | `server/rateLimiter.ts`, `server/redisRateLimiter.ts`, `server/rateLimiterFactory.ts` | ✅ **Verified** | In-memory **true sliding window** (per-key event logs, bounded memory, LRU-style eviction) plus a Redis sorted-set adapter sharing identical semantics; `REDIS_URL` selects the distributed one via the factory. |
+| **Security Headers** | CSP, HSTS, X-Frame-Options | `server/_core/index.ts` | ✅ **Verified** | Hardened custom middleware enforcing zero iframe embedding, strict CSP, and nosniff. |
+| **PII Encryption** | AES-256-GCM field encryption | `server/encryption.ts` + repositories | ✅ **Verified** | HKDF-SHA256 key derivation, `v1:` versioned envelope, pass-through when unconfigured, fail-fast enforced in production; columns widened (migration 0009) and envelope-capacity contract-tested. |
 
 ---
 
@@ -485,7 +492,7 @@ A comprehensive adversarial security evaluation identified the following threat 
 - **Defensive Safeguards Evaluated**:
   - Drizzle ORM uses parameterized SQL queries throughout, effectively mitigating classic SQL injection.
   - Public On-Screen Display (`queue.display`) strictly masks patient names (e.g., "A*** B***") and excludes phone numbers and NIK.
-- **Remaining Risk**: Data stored at rest in MySQL is unencrypted. Database backups or compromised server filesystem access would expose raw patient NIK and contact details.
+- **Remaining Risk**: Patient PII (names, contacts, NIK, demographics, notes, queue names) is encrypted at rest (AES-256-GCM); the residual attack surface is key custody — database dumps contain ciphertext only as strong as `PII_ENCRYPTION_KEY` protection, plus the low-sensitivity `agama`/`instagramUrl` plaintext columns.
 
 ### 4. Public Waiting Room Display (OSD) Tampering & XSS
 - **Threat Vector**: Malicious actor altering `osd_settings.youtubeUrl` or `osd_settings.runningText` to display phishing links, offensive media, or execute Stored XSS on the clinic TV.
@@ -496,7 +503,7 @@ A comprehensive adversarial security evaluation identified the following threat 
   - React JSX auto-escapes string content in the marquee running text, preventing DOM-based script injection.
 
 ### 5. Dependency Supply Chain Audit
-- **Findings**: Package audit identified 74 vulnerabilities (8 low, 48 moderate, 18 high) primarily concentrated in transitive documentation/diagramming dependencies (`streamdown` > `mermaid` > `dompurify`).
+- **Findings**: Package audit identified 78 vulnerabilities (8 low, 52 moderate, 18 high) primarily concentrated in transitive documentation/diagramming dependencies (`streamdown` > `mermaid` > `dompurify`).
 - **Production Impact Assessment**: None of these packages are exposed to unauthenticated user input on the server API layer.
 - **Remediation**: Run `pnpm update` on next maintenance cycle to pull patched `dompurify` (>= 3.4.8) and `mermaid` (>= 11.16.1).
 

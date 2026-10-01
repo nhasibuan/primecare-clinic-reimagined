@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lte, type SQL } from "drizzle-orm";
 import { appointmentRequests, whatsappFollowUpActivities } from "../../drizzle/schema";
 import { getDb, requireDb } from "../db";
+import { encryptPiiFields, decryptPiiFields } from "../encryption";
 
 export type AppointmentRequestInput = {
   fullName: string;
@@ -24,27 +25,52 @@ export type WhatsAppFollowUpActivityFilters = {
   endAt?: Date;
 };
 
+/** PII fields that are encrypted at rest (names, contact details, demographics, notes). */
+const PII_FIELDS = ["fullName", "contactNumber", "note", "nik", "tempatLahir", "tanggalLahir", "alamatLengkap", "email"] as const;
+type PiiField = (typeof PII_FIELDS)[number];
+type PiiRecord = Record<PiiField, string | null | undefined>;
+
+/** Encrypts sensitive patient fields before database write. */
+function encryptAppointmentPii<T extends Partial<PiiRecord>>(data: T): T {
+  const pii: Partial<PiiRecord> = {};
+  for (const field of PII_FIELDS) {
+    if (field in data) pii[field] = data[field] as string | null | undefined;
+  }
+  return { ...data, ...encryptPiiFields(pii as PiiRecord) };
+}
+
+/** Decrypts sensitive patient fields after database read. */
+function decryptAppointmentPii<T extends Partial<PiiRecord>>(row: T): T {
+  const pii: Partial<PiiRecord> = {};
+  for (const field of PII_FIELDS) {
+    if (field in row) pii[field] = row[field] as string | null | undefined;
+  }
+  return { ...row, ...decryptPiiFields(pii as PiiRecord) };
+}
+
 export async function createAppointmentRequest(input: AppointmentRequestInput) {
   const db = requireDb(await getDb());
-  const inserted = await db.insert(appointmentRequests).values({
+  const safeInput = encryptAppointmentPii({
     ...input,
     note: input.note ?? null,
     preferredTime: input.preferredTime ?? null,
     consentedAt: new Date(),
   });
+  const inserted = await db.insert(appointmentRequests).values(safeInput);
   return { id: Number(inserted[0].insertId) };
 }
 
 export async function getAppointmentRequests() {
   const db = requireDb(await getDb());
-  return db.select().from(appointmentRequests).orderBy(desc(appointmentRequests.createdAt));
+  const rows = await db.select().from(appointmentRequests).orderBy(desc(appointmentRequests.createdAt));
+  return rows.map(decryptAppointmentPii);
 }
 
 export async function updateAppointmentRequestStatus(id: number, status: "new" | "contacted" | "closed") {
   const db = requireDb(await getDb());
   await db.update(appointmentRequests).set({ status }).where(eq(appointmentRequests.id, id));
   const [request] = await db.select().from(appointmentRequests).where(eq(appointmentRequests.id, id)).limit(1);
-  return request || null;
+  return request ? decryptAppointmentPii(request) : null;
 }
 
 export async function updatePatientData(id: number, data: {
@@ -57,17 +83,26 @@ export async function updatePatientData(id: number, data: {
   instagramUrl?: string;
 }) {
   const db = requireDb(await getDb());
-  await db.update(appointmentRequests).set(data).where(eq(appointmentRequests.id, id));
+  const safeData = encryptAppointmentPii(data);
+  await db.update(appointmentRequests).set(safeData).where(eq(appointmentRequests.id, id));
   const [request] = await db.select().from(appointmentRequests).where(eq(appointmentRequests.id, id)).limit(1);
-  return request || null;
+  return request ? decryptAppointmentPii(request) : null;
 }
 
 export async function createWhatsAppFollowUpActivity(input: WhatsAppFollowUpActivityInput) {
   const db = requireDb(await getDb());
-  const [request] = await db.select({ id: appointmentRequests.id }).from(appointmentRequests).where(eq(appointmentRequests.id, input.appointmentRequestId)).limit(1);
+  const [request] = await db
+    .select({ id: appointmentRequests.id })
+    .from(appointmentRequests)
+    .where(eq(appointmentRequests.id, input.appointmentRequestId))
+    .limit(1);
   if (!request) throw new Error("Permintaan kunjungan tidak ditemukan.");
   const inserted = await db.insert(whatsappFollowUpActivities).values(input);
-  const [activity] = await db.select().from(whatsappFollowUpActivities).where(eq(whatsappFollowUpActivities.id, Number(inserted[0].insertId))).limit(1);
+  const [activity] = await db
+    .select()
+    .from(whatsappFollowUpActivities)
+    .where(eq(whatsappFollowUpActivities.id, Number(inserted[0].insertId)))
+    .limit(1);
   if (!activity) throw new Error("Gagal merekam aktivitas tindak lanjut WhatsApp.");
   return activity;
 }

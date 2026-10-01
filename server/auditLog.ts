@@ -30,6 +30,7 @@ export type AuditEntry = {
 /**
  * Records an admin action in the audit log.
  * Best-effort: failures are logged but never block the primary operation.
+ * The `detail` field is truncated to 2 000 characters to avoid oversized rows.
  */
 export async function recordAuditLog(entry: AuditEntry): Promise<void> {
   try {
@@ -40,7 +41,7 @@ export async function recordAuditLog(entry: AuditEntry): Promise<void> {
       action: entry.action,
       entityType: entry.entityType,
       entityId: entry.entityId != null ? String(entry.entityId) : null,
-      detail: entry.detail ?? null,
+      detail: entry.detail ? entry.detail.slice(0, 2000) : null,
       ipAddress: entry.ipAddress ?? null,
     });
   } catch (error) {

@@ -27,6 +27,7 @@ import {
   normalizeAppointmentNote,
 } from "../appointmentRequest";
 import { recordAuditLog } from "../auditLog";
+import { unwrapOrThrow } from "@shared/result";
 import { validateAppointmentTime } from "../services/clinicValidation";
 import {
   getTurnstileVerificationSecret,
@@ -45,11 +46,12 @@ export const appointmentsRouter = router({
   /**
    * Public: submit a new appointment request.
    *
-   * Protection layers (in order):
+   * Protection layers (in order — cheapest first):
    *   1. Honeypot — silently drops bot submissions.
-   *   2. Turnstile CAPTCHA — when enabled in clinic profile.
-   *   3. Server-side schedule validation.
-   *   4. IP-based rate limiting.
+   *   2. IP-based rate limiting — bounds all downstream work, including the
+   *      outbound Cloudflare CAPTCHA call, before any of it happens.
+   *   3. Server-side schedule validation — pure CPU, no I/O.
+   *   4. Turnstile CAPTCHA — outbound HTTPS verification, bounded by (2).
    */
   create: publicProcedure.input(appointmentInput).mutation(
     async ({ ctx, input }) => {
@@ -60,7 +62,38 @@ export const appointmentsRouter = router({
 
       const clientIp = getClientIp(ctx.req);
 
-      // 2. CAPTCHA verification (conditional on clinic configuration)
+      // 2. IP rate limiting first — every request below (including the
+      //    outbound CAPTCHA verification) is now bounded per IP.
+      const limit = await appointmentSubmissionRateLimiter.attempt(clientIp);
+      if (!limit.allowed) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message:
+            "Terlalu banyak permintaan kunjungan. Silakan tunggu beberapa saat sebelum mencoba lagi.",
+        });
+      }
+
+      // 3. Server-side schedule re-validation (no I/O — reject early).
+      //    validateAppointmentTime is a pure function returning a Result;
+      //    the conversion to a transport error happens only here, at the
+      //    router boundary (Result pattern).
+      unwrapOrThrow(
+        validateAppointmentTime(
+          input.service,
+          input.preferredDate,
+          input.preferredHour,
+          input.preferredMinute,
+          input.preferredPeriod,
+        ),
+        (validationError) =>
+          new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              validationError.message ?? "Permintaan kunjungan tidak valid.",
+          }),
+      );
+
+      // 4. CAPTCHA verification (conditional on clinic configuration)
       const captchaEnabled = await getCaptchaEnabled();
       if (captchaEnabled) {
         if (!input.captchaToken) {
@@ -82,31 +115,6 @@ export const appointmentsRouter = router({
             message: "Verifikasi keamanan tidak berhasil. Silakan coba lagi.",
           });
         }
-      }
-
-      // 3. Server-side schedule re-validation
-      const timeCheck = validateAppointmentTime(
-        input.service,
-        input.preferredDate,
-        input.preferredHour,
-        input.preferredMinute,
-        input.preferredPeriod,
-      );
-      if (!timeCheck.valid) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: timeCheck.message ?? "Permintaan kunjungan tidak valid.",
-        });
-      }
-
-      // 4. IP rate limiting (defence-in-depth after CAPTCHA)
-      const limit = appointmentSubmissionRateLimiter.attempt(clientIp);
-      if (!limit.allowed) {
-        throw new TRPCError({
-          code: "TOO_MANY_REQUESTS",
-          message:
-            "Terlalu banyak permintaan kunjungan. Silakan tunggu beberapa saat sebelum mencoba lagi.",
-        });
       }
 
       const request = await createAppointmentRequest({

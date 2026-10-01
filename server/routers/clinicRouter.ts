@@ -20,7 +20,7 @@ import {
 } from "../repositories/clinicRepository";
 import { getClientIp } from "../appointmentRequest";
 import { recordAuditLog } from "../auditLog";
-import { InMemoryRateLimiter } from "../rateLimiter";
+import { createRateLimiter } from "../rateLimiterFactory";
 import { storagePut } from "../storage";
 import { normalizeAssetFileName, decodeMediaUpload } from "../utils/mediaUtils";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
@@ -32,12 +32,13 @@ import {
 
 /**
  * Per-user upload rate limiter: max 20 uploads per 5-minute window.
- * Module-scoped to ensure isolation and testability.
+ * Module-scoped to ensure isolation and testability; Redis-backed when
+ * REDIS_URL is set (shared quota across instances).
  */
-const uploadLimiter = new InMemoryRateLimiter({
+const uploadLimiter = createRateLimiter({
   maxRequests: 20,
   windowMs: 5 * 60_000,
-});
+}, "clinic:uploadMedia");
 
 export const clinicRouter = router({
   /**
@@ -84,7 +85,7 @@ export const clinicRouter = router({
   uploadMedia: adminProcedure
     .input(uploadMediaInput)
     .mutation(async ({ ctx, input }) => {
-      if (!uploadLimiter.attempt(String(ctx.user.id)).allowed) {
+      if (!(await uploadLimiter.attempt(String(ctx.user.id))).allowed) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message: "Terlalu banyak unggahan. Silakan coba lagi nanti.",

@@ -14,6 +14,12 @@ const envSchema = z.object({
   forgeApiKey: z.string().optional().default(""),
   turnstileSecretKey: z.string().optional().default(""),
   turnstileAllowTestKey: z.coerce.boolean(),
+  /** AES-256-GCM key for PII field encryption (UU PDP compliance). Optional but strongly recommended in production. */
+  piiEncryptionKey: z.string().optional().default(""),
+  /** Redis/Dragonfly connection URL for distributed rate limiting. Optional; falls back to in-memory. */
+  redisUrl: z.string().optional().default(""),
+  /** Emergency escape hatch: launch production with plaintext PII when the encryption key cannot yet be provisioned. */
+  allowPlaintextPii: z.coerce.boolean().optional().default(false),
 });
 
 const parsedEnv = envSchema.parse({
@@ -27,6 +33,9 @@ const parsedEnv = envSchema.parse({
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY,
   turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY,
   turnstileAllowTestKey: process.env.TURNSTILE_ALLOW_TEST_KEY === "true",
+  piiEncryptionKey: process.env.PII_ENCRYPTION_KEY,
+  redisUrl: process.env.REDIS_URL,
+  allowPlaintextPii: process.env.ALLOW_PLAINTEXT_PII,
 });
 
 export const ENV = parsedEnv;
@@ -38,6 +47,8 @@ export const ENV = parsedEnv;
 export function validateProductionEnv(): void {
   if (ENV.isProduction) {
     const errors: string[] = [];
+    const warnings: string[] = [];
+
     if (!ENV.cookieSecret || ENV.cookieSecret === KNOWN_DEV_JWT_SECRET) {
       errors.push("JWT_SECRET must be set to a unique, secret value in production (the committed dev default is not safe).");
     }
@@ -54,8 +65,29 @@ export function validateProductionEnv(): void {
       errors.push("DATABASE_URL must be set in production.");
     }
 
+    // PII encryption: required in production (UU PDP No. 27/2022 hardening).
+    // Set ALLOW_PLAINTEXT_PII=true only for transitional deployments where the
+    // key cannot yet be provisioned — the warning keeps that decision visible.
+    if (!ENV.piiEncryptionKey) {
+      if (ENV.allowPlaintextPii) {
+        warnings.push("[SECURITY WARNING] PII_ENCRYPTION_KEY is not set but ALLOW_PLAINTEXT_PII=true — patient NIK and contact data will be stored UNENCRYPTED. Provision the key as soon as possible.");
+      } else {
+        errors.push("PII_ENCRYPTION_KEY must be set in production: patient NIK and contact data are encrypted at rest (UU PDP No. 27/2022). To launch without encryption during migration, set ALLOW_PLAINTEXT_PII=true.");
+      }
+    } else if (ENV.piiEncryptionKey.length < 32) {
+      errors.push("PII_ENCRYPTION_KEY must be at least 32 characters for sufficient entropy.");
+    }
+    if (!ENV.redisUrl) {
+      warnings.push("[SCALABILITY WARNING] REDIS_URL is not set. Rate limiting uses in-memory state (resets on restart, not shared across instances). Implement the RateLimiter interface with a distributed store for multi-instance deployments.");
+    }
+
     if (errors.length > 0) {
       throw new Error(`Production environment validation failed:\n${errors.join("\n")}`);
+    }
+    if (warnings.length > 0) {
+      for (const w of warnings) {
+        console.warn(JSON.stringify({ timestamp: new Date().toISOString(), level: "warn", component: "env", message: w }));
+      }
     }
   }
 }

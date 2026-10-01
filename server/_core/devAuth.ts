@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
-import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const";
+import { ONE_YEAR_MS } from "../../shared/const";
 import * as db from "../db";
-import { getSessionCookieOptions } from "./cookies";
+import { getSessionCookieName, getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
 const DEV_ADMIN_OPEN_ID = "dev-admin-local-001";
@@ -40,7 +40,7 @@ export function registerDevAuthRoutes(app: Express) {
 
       // Set session cookie
       const cookieOptions = getSessionCookieOptions(_req);
-      _req.res?.cookie(COOKIE_NAME, sessionToken, {
+      _req.res?.cookie(getSessionCookieName(), sessionToken, {
         ...cookieOptions,
         maxAge: ONE_YEAR_MS,
       });
@@ -63,7 +63,7 @@ export function registerDevAuthRoutes(app: Express) {
     }
 
     const cookieOptions = getSessionCookieOptions(_req);
-    res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    res.clearCookie(getSessionCookieName(), { ...cookieOptions, maxAge: -1 });
     res.redirect(302, "/");
   });
 }

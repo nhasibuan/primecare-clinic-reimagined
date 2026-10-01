@@ -74,23 +74,28 @@ export const mediaAssets = mysqlTable("media_assets", {
 
 export const appointmentRequests = mysqlTable("appointment_requests", {
   id: int("id").autoincrement().primaryKey(),
-  fullName: varchar("fullName", { length: 160 }).notNull(),
-  contactNumber: varchar("contactNumber", { length: 40 }).notNull(),
+  // ── Column widths for AES-256-GCM envelopes (server/encryption.ts) ──
+  // Encrypted fields store "v1:<iv>:<ct+tag>" base64 envelopes whose length is
+  // 20 + 4*ceil((n+16)/3) for an n-character plaintext. Widths below hold the
+  // largest plaintext accepted by the Zod input schemas. The contract test in
+  // server/encryption.test.ts keeps these in sync.
+  fullName: varchar("fullName", { length: 400 }).notNull(),
+  contactNumber: varchar("contactNumber", { length: 128 }).notNull(),
   service: varchar("service", { length: 160 }).notNull(),
   preferredDate: varchar("preferredDate", { length: 10 }).notNull(),
   preferredTime: varchar("preferredTime", { length: 8 }),
-  note: varchar("note", { length: 600 }),
+  note: varchar("note", { length: 1024 }),
   consentedAt: timestamp("consentedAt").defaultNow().notNull(),
   status: mysqlEnum("status", ["new", "contacted", "closed"]).default("new").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  // Data tambahan pasien (diisi oleh staf setelah kontak)
-  nik: varchar("nik", { length: 30 }),
-  tempatLahir: varchar("tempatLahir", { length: 100 }),
-  tanggalLahir: varchar("tanggalLahir", { length: 10 }),
-  alamatLengkap: varchar("alamatLengkap", { length: 500 }),
+  // Data tambahan pasien (diisi oleh staf setelah kontak) — encrypted at rest
+  nik: varchar("nik", { length: 128 }),
+  tempatLahir: varchar("tempatLahir", { length: 192 }),
+  tanggalLahir: varchar("tanggalLahir", { length: 64 }),
+  alamatLengkap: varchar("alamatLengkap", { length: 768 }),
   agama: varchar("agama", { length: 50 }),
-  email: varchar("email", { length: 255 }),
+  email: varchar("email", { length: 400 }),
   instagramUrl: varchar("instagramUrl", { length: 255 }),
 }, (table) => ({
   statusCreatedIdx: index("appointment_requests_status_created_idx").on(table.status, table.createdAt),
@@ -115,7 +120,8 @@ export const whatsappSignatureTemplates = mysqlTable("whatsapp_signature_templat
 export const queueEntries = mysqlTable("queue_entries", {
   id: int("id").autoincrement().primaryKey(),
   queueNumber: int("queueNumber").notNull(),
-  patientName: varchar("patientName", { length: 160 }).notNull(),
+  // Width accommodates the AES-256-GCM envelope (see encryption.ts header note).
+  patientName: varchar("patientName", { length: 400 }).notNull(),
   poli: varchar("poli", { length: 160 }).notNull(),
   doctorName: varchar("doctorName", { length: 160 }).notNull(),
   appointmentRequestId: int("appointmentRequestId").unique().references(() => appointmentRequests.id, { onDelete: "set null" }),

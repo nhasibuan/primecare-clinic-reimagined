@@ -1,6 +1,7 @@
 import { eq, desc, count } from "drizzle-orm";
 import { users, type InsertUser } from "../../drizzle/schema";
 import { ENV } from "../_core/env";
+import { MIN_ADMIN_COUNT_SAFE } from "@shared/const";
 import { getDb, getDbOrFail, requireDb } from "../db";
 
 export function resolveUserRole(
@@ -44,17 +45,20 @@ export type UserListItem = {
   lastSignedIn: Date;
 };
 
+/** Shared column selection for user list queries — avoids repeating the column map. */
+const USER_LIST_COLUMNS = {
+  id: users.id,
+  openId: users.openId,
+  name: users.name,
+  email: users.email,
+  role: users.role,
+  lastSignedIn: users.lastSignedIn,
+} as const;
+
 export async function listUsers(): Promise<UserListItem[]> {
   const db = requireDb(await getDb());
   return db
-    .select({
-      id: users.id,
-      openId: users.openId,
-      name: users.name,
-      email: users.email,
-      role: users.role,
-      lastSignedIn: users.lastSignedIn,
-    })
+    .select(USER_LIST_COLUMNS)
     .from(users)
     .orderBy(desc(users.lastSignedIn));
 }
@@ -71,26 +75,41 @@ export async function countAdmins(): Promise<number> {
   return result?.value ?? 0;
 }
 
+/** Fetches a single user's list-safe fields by ID. Throws if not found. */
+async function requireUserById(db: Awaited<ReturnType<typeof getDb>> & object, id: number): Promise<UserListItem> {
+  const [user] = await db.select(USER_LIST_COLUMNS).from(users).where(eq(users.id, id)).limit(1);
+  if (!user) throw new Error("Pengguna tidak ditemukan setelah diperbarui.");
+  return user;
+}
+
 export async function promoteUser(targetUserId: number): Promise<UserListItem> {
   const db = requireDb(await getDb());
-  const [user] = await db.select().from(users).where(eq(users.id, targetUserId)).limit(1);
+  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, targetUserId)).limit(1);
   if (!user) throw new Error("Pengguna tidak ditemukan.");
   if (user.role === "admin") throw new Error("Pengguna sudah menjadi administrator.");
   await db.update(users).set({ role: "admin" }).where(eq(users.id, targetUserId));
-  const [updated] = await db.select({ id: users.id, openId: users.openId, name: users.name, email: users.email, role: users.role, lastSignedIn: users.lastSignedIn }).from(users).where(eq(users.id, targetUserId)).limit(1);
-  if (!updated) throw new Error("Pengguna tidak ditemukan setelah diperbarui.");
-  return updated;
+  return requireUserById(db, targetUserId);
 }
 
 export async function demoteUser(targetUserId: number): Promise<UserListItem> {
   const db = requireDb(await getDb());
-  const [user] = await db.select().from(users).where(eq(users.id, targetUserId)).limit(1);
+  const [user] = await db.select({ role: users.role }).from(users).where(eq(users.id, targetUserId)).limit(1);
   if (!user) throw new Error("Pengguna tidak ditemukan.");
   if (user.role !== "admin") throw new Error("Pengguna bukan administrator.");
   const adminCount = await countAdmins();
+  // Hard floor: never demote the final admin (guarantees recovery access).
   if (adminCount <= 1) throw new Error("Tidak dapat menurunkan administrator terakhir. Tambahkan administrator lain terlebih dahulu.");
+  // Soft floor: permit the demotion, but make the thin margin visible so the
+  // remaining admins add a backup before an outage or another demotion.
+  if (adminCount <= MIN_ADMIN_COUNT_SAFE) {
+    console.warn(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: "warn",
+      component: "admin",
+      message: `Admin count (${adminCount}) is at or below the safe minimum (${MIN_ADMIN_COUNT_SAFE}) after demotion request.`,
+      targetUserId,
+    }));
+  }
   await db.update(users).set({ role: "user" }).where(eq(users.id, targetUserId));
-  const [updated] = await db.select({ id: users.id, openId: users.openId, name: users.name, email: users.email, role: users.role, lastSignedIn: users.lastSignedIn }).from(users).where(eq(users.id, targetUserId)).limit(1);
-  if (!updated) throw new Error("Pengguna tidak ditemukan setelah diperbarui.");
-  return updated;
+  return requireUserById(db, targetUserId);
 }
