@@ -1,0 +1,19 @@
+# Post-boot self-check for the PrimeCare stack.
+# Install with:
+#   sudo cp deploy/primecare-bootcheck.sh /usr/local/bin/ && chmod +x /usr/local/bin/primecare-bootcheck.sh
+#   sudo cp deploy/primecare-bootcheck.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable primecare-bootcheck
+# Report after any boot:  cat /root/bootcheck-report.txt
+
+[Unit]
+Description=PrimeCare post-boot health self-check
+After=primecare.service cloudflared.service mysql.service
+Wants=primecare.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/primecare-bootcheck.sh
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target
