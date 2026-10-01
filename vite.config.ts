@@ -169,10 +169,13 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-select", "@radix-ui/react-tabs", "@radix-ui/react-tooltip"],
-          charts: ["recharts"],
+        // Vite 8: object form of manualChunks was removed — use the function form.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "vendor";
+          if (id.includes("@radix-ui")) return "ui";
+          if (id.includes("recharts")) return "charts";
+          return undefined;
         },
       },
     },
