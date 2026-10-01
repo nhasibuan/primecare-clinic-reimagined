@@ -80,11 +80,13 @@ offline copy below is mandatory.
 
 ### Whole VM lost
 Restore from your offline master-passphrase copy plus the latest database
-backup. Rebuild `.env` using this file and `DEPLOYMENT_ROLLOUT.md`; database,
-OAuth, and Turnstile credentials come from your provider dashboards. The
-pre-0009 backup at `/root/backup_pre_0009_2026-10-01.sql.gpg` needs
-`BACKUP_PASSPHRASE` from the vault:
-`gpg -d backup_pre_0009_2026-10-01.sql.gpg > dump.sql`.
+backup. Daily encrypted dumps live in `/root/backups/` (14-day retention);
+each needs `BACKUP_PASSPHRASE` from the vault:
+`gpg -d <file>.sql.gz.gpg | gunzip | mysql -u primecare -p primecare`.
+The pre-0009 backup at `/root/backup_pre_0009_2026-10-01.sql.gpg` uses the
+same passphrase: `gpg -d backup_pre_0009_2026-10-01.sql.gpg > dump.sql`.
+Rebuild `.env` using this file and `DEPLOYMENT_ROLLOUT.md`; database and
+Turnstile credentials come from your provider dashboards.
 
 ## Mandatory offline backup (do this now)
 

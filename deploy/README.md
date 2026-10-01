@@ -22,6 +22,27 @@ the current admin login depends on the dev backdoor (`/api/dev/login`).
 - [ ] `deploy/primecare.service` reviewed: `WorkingDirectory`,
       `EnvironmentFile`, and `User` match this VM's paths.
 
+## Live production topology (as of 2026-10-01)
+
+- **Public URL:** `https://www.berkatinsani.id` (via Cloudflare tunnel,
+  token-mode — ingress rules live in the Cloudflare Zero Trust dashboard).
+- The tunnel maps `berkatinsani.id`, `www.berkatinsani.id`, and
+  `klinik.berkatinsani.id` to `http://localhost:3000`. Only `www.` has a
+  public DNS record today; the apex points elsewhere and `klinik.` is
+  NXDOMAIN.
+- **To activate `klinik.berkatinsani.id`:** in the Cloudflare dashboard →
+  DNS → add a `CNAME` record `klinik → <tunnel-id>.cfargotunnel.com`
+  (Proxied). The tunnel side needs no change — it already routes the
+  hostname. Find the tunnel ID with
+  `journalctl -u cloudflared | grep -m1 -oE 'tunnel=[a-f0-9-]+'`.
+- Runtime: `primecare.service` (this directory) on port 3000, enabled;
+  boot health self-check via `primecare-bootcheck.service`
+  (report: `/root/bootcheck-report.txt`).
+- **Database backups:** daily 02:30 via `primecare-backup.timer` →
+  encrypted dumps in `/root/backups/` (14-day retention, AES-256,
+  passphrase from the secrets vault). Restore:
+  `gpg -d <file> | gunzip | mysql -u primecare -p primecare`.
+
 ## Cutover runbook
 
 1. `pnpm build`

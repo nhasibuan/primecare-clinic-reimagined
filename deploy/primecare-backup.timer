@@ -1,0 +1,13 @@
+# Daily schedule for the PrimeCare encrypted backup.
+# Runs at 02:30 local time — after the daily patient peak, before morning use.
+
+[Unit]
+Description=Daily PrimeCare encrypted MySQL backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00
+Persistent=true
+RandomizedDelaySec=15min
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,16 @@
+# Daily encrypted backup for the PrimeCare database.
+# Install with:
+#   sudo cp deploy/primecare-backup.sh /usr/local/bin/ && chmod +x /usr/local/bin/primecare-backup.sh
+#   sudo cp deploy/primecare-backup.service deploy/primecare-backup.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now primecare-backup.timer
+# Logs: journalctl -u primecare-backup.service
+
+[Unit]
+Description=PrimeCare encrypted MySQL backup
+After=mysql.service
+Requires=mysql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/primecare-backup.sh
+TimeoutStartSec=600
