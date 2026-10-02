@@ -1,0 +1,16 @@
+# PrimeCare uptime watchdog — checks app + tunnel health every 2 minutes and
+# restarts the offending unit (primecare / cloudflared) when something hangs.
+# Install with:
+#   sudo cp deploy/primecare-watchdog.sh /usr/local/bin/ && chmod +x /usr/local/bin/primecare-watchdog.sh
+#   sudo cp deploy/primecare-watchdog.service deploy/primecare-watchdog.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now primecare-watchdog.timer
+# Status: cat /root/uptime-status.txt ; journalctl -u primecare-watchdog.service
+
+[Unit]
+Description=PrimeCare uptime watchdog (health check + auto-remediation)
+After=network-online.target primecare.service cloudflared.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/primecare-watchdog.sh

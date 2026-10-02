@@ -1,0 +1,18 @@
+# Monthly restore drill for the PrimeCare database.
+# Restores the newest encrypted backup into a scratch DB, compares row
+# counts against production, verifies PII decryption, then drops the scratch.
+# Install with:
+#   sudo cp deploy/primecare-restore-drill.sh /usr/local/bin/ && chmod +x /usr/local/bin/primecare-restore-drill.sh
+#   sudo cp deploy/primecare-restore-drill.service deploy/primecare-restore-drill.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now primecare-restore-drill.timer
+# Logs: journalctl -u primecare-restore-drill.service ; cat /root/restore-drill-report.txt
+
+[Unit]
+Description=PrimeCare monthly restore drill (scratch-DB restore + verification)
+After=mysql.service
+Requires=mysql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/primecare-restore-drill.sh
+TimeoutStartSec=900

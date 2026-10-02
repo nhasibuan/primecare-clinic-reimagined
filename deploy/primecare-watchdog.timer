@@ -1,0 +1,13 @@
+# Schedule for the PrimeCare uptime watchdog: first run 1 minute after boot,
+# then every 2 minutes (relative to last activation — no wall-clock stampedes).
+
+[Unit]
+Description=Every-2-minutes PrimeCare uptime watchdog
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=2min
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

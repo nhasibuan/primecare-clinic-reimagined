@@ -1,0 +1,15 @@
+# Monthly schedule for the PrimeCare restore drill.
+# Runs on the 1st of each month at 04:00 — after that morning's 02:30 backup,
+# so the drill always exercises the freshest archive. Persistent=true catches
+# missed schedules after downtime.
+
+[Unit]
+Description=Monthly PrimeCare restore drill
+
+[Timer]
+OnCalendar=*-*-01 04:00:00
+Persistent=true
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target

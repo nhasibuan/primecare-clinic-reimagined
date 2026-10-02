@@ -42,6 +42,29 @@ the current admin login depends on the dev backdoor (`/api/dev/login`).
   encrypted dumps in `/root/backups/` (14-day retention, AES-256,
   passphrase from the secrets vault). Restore:
   `gpg -d <file> | gunzip | mysql -u primecare -p primecare`.
+- **Restore drill:** monthly (1st, 04:00) via
+  `primecare-restore-drill.timer` — restores the newest backup into a
+  scratch DB (`primecare_drill_*`), compares all table row counts against
+  production, verifies PII still decrypts (`scripts/restoreDrillCheck.mts`),
+  then drops the scratch DB and revokes the grant. Report:
+  `/root/restore-drill-report.txt` (latest) + `/root/restore-drill-history.log`
+  (PASS/FAIL per run). Run manually any time with
+  `sudo systemctl start primecare-restore-drill.service`. A drill exit code
+  of 0 with `RESULT: PASS` is the only proof that backups are restorable —
+  a successful *backup* alone proves nothing.
+- **Uptime watchdog:** every 2 minutes via `primecare-watchdog.timer` —
+  checks `http://localhost:3000/healthz` and
+  `https://www.berkatinsani.id/healthz`. Local failure → restart
+  `primecare`; public failure with local healthy → restart `cloudflared`
+  (both double-checked with a grace window first, so deploys/restarts don't
+  get kicked mid-cycle). Alerts fire on state transitions only (no spam):
+  history in `/root/uptime-history.log`, current state in
+  `/root/uptime-status.txt`, journal via `journalctl -u primecare-watchdog`.
+  This catches *hung* processes, which systemd's `Restart=on-failure` alone
+  does not. Test safely with `DRY_RUN=1` (logs actions, executes nothing).
+  To add email alerts later: create a Resend API key, store it root-only,
+  and curl `api.resend.com/emails` from the `notify()` hook in
+  `deploy/primecare-watchdog.sh`.
 
 ## Cutover runbook
 
