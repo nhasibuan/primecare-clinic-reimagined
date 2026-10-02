@@ -1,10 +1,10 @@
 # Klinik Berkat Insani — PrimeCare Clinic Reimagined
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7.0-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-116%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-134%20passing-brightgreen)](#testing)
 
-A modern, full-stack TypeScript clinic management system for **Klinik Berkat Insani** — a healthcare clinic in Kotabaru, Kalimantan Selatan, Indonesia. Combines a public landing page with an admin CMS, appointment booking, WhatsApp follow-up tooling, and a patient queue management system.
+A production-hardened, full-stack TypeScript platform that runs both the public face and the daily operations of **Klinik Berkat Insani**, a healthcare clinic in Kotabaru, Kalimantan Selatan, Indonesia. A single codebase serves the marketing website, online appointment booking with layered anti-spam defenses, a WhatsApp follow-up workflow for staff, a waiting-room patient queue display, patient records management, and a complete admin CMS — all exposed through a type-safe tRPC API, persisted in MySQL 8, shipped as one Node binary, and supervised in production by systemd units covering encrypted backups, restore drills, boot self-checks, and uptime watchdogs.
 
 ## Table of Contents
 
@@ -40,9 +40,10 @@ A modern, full-stack TypeScript clinic management system for **Klinik Berkat Ins
 
 | Category | Technology | Version |
 |----------|-----------|---------|
-| **Language** | TypeScript | 5.9 |
+| **Language** | TypeScript | 7.0 |
+| **Runtime** | Node.js | 26 (production) |
 | **Frontend** | React | 19 |
-| **Build Tool** | Vite | 7 |
+| **Build Tool** | Vite | 8 |
 | **Styling** | Tailwind CSS | 4 |
 | **UI Components** | shadcn/ui (Radix UI) | 40+ primitives |
 | **Routing** | wouter | 3 |
@@ -50,12 +51,12 @@ A modern, full-stack TypeScript clinic management system for **Klinik Berkat Ins
 | **API Layer** | tRPC | 11 |
 | **Validation** | Zod | 4 |
 | **Server** | Express | 4 |
-| **ORM** | Drizzle | 0.44 |
+| **ORM** | Drizzle | 0.45 |
 | **Database** | MySQL | 8+ |
 | **Distributed Rate Limiting (optional)** | ioredis / Redis | 6 |
-| **Auth** | jose (JWT/HS256) | — |
-| **Testing** | Vitest | 2 |
-| **Package Manager** | pnpm | — |
+| **Auth** | jose (JWT/HS256) | 6 |
+| **Testing** | Vitest | 5 |
+| **Package Manager** | pnpm | 10 |
 
 ## Architecture
 
@@ -68,7 +69,7 @@ flowchart TD
     end
 
     subgraph Server["Server (Express + tRPC)"]
-        Router["tRPC App Router<br/>29 procedures across 6 domains"]
+        Router["tRPC App Router<br/>29 procedures across 7 domains"]
         Auth["Auth Middleware<br/>public · protected · admin"]
         AuditLog["Audit Logger"]
         RateLimiter["Rate Limiter<br/>(pluggable interface)"]
@@ -102,8 +103,8 @@ flowchart TD
 
 ### Prerequisites
 
-- **Node.js** 20+
-- **pnpm** 9+
+- **Node.js** 20+ (production runs Node 26)
+- **pnpm** 10+
 - **MySQL** 8+ (or MariaDB 10.5+)
 
 ### Installation
@@ -146,24 +147,32 @@ pnpm dev
 │       │   └── ui/            # 40+ shadcn/ui primitives
 │       ├── pages/             # Route pages
 │       ├── hooks/             # Custom React hooks
-│       ├── lib/               # tRPC client, utilities
-│       └── contexts/          # Theme provider
+│       ├── lib/              # tRPC client, utilities
+│       └── contexts/         # Theme provider
 ├── server/                     # Backend (Express + tRPC)
 │   ├── _core/                 # Server infrastructure
 │   │   ├── index.ts           # Entry point, Express setup, security headers
 │   │   ├── trpc.ts            # tRPC init, procedure definitions
 │   │   ├── context.ts         # Request context (auth)
+│   │   ├── systemRouter.ts    # Built-in system procedures
+│   │   ├── heartbeat.ts       # Liveness heartbeat
+│   │   ├── env.ts             # Environment validation
 │   │   ├── oauth.ts           # OAuth callback handler
-│   │   └── env.ts             # Environment validation
+│   │   ├── cookies.ts         # Cookie helpers
+│   │   ├── notification.ts    # Notifications
+│   │   └── vite.ts            # Vite dev integration
 │   ├── routers.ts             # tRPC app router (all API endpoints)
 │   ├── db.ts                  # Database queries and business logic
 │   ├── auditLog.ts            # Audit logging utility
 │   ├── rateLimiter.ts         # Pluggable rate limiter interface
+│   ├── redisRateLimiter.ts    # Redis sorted-set sliding-window limiter
+│   ├── rateLimiterFactory.ts  # Selects limiter via REDIS_URL
+│   ├── encryption.ts          # AES-256-GCM field encryption (HKDF)
 │   ├── appointmentRequest.ts  # Spam protection, rate limiting
 │   ├── clinicSchedule.ts      # Schedule validation helpers
 │   ├── turnstile.ts           # Cloudflare Turnstile CAPTCHA
 │   ├── storage.ts             # S3/Forge presigned uploads
-│   └── *.test.ts              # 14 test files
+│   └── *.test.ts              # 18 test files
 ├── shared/                     # Shared between client & server
 │   ├── clinicSchedule.ts      # Schedule data (single source of truth)
 │   ├── const.ts               # Constants, error messages
@@ -171,8 +180,19 @@ pnpm dev
 │   └── types.ts               # Re-exported schema types
 ├── drizzle/                    # Database schema & migrations
 │   ├── schema.ts              # Full MySQL schema (12 tables)
-│   ├── 0000–0008*.sql         # 9 migration files
+│   ├── 0000–0009*.sql         # Migration files
 │   └── meta/                  # Migration metadata
+├── deploy/                     # Production systemd units
+│   ├── primecare.service              # Main app service
+│   ├── primecare-backup.service/.timer   # Daily encrypted MySQL backups
+│   ├── primecare-restore-drill.service/.timer  # Monthly restore drill
+│   ├── primecare-watchdog.service/.timer       # Uptime watchdog
+│   └── primecare-bootcheck.service            # Post-boot self-check
+├── scripts/                    # Ops & maintenance scripts
+│   ├── backfillPiiEncryption.ts
+│   ├── restoreDrillCheck.mts
+│   ├── setAdminPassword.mjs
+│   └── hashPassword.mjs
 ├── .env.example                # Environment template
 ├── LICENSE                     # MIT License
 ├── package.json
@@ -246,6 +266,8 @@ All endpoints are served via tRPC at `/api/trpc`.
 
 ## Database Schema
 
+12 MySQL tables (`clinicians` and `opening_schedules` are deprecated — retained for migration compatibility):
+
 ```mermaid
 erDiagram
     users {
@@ -262,6 +284,12 @@ erDiagram
         varchar tagline
         text address
         boolean captchaEnabled
+    }
+    clinicians {
+        int id PK
+        varchar name
+        varchar specialty
+        boolean isPublished
     }
     services {
         int id PK
@@ -306,6 +334,12 @@ erDiagram
         enum status "waiting | serving | done | skipped"
         int appointmentRequestId FK
     }
+    opening_schedules {
+        int id PK
+        int clinicianId FK
+        int serviceId FK
+        varchar dayLabel
+    }
     osd_settings {
         int id PK
         varchar runningText
@@ -326,6 +360,8 @@ erDiagram
     users ||--o{ audit_logs : performs
     appointment_requests ||--o{ whatsapp_follow_up_activities : has
     appointment_requests ||--o| queue_entries : queued_as
+    clinicians ||--o{ opening_schedules : has
+    services ||--o{ opening_schedules : has
 ```
 
 ## Security
@@ -352,18 +388,20 @@ This application implements **defense-in-depth** with multiple security layers:
 ## Testing
 
 ```bash
-pnpm test        # Run all tests
+pnpm test        # Run all tests (vitest run)
 pnpm check       # TypeScript type checking
 ```
 
-**116 tests across 15 test files** covering:
+**134 tests passing (1 skipped) across 18 test files**, covering:
 - Role resolution and admin management logic
-- Rate limiter behavior (window expiry, eviction)
-- Appointment request validation (honeypot, note normalization)
+- Rate limiter behavior (window expiry, eviction; in-memory and Redis sorted-set)
+- Appointment request validation (honeypot, note normalization, rate limits)
 - CAPTCHA verification (Turnstile token + secret resolution)
-- WhatsApp follow-up constraints and activity tracking
+- WhatsApp follow-up constraints, message metrics, and activity tracking
 - Database degradation handling
 - Auth logout and cookie clearing
+- Local auth routes (login, password hashing)
+- PII encryption envelopes (AES-256-GCM, capacity contracts)
 - Schedule validation (client + server)
 
 ## Deployment
@@ -383,6 +421,20 @@ pnpm build
 ```bash
 NODE_ENV=production node dist/index.js
 ```
+
+### Production Operations (systemd)
+
+The `deploy/` directory ships production systemd units — the app is supervised, backed up, and self-checked without manual intervention:
+
+| Unit | Schedule | Purpose |
+|------|----------|---------|
+| `primecare.service` | always | Main application service |
+| `primecare-backup.service` + `.timer` | daily | Encrypted MySQL backups |
+| `primecare-restore-drill.service` + `.timer` | monthly | Automated restore drill (verifies backups are actually restorable) |
+| `primecare-watchdog.service` + `.timer` | periodic | Uptime watchdog |
+| `primecare-bootcheck.service` | on boot | Post-boot self-check of the production stack |
+
+A CI **production-audit gate** additionally blocks releases that fail the audit checklist, and Dependabot merges are batched and verified before landing.
 
 ### Production Environment Variables
 
@@ -412,29 +464,32 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 ## SWOT Analysis
 
 ### Strengths
-- **End-to-End Type Safety & Contract Integrity**: Strict TypeScript 5.9 + tRPC 11 + Zod 4 + Drizzle 0.44 ensures compile-time and runtime validation spanning database entities to React UI components.
+- **End-to-End Type Safety & Contract Integrity**: Strict TypeScript 7 + tRPC 11 + Zod 4 + Drizzle 0.45 ensures compile-time and runtime validation spanning database entities to React UI components.
 - **Multi-Tiered Defense-in-Depth**: Six defensive layers protect public endpoints, ordered cheapest-first: honeypot, sliding-window IP rate limiting (bounding even the outbound CAPTCHA call), pure-function schedule validation, Cloudflare Turnstile CAPTCHA, authenticated upload throttling, and hardened HTTP security headers (CSP, HSTS, X-Frame-Options).
-- **Privacy-by-Design Architecture**: Strict data minimization avoids persisting clinical diagnosis notes in the web layer; patient names are dynamically redacted on public waiting-room displays, and WhatsApp follow-up logs preserve only telemetry/metadata.
+- **Privacy-by-Design Architecture**: Strict data minimization avoids persisting clinical diagnosis notes in the web layer; patient names are dynamically redacted on public waiting-room displays, and WhatsApp follow-up logs preserve only telemetry/metadata. Sensitive PII columns are AES-256-GCM encrypted at rest with fail-fast production enforcement.
 - **Comprehensive Immutable Audit Trail**: Admin actions (user role alterations, queue resets, clinic profile updates, media uploads) are recorded with actor ID, entity reference, mutation detail, and remote IP address.
-- **Robust Automated Verification**: 116 unit/integration tests spanning 15 test suites provide high confidence in scheduling logic, role guards, failover behavior, and ciphertext-envelope capacity.
+- **Self-Healing Production Operations**: Daily encrypted MySQL backups, monthly automated restore drills, an uptime watchdog, post-boot self-checks, and a CI production-audit gate — backup restorability is *proven*, not assumed.
+- **Robust Automated Verification**: 134 tests passing across 18 suites provide high confidence in scheduling logic, role guards, failover behavior, encryption envelopes, and ciphertext capacity.
 
 ### Weaknesses
 - **Operational Dependency for Distributed Rate Limiting**: The Redis-backed limiter shares quota across instances but depends on a reachable Redis; a Redis outage degrades to per-instance fail-open limits with throttled warnings until connectivity returns.
 - **Platform & Vendor Coupling**: Auth callbacks and file storage are tightly coupled to Forge/Manus platform APIs; self-hosted S3/MinIO or generic OIDC requires adapter refactoring.
-- **Static Clinic Schedule**: Operating hours and poli availability are defined in code (`shared/clinicSchedule.ts`), requiring code redeployment rather than dynamic CMS modification.
-- **Plaintext PII Residuals Outside Encrypted Columns**: Patient names, contact details, notes, NIK, birth details, addresses, emails, and queue patient names are AES-256-GCM encrypted at rest; the remaining plaintext columns are low-sensitivity (`agama`, `instagramUrl`, doctor/poli labels), and backup security reduces to `PII_ENCRYPTION_KEY` custody.
+- **Static Clinic Schedule**: Operating hours and poli availability are defined in code (`shared/clinicSchedule.ts`), requiring code redeployment rather than dynamic CMS modification. (The `clinicians` / `opening_schedules` tables exist but are deprecated and unused.)
+- **Plaintext PII Residuals Outside Encrypted Columns**: The remaining plaintext columns are low-sensitivity (`agama`, `instagramUrl`, doctor/poli labels) — but backup security still reduces entirely to `PII_ENCRYPTION_KEY` custody, with no documented key-rotation or multi-admin recovery procedure yet.
 
 ### Opportunities
 - **Official WhatsApp Business Platform (Cloud API)**: Transition from desktop URI links (`wa.me`) to verified template messaging with automated webhooks and bi-directional status tracking.
 - **Rate-Limiter Observability**: The Redis-backed `RateLimiter` is implemented (sorted-set sliding window, fail-open with throttled warnings); next steps are hit-rate metrics and alerting on degradation events.
 - **Indonesian UU PDP Compliance Hardening**: Extend encryption coverage to backups and add explicit consent logs and patient data deletion workflows on top of the existing field-level AES-256-GCM.
 - **PWA & Offline Queue Display**: Enable Progressive Web App caching and service workers for the clinic waiting-room TV display to survive intermittent internet drops.
+- **Key Management Maturity**: Introduce PII encryption key rotation, versioned key envelopes beyond `v1:`, and a documented break-glass recovery runbook to match the maturity of the backup/restore automation.
 
 ### Threats
 - **Regulatory Penalties (Indonesian Personal Data Protection Law / UU PDP No. 27/2022)**: Storage of sensitive identity data (NIK, birth details) carries strict liability; any unauthorized database exposure poses severe compliance and legal risks.
 - **Single Owner Bootstrap Vulnerability**: Administrative root privileges rely on a single environment variable (`OWNER_OPEN_ID`); loss or compromise of this identity provider credential locks or jeopardizes admin control.
 - **Third-Party Infrastructure Outages**: Concurrent dependency on Cloudflare Turnstile, YouTube OSD embeds, and external OAuth means third-party downtime degrades critical user journeys.
 - **Healthcare Operational Impact**: Incorrect queue states or missed follow-ups directly affect real-world clinical operations and patient care continuity.
+- **Documentation Drift**: The README previously carried stale dependency versions and test counts for multiple release cycles — a leading indicator that operational runbooks can silently diverge from the system they describe unless verification is automated.
 
 ### Strategic Initiatives Matrix
 
@@ -443,24 +498,26 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 | **SO (Strengths + Opportunities)** | Type Safety & WhatsApp API | Leverage end-to-end Zod schemas to build fully automated, typed WhatsApp Cloud API outbound queues. |
 | **ST (Strengths + Threats)** | Audit Trail & PDP Compliance | Extend audit logging to patient PII read events, demonstrating regulatory accountability under UU PDP. |
 | **WO (Weaknesses + Opportunities)** | Redis Rate Limiting | Implemented; extend with hit-rate metrics and degradation alerting. |
-| **WT (Weaknesses + Threats)** | Encryption & Key Recovery | `fullName`/`note`/queue names now encrypted; configure key rotation, backup encryption, and multi-admin recovery protocols. |
+| **WT (Weaknesses + Threats)** | Encryption & Key Recovery | `fullName`/`note`/queue names now encrypted; configure key rotation, backup encryption verification, and multi-admin recovery protocols. |
 
 ---
 
 ## Fact Verification & System Integrity
 
-An exhaustive codebase verification was executed on the current workspace:
+A codebase verification pass was executed against the live repository on **2026-10-02**:
 
 | Claim / Specification | Target in Codebase | Verification Method | Status | Notes |
 |-----------------------|--------------------|---------------------|:------:|-------|
-| **Unit & Integration Tests** | 116 passing tests | `vitest run` | ✅ **Verified** | 116 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 15 test suites. |
-| **Type Checking** | Strict TypeScript | `tsc --noEmit` | ✅ **Verified** | 0 errors across entire frontend and backend modules. |
+| **Unit & Integration Tests** | 134 passing, 1 skipped (18 files) | `vitest run` | ✅ **Verified** | 134 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 18 test files, in ~10s. |
+| **Type Checking** | Strict TypeScript 7 | `tsc --noEmit` | ✅ **Verified** | 0 errors across frontend and backend modules. |
 | **Production Build** | Client + Server bundles | `pnpm build` | ✅ **Verified** | Vite client bundle (`dist/public/`) and esbuild ESM server (`dist/index.js`) generate cleanly. |
-| **Database Schema** | 12 MySQL tables | `drizzle/schema.ts` | ✅ **Verified** | Exactly 12 relational tables: `users`, `clinic_profiles`, `services`, `media_assets`, `appointment_requests`, `whatsapp_follow_up_activities`, `whatsapp_signature_templates`, `queue_entries`, `osd_settings`, `audit_logs`, `clinic_schedules` (deprecated), `presigned_urls`. |
-| **tRPC API Procedures** | 29 API procedures | `server/routers/index.ts` | ✅ **Verified** | 29 procedures across 7 domain sub-routers (`schedule`, `captcha`, `auth`, `appointments`, `clinic`, `queue`, `admin`) plus the built-in system router. |
+| **Database Schema** | 12 MySQL tables | `drizzle/schema.ts` | ✅ **Verified** | Exactly 12 tables: `users`, `clinic_profiles`, `clinicians` (deprecated), `services`, `media_assets`, `appointment_requests`, `whatsapp_follow_up_activities`, `whatsapp_signature_templates`, `queue_entries`, `opening_schedules` (deprecated), `osd_settings`, `audit_logs`. |
+| **tRPC API Procedures** | 29 API procedures | `server/routers.ts` | ✅ **Verified** | 29 procedures across 7 domain sub-routers (`schedule`, `captcha`, `auth`, `appointments`, `clinic`, `queue`, `admin`) plus the built-in system router. |
 | **Rate Limiter Design** | Pluggable interface | `server/rateLimiter.ts`, `server/redisRateLimiter.ts`, `server/rateLimiterFactory.ts` | ✅ **Verified** | In-memory **true sliding window** (per-key event logs, bounded memory, LRU-style eviction) plus a Redis sorted-set adapter sharing identical semantics; `REDIS_URL` selects the distributed one via the factory. |
 | **Security Headers** | CSP, HSTS, X-Frame-Options | `server/_core/index.ts` | ✅ **Verified** | Hardened custom middleware enforcing zero iframe embedding, strict CSP, and nosniff. |
 | **PII Encryption** | AES-256-GCM field encryption | `server/encryption.ts` + repositories | ✅ **Verified** | HKDF-SHA256 key derivation, `v1:` versioned envelope, pass-through when unconfigured, fail-fast enforced in production; columns widened (migration 0009) and envelope-capacity contract-tested. |
+| **Production Operations** | systemd units | `deploy/` | ✅ **Verified** | `primecare.service`, daily encrypted backup timer, monthly restore-drill timer, uptime watchdog timer, and post-boot self-check service all present. |
+| **Dependency Versions** | `package.json` | manifest inspection | ✅ **Verified** | TypeScript 7.0.2, Vite 8.3.1, Vitest 5.0.2, Drizzle 0.45.3, tRPC 11, React 19, Node 26 runtime. |
 
 ---
 
@@ -486,7 +543,7 @@ A comprehensive adversarial security evaluation identified the following threat 
   - **Self-Promotion Guard**: `admin.promoteUser` rejects requests where target ID matches current user ID.
   - **Last-Admin Lock**: `admin.demoteUser` checks the total active admin count before allowing demotion, preventing accidental lockout.
   - **Cookie Security**: Auth cookies utilize `HttpOnly`, `SameSite=Lax`, and `__Host-` prefix in production.
-- **Remaining Risk**: Single root owner bootstrap via `OWNER_OPEN_ID`. If the OAuth provider issues a hijacked OpenID token matching this value, full administrative takeover occurs.
+- **Remaining Risk**: Single root owner bootstrap via `OWNER_OPEN_ID`. If the OAuth provider issues a hijacked OpenID token matching this value, full administrative takeover occurs. Additionally, HS256 session tokens carry a **1-year expiry** — a stolen cookie remains valid for up to a year; consider shortening session lifetime and adding rotation.
 
 ### 3. Patient Data Privacy & Compliance (Indonesian UU PDP No. 27/2022)
 - **Threat Vector**: Unauthorized exfiltration of patient identification records (NIK, birth dates, full addresses, WhatsApp numbers) via SQL injection or unauthorized admin database dumps.
@@ -494,7 +551,7 @@ A comprehensive adversarial security evaluation identified the following threat 
 - **Defensive Safeguards Evaluated**:
   - Drizzle ORM uses parameterized SQL queries throughout, effectively mitigating classic SQL injection.
   - Public On-Screen Display (`queue.display`) strictly masks patient names (e.g., "A*** B***") and excludes phone numbers and NIK.
-- **Remaining Risk**: Patient PII (names, contacts, NIK, demographics, notes, queue names) is encrypted at rest (AES-256-GCM); the residual attack surface is key custody — database dumps contain ciphertext only as strong as `PII_ENCRYPTION_KEY` protection, plus the low-sensitivity `agama`/`instagramUrl` plaintext columns.
+- **Remaining Risk**: Patient PII (names, contacts, NIK, demographics, notes, queue names) is encrypted at rest (AES-256-GCM); the residual attack surface is key custody — database dumps contain ciphertext only as strong as `PII_ENCRYPTION_KEY` protection, plus the low-sensitivity `agama`/`instagramUrl` plaintext columns. **Encrypted backups are only as safe as the key**: anyone holding both a backup and the key reads everything — key storage must be isolated from backup storage.
 
 ### 4. Public Waiting Room Display (OSD) Tampering & XSS
 - **Threat Vector**: Malicious actor altering `osd_settings.youtubeUrl` or `osd_settings.runningText` to display phishing links, offensive media, or execute Stored XSS on the clinic TV.
@@ -505,9 +562,14 @@ A comprehensive adversarial security evaluation identified the following threat 
   - React JSX auto-escapes string content in the marquee running text, preventing DOM-based script injection.
 
 ### 5. Dependency Supply Chain Audit
-- **Findings**: Package audit identified 78 vulnerabilities (8 low, 52 moderate, 18 high) primarily concentrated in transitive documentation/diagramming dependencies (`streamdown` > `mermaid` > `dompurify`).
+- **Findings**: Package audit previously identified vulnerabilities concentrated in transitive documentation/diagramming dependencies (`streamdown` > `mermaid` > `dompurify`).
 - **Production Impact Assessment**: None of these packages are exposed to unauthenticated user input on the server API layer.
-- **Remediation**: Run `pnpm update` on next maintenance cycle to pull patched `dompurify` (>= 3.4.8) and `mermaid` (>= 11.16.1).
+- **Remediation**: `pnpm.overrides` in `package.json` now pins patched floors (`dompurify >= 3.4.8`, `mermaid >= 11.16.1`, `tar >= 7.5.21`, `lodash >= 4.17.23`, among others), enforced by the CI production-audit gate — run `pnpm audit --prod` on each maintenance cycle to confirm.
+
+### 6. Documentation & Operational Drift (New)
+- **Threat Vector**: Stale runbooks and README claims (dependency versions, test counts, table inventories) silently diverge from the deployed system, causing operators to trust wrong rollback/verification steps during incidents.
+- **Evidence**: Prior to this refresh, the README listed TypeScript 5.9 / Vite 7 / Vitest 2 (actual: 7.0.2 / 8.3.1 / 5.0.2), claimed 14–15 test files (actual: 18), named two tables that do not exist (`clinic_schedules`, `presigned_urls`) while omitting two that do (`clinicians`, `opening_schedules`), and documented none of the backup/restore/watchdog systemd units.
+- **Mitigation**: The fact-verification table above is now dated and reproducible (`grep`/`find` one-liners); consider a CI job that fails when README version badges drift from `package.json`.
 
 ## Contributing
 
