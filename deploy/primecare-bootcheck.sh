@@ -21,6 +21,16 @@ check_unit() {
   fi
 }
 
+# Timers must be active (waiting) AND enabled, or they will not survive reboot.
+check_timer() {
+  if systemctl is-active --quiet "$1" && systemctl is-enabled --quiet "$1" 2>/dev/null; then
+    echo "ok      timer $1 active + enabled" >> "$REPORT"
+  else
+    echo "FAIL    timer $1 not active/enabled — systemctl status $1" >> "$REPORT"
+    return 1
+  fi
+}
+
 wait_local_health() {
   while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     if curl -fsS http://localhost:3000/healthz >/dev/null 2>&1; then return 0; fi
@@ -33,6 +43,10 @@ fail=0
 check_unit mysql       || fail=1
 check_unit primecare   || fail=1
 check_unit cloudflared || fail=1
+
+check_timer primecare-backup.timer        || fail=1
+check_timer primecare-restore-drill.timer || fail=1
+check_timer primecare-watchdog.timer      || fail=1
 
 if wait_local_health; then
   echo "ok      local /healthz responded" >> "$REPORT"
