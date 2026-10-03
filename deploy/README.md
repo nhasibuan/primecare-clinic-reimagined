@@ -65,6 +65,21 @@ the current admin login depends on the dev backdoor (`/api/dev/login`).
   To add email alerts later: create a Resend API key, store it root-only,
   and curl `api.resend.com/emails` from the `notify()` hook in
   `deploy/primecare-watchdog.sh`.
+- **Uptime dashboard:** every watchdog check appends a line with state and
+  both probe latencies to `/root/uptime-checks.log` (rotated at 1 MB,
+  ~28 days retained at 2-min cadence). `scripts/uptime-report.sh` (run as
+  root on the VM) turns that into availability numbers:
+
+  ```bash
+  scripts/uptime-report.sh        # last 24h, human-readable
+  scripts/uptime-report.sh 168    # last 7 days
+  scripts/uptime-report.sh 24 json  # machine-readable
+  ```
+
+  Reports uptime %, average public-path response time, incident starts
+  (UP → DOWN/DEGRADED transitions), and how many restarts the watchdog
+  performed. DOWN = the app itself is unhealthy; DEGRADED = only the
+  public path fails (tunnel/Cloudflare side).
 
 ## Cutover runbook
 

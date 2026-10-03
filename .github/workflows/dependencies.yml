@@ -2,9 +2,9 @@
 # dependency update PR, so bumps that break the app fail CI instead of
 # silently shipping.
 #
-# The audit job also runs on pushes to main: new advisories can be published
-# against unchanged, locked dependency versions at any time, and the gate
-# should catch those too. It audits the production dependency tree only —
+# The audit job also runs on pushes to main and weekly: new advisories can be
+# published against unchanged, locked dependency versions at any time, and the
+# gate should catch those too. It audits the production dependency tree only —
 # the one accepted finding (esbuild inside drizzle-kit's dev tooling) lives
 # in devDependencies and must not block the build.
 name: Dependencies
@@ -14,12 +14,18 @@ on:
     paths:
       - "package.json"
       - "pnpm-lock.yaml"
+      - ".github/workflows/dependencies.yml"
   push:
     branches:
       - main
     paths:
       - "package.json"
       - "pnpm-lock.yaml"
+      - ".github/workflows/dependencies.yml"
+  schedule:
+    # Weekly audit sweep, Sat 03:07 UTC.
+    - cron: "7 3 * * 6"
+  workflow_dispatch:
 
 jobs:
   verify:
