@@ -34,8 +34,9 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10
+        # No `version` input: the action reads packageManager from
+        # package.json (with its sha512 integrity hash). Specifying both
+        # fails the step with ERR_PNPM_BAD_PM_VERSION-style conflicts.
 
       - uses: actions/setup-node@v7
         with:
@@ -60,8 +61,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10
+        # Same rule as the verify job: no `version` input here.
 
       # Reads pnpm-lock.yaml; no install required.
       - name: Audit production dependencies
