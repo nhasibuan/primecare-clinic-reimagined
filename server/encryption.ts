@@ -6,16 +6,28 @@
  * before they reach MySQL — protecting data even if the database is exfiltrated.
  *
  * Architecture:
- *   - Key: 256-bit derived from PII_ENCRYPTION_KEY env var via HKDF-SHA256
+ *   - Key: 256-bit derived from the PII key ring via HKDF-SHA256
  *   - Cipher: AES-256-GCM (authenticated encryption — prevents tampering)
  *   - Format: "v1:<base64-iv>:<base64-ciphertext+tag>"
  *   - Envelope versioning allows future key rotation
  *
+ * Key ring (rotation support):
+ *   - `PII_ENCRYPTION_KEYS`: comma-separated key ring; the FIRST entry is the
+ *     primary key used for encryption, the rest are retired keys kept so old
+ *     ciphertext still decrypts. Takes precedence when set and non-empty.
+ *   - `PII_ENCRYPTION_KEY`: legacy single-key form, used when the ring var is
+ *     absent. Equivalent to a one-entry ring.
+ *   - `encryptPii*` always uses the primary (first) key.
+ *   - `decryptPii*` tries each ring key in order until one authenticates.
+ *   - Rotate with: prepend the new key to the ring, restart, run
+ *     `scripts/rotatePiiKey.ts` to re-encrypt every envelope with the new
+ *     primary, then optionally drop the retired key from the ring.
+ *
  * Usage:
- *   When PII_ENCRYPTION_KEY is set, encrypt/decrypt transparently.
+ *   When a key is configured, encrypt/decrypt transparently.
  *   When absent (dev/test), functions are no-ops (pass-through).
  *
- * ⚠️  Store PII_ENCRYPTION_KEY in a secrets manager (Vault, AWS Secrets Manager)
+ * ⚠️  Store PII_ENCRYPTION_KEY(S) in a secrets manager (Vault, AWS Secrets Manager)
  *     — never in source control or plain environment files.
  */
 
@@ -26,8 +38,8 @@ const IV_BYTES = 12;      // 96-bit IV recommended for GCM
 const TAG_BYTES = 16;     // 128-bit authentication tag (GCM default)
 const VERSION_PREFIX = "v1:" as const;
 
-/** Derived 256-bit AES key, memoized per process. */
-let _cachedKey: Buffer | null = null;
+/** Derived 256-bit AES keys (one per ring entry), memoized per process. */
+let _cachedKeys: Buffer[] | null = null;
 
 function deriveKey(secret: string): Buffer {
   // HKDF-SHA256 with a fixed, versioned salt. A plain SHA-256(secret) would
@@ -41,27 +53,81 @@ function deriveKey(secret: string): Buffer {
   return Buffer.from(hkdfSync("sha256", secret, salt, info, 32));
 }
 
-function getKey(): Buffer | null {
-  const secret = process.env.PII_ENCRYPTION_KEY;
-  if (!secret) return null;
-  if (!_cachedKey) {
-    _cachedKey = deriveKey(secret);
+/**
+ * Raw key-ring secrets: PII_ENCRYPTION_KEYS (comma-separated, first = primary)
+ * with fallback to the legacy single PII_ENCRYPTION_KEY.
+ */
+function getKeySecrets(): string[] {
+  const ring = process.env.PII_ENCRYPTION_KEYS;
+  if (ring) {
+    const keys = ring
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (keys.length > 0) return keys;
   }
-  return _cachedKey;
+  const single = process.env.PII_ENCRYPTION_KEY;
+  return single ? [single] : [];
 }
 
-/** Returns true when field-level encryption is active. */
+/** Derived ring keys, memoized. First entry is the primary (encryption) key. */
+function getKeyRing(): Buffer[] {
+  if (!_cachedKeys) {
+    _cachedKeys = getKeySecrets().map(deriveKey);
+  }
+  return _cachedKeys;
+}
+
+/** Primary key used for encryption, or null when unconfigured. */
+function getPrimaryKey(): Buffer | null {
+  const ring = getKeyRing();
+  return ring.length > 0 ? ring[0] : null;
+}
+
+/** Returns true when field-level encryption is active (either var set). */
 export function isPiiEncryptionEnabled(): boolean {
-  return Boolean(process.env.PII_ENCRYPTION_KEY);
+  return getKeySecrets().length > 0;
+}
+
+interface ParsedEnvelope {
+  iv: Buffer;
+  ciphertext: Buffer;
+  tag: Buffer;
+}
+
+/** Parses a v1: envelope. Returns null when the value is not an envelope. */
+function parseEnvelope(value: string): ParsedEnvelope | null {
+  if (!value.startsWith(VERSION_PREFIX)) return null;
+  const rest = value.slice(VERSION_PREFIX.length);
+  const colonIdx = rest.indexOf(":");
+  if (colonIdx === -1) return null;
+
+  const iv = Buffer.from(rest.slice(0, colonIdx), "base64");
+  const payload = Buffer.from(rest.slice(colonIdx + 1), "base64");
+  if (payload.length < TAG_BYTES) return null;
+
+  // Last TAG_BYTES are the GCM authentication tag
+  return {
+    iv,
+    ciphertext: payload.slice(0, payload.length - TAG_BYTES),
+    tag: payload.slice(payload.length - TAG_BYTES),
+  };
+}
+
+function decryptWithKey(envelope: ParsedEnvelope, key: Buffer): string {
+  const decipher = createDecipheriv(ALGORITHM, key, envelope.iv);
+  decipher.setAuthTag(envelope.tag);
+  return decipher.update(envelope.ciphertext) + decipher.final("utf8");
 }
 
 /**
  * Encrypts a plaintext string. Returns the ciphertext envelope.
+ * Uses the primary (first) ring key.
  * Pass-through (returns `value` unchanged) when no key is configured.
  */
 export function encryptPii(value: string | null | undefined): string | null {
   if (!value) return value ?? null;
-  const key = getKey();
+  const key = getPrimaryKey();
   if (!key) return value;                // encryption not configured — pass-through
 
   const iv = randomBytes(IV_BYTES);
@@ -76,38 +142,53 @@ export function encryptPii(value: string | null | undefined): string | null {
 
 /**
  * Decrypts a ciphertext envelope. Returns the original plaintext.
+ * Tries each ring key in order until one authenticates, so data encrypted
+ * with a retired key still decrypts while the old key remains in the ring.
  * Pass-through when the value is not in envelope format or no key is set.
  */
 export function decryptPii(value: string | null | undefined): string | null {
   if (!value) return value ?? null;
 
   // Not an encrypted envelope — treat as plaintext (backwards-compatible)
-  if (!value.startsWith(VERSION_PREFIX)) return value;
+  const envelope = parseEnvelope(value);
+  if (!envelope) return value;
 
-  const key = getKey();
-  if (!key) {
+  const ring = getKeyRing();
+  if (ring.length === 0) {
     // Key removed after data was encrypted — return raw envelope to avoid data loss
     return value;
   }
 
-  const rest = value.slice(VERSION_PREFIX.length);
-  const colonIdx = rest.indexOf(":");
-  if (colonIdx === -1) return value;
+  for (const key of ring) {
+    try {
+      return decryptWithKey(envelope, key);
+    } catch {
+      // Wrong key (or tampered data) — try the next key in the ring.
+    }
+  }
+  // Authentication failure — data may be tampered; do not return garbage
+  throw new Error("PII decryption failed: authentication tag mismatch.");
+}
 
-  const iv = Buffer.from(rest.slice(0, colonIdx), "base64");
-  const payload = Buffer.from(rest.slice(colonIdx + 1), "base64");
+/**
+ * Decrypts using ONLY the primary (first) ring key.
+ * Returns null when the value was encrypted with a different (retired) ring
+ * key — used by scripts/rotatePiiKey.ts to skip rows already rotated.
+ * Pass-through semantics match decryptPii for non-envelope / unconfigured cases.
+ */
+export function tryDecryptWithPrimary(value: string | null | undefined): string | null {
+  if (!value) return value ?? null;
 
-  // Last TAG_BYTES are the GCM authentication tag
-  const ciphertext = payload.slice(0, payload.length - TAG_BYTES);
-  const tag = payload.slice(payload.length - TAG_BYTES);
+  const envelope = parseEnvelope(value);
+  if (!envelope) return value;
+
+  const primary = getPrimaryKey();
+  if (!primary) return value;
 
   try {
-    const decipher = createDecipheriv(ALGORITHM, key, iv);
-    decipher.setAuthTag(tag);
-    return decipher.update(ciphertext) + decipher.final("utf8");
+    return decryptWithKey(envelope, primary);
   } catch {
-    // Authentication failure — data may be tampered; do not return garbage
-    throw new Error("PII decryption failed: authentication tag mismatch.");
+    return null;
   }
 }
 
@@ -144,7 +225,7 @@ export function decryptPiiFields<T extends Record<string, string | null | undefi
   return result;
 }
 
-// Reset cached key (useful in tests when env var changes between test cases)
+// Reset cached keys (useful in tests when env vars change between test cases)
 export function _resetKeyCache(): void {
-  _cachedKey = null;
+  _cachedKeys = null;
 }

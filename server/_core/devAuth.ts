@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { ONE_YEAR_MS } from "../../shared/const";
+import { SESSION_TTL_MS } from "../../shared/const";
 import * as db from "../db";
 import { getSessionCookieName, getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
@@ -35,14 +35,14 @@ export function registerDevAuthRoutes(app: Express) {
       // Create session token
       const sessionToken = await sdk.createSessionToken(DEV_ADMIN_OPEN_ID, {
         name: DEV_ADMIN_NAME,
-        expiresInMs: ONE_YEAR_MS,
+        expiresInMs: SESSION_TTL_MS,
       });
 
       // Set session cookie
       const cookieOptions = getSessionCookieOptions(_req);
       _req.res?.cookie(getSessionCookieName(), sessionToken, {
         ...cookieOptions,
-        maxAge: ONE_YEAR_MS,
+        maxAge: SESSION_TTL_MS,
       });
 
       console.log("[Dev Auth] Admin session created for dev-admin-local-001");

@@ -1,4 +1,4 @@
-import { ONE_YEAR_MS, OAUTH_STATE_COOKIE, decodeOAuthState } from "@shared/const";
+import { SESSION_TTL_MS, OAUTH_STATE_COOKIE, decodeOAuthState } from "@shared/const";
 import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
@@ -55,11 +55,11 @@ export function registerOAuthRoutes(app: Express) {
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
-        expiresInMs: ONE_YEAR_MS,
+        expiresInMs: SESSION_TTL_MS,
       });
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(getSessionCookieName(), sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.cookie(getSessionCookieName(), sessionToken, { ...cookieOptions, maxAge: SESSION_TTL_MS });
 
       res.redirect(302, safeRedirect);
     } catch (error) {

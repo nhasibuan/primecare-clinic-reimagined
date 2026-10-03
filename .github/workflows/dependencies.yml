@@ -14,6 +14,8 @@ on:
     paths:
       - "package.json"
       - "pnpm-lock.yaml"
+      - "README.md"
+      - "scripts/verifyReadme.mjs"
       - ".github/workflows/dependencies.yml"
   push:
     branches:
@@ -21,6 +23,8 @@ on:
     paths:
       - "package.json"
       - "pnpm-lock.yaml"
+      - "README.md"
+      - "scripts/verifyReadme.mjs"
       - ".github/workflows/dependencies.yml"
   schedule:
     # Weekly audit sweep, Sat 03:07 UTC.
@@ -51,6 +55,9 @@ jobs:
 
       - name: Unit & integration tests
         run: pnpm test
+
+      - name: Verify README claims
+        run: pnpm docs:verify
 
       - name: Production build
         run: pnpm build

@@ -5,7 +5,12 @@ export const COOKIE_NAME = "app_session_id";
  * keeps the plain name so local HTTP logins keep working.
  */
 export const PROD_COOKIE_NAME = "__Host-app_session_id";
-export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;
+/**
+ * Session lifetime: 30 days. Session JWTs (sdk.signSession default) and the
+ * session cookie maxAge all use this constant. Reduced from 1 year on
+ * 2026-10-03 (README threat-review remediation).
+ */
+export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';
 export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';

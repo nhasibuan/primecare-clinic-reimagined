@@ -9,6 +9,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   encryptPii,
   decryptPii,
+  tryDecryptWithPrimary,
   encryptPiiFields,
   decryptPiiFields,
   isPiiEncryptionEnabled,
@@ -154,6 +155,109 @@ describe("PII Encryption", () => {
             `${field}: envelope must fit varchar(${columnWidth})`,
           ).toBeLessThanOrEqual(columnWidth);
         }
+      });
+    });
+  });
+
+  describe("key rotation (PII_ENCRYPTION_KEYS ring)", () => {
+    const KEY_A = "rotation-test-key-A-0123456789abcdef";
+    const KEY_B = "rotation-test-key-B-0123456789abcdef";
+
+    function withRingEnv(ring: string | undefined, single: string | undefined, fn: () => void) {
+      if (ring === undefined) delete process.env.PII_ENCRYPTION_KEYS;
+      else process.env.PII_ENCRYPTION_KEYS = ring;
+      if (single === undefined) delete process.env.PII_ENCRYPTION_KEY;
+      else process.env.PII_ENCRYPTION_KEY = single;
+      _resetKeyCache();
+      try {
+        fn();
+      } finally {
+        delete process.env.PII_ENCRYPTION_KEYS;
+        delete process.env.PII_ENCRYPTION_KEY;
+        _resetKeyCache();
+      }
+    }
+
+    beforeEach(() => {
+      delete process.env.PII_ENCRYPTION_KEYS;
+      delete process.env.PII_ENCRYPTION_KEY;
+      _resetKeyCache();
+    });
+
+    afterEach(() => {
+      delete process.env.PII_ENCRYPTION_KEYS;
+      delete process.env.PII_ENCRYPTION_KEY;
+      _resetKeyCache();
+    });
+
+    it("falls back to PII_ENCRYPTION_KEY when the ring var is absent", () => {
+      withRingEnv(undefined, KEY_A, () => {
+        expect(isPiiEncryptionEnabled()).toBe(true);
+        const ct = encryptPii("3201234567890001");
+        expect(decryptPii(ct)).toBe("3201234567890001");
+      });
+    });
+
+    it("ring takes precedence over the single-key var", () => {
+      let ct: string | null = null;
+      withRingEnv(KEY_B, KEY_A, () => {
+        ct = encryptPii("3201234567890001");
+      });
+      // Encrypted with B (the ring primary), not A.
+      withRingEnv(KEY_B, undefined, () => expect(decryptPii(ct)).toBe("3201234567890001"));
+      withRingEnv(undefined, KEY_A, () =>
+        expect(() => decryptPii(ct)).toThrow("authentication tag mismatch"),
+      );
+    });
+
+    it("old ciphertext still decrypts after rotating primary to B with A retained", () => {
+      let oldCiphertext: string | null = null;
+      withRingEnv(undefined, KEY_A, () => {
+        oldCiphertext = encryptPii("3201234567890001");
+      });
+      withRingEnv(`${KEY_B},${KEY_A}`, undefined, () => {
+        // Old data (encrypted with retired key A) still decrypts via the ring.
+        expect(decryptPii(oldCiphertext)).toBe("3201234567890001");
+        // ...but it was not encrypted with the new primary.
+        expect(tryDecryptWithPrimary(oldCiphertext)).toBeNull();
+      });
+    });
+
+    it("new encryptions use the primary key B", () => {
+      let newCiphertext: string | null = null;
+      withRingEnv(`${KEY_B},${KEY_A}`, undefined, () => {
+        newCiphertext = encryptPii("3201234567890001");
+      });
+      // Decrypts with B alone...
+      withRingEnv(KEY_B, undefined, () => {
+        expect(decryptPii(newCiphertext)).toBe("3201234567890001");
+        expect(tryDecryptWithPrimary(newCiphertext)).toBe("3201234567890001");
+      });
+      // ...but not with the retired key A alone.
+      withRingEnv(undefined, KEY_A, () =>
+        expect(() => decryptPii(newCiphertext)).toThrow("authentication tag mismatch"),
+      );
+    });
+
+    it("decryption fails when no ring key matches", () => {
+      let ct: string | null = null;
+      withRingEnv(undefined, KEY_A, () => {
+        ct = encryptPii("3201234567890001");
+      });
+      withRingEnv(KEY_B, undefined, () => {
+        expect(() => decryptPii(ct)).toThrow("authentication tag mismatch");
+      });
+    });
+
+    it("isPiiEncryptionEnabled is true when only the ring var is set", () => {
+      withRingEnv(`${KEY_B},${KEY_A}`, undefined, () => {
+        expect(isPiiEncryptionEnabled()).toBe(true);
+      });
+    });
+
+    it("tryDecryptWithPrimary passes plaintext through", () => {
+      withRingEnv(`${KEY_B},${KEY_A}`, undefined, () => {
+        expect(tryDecryptWithPrimary("legacy-plaintext")).toBe("legacy-plaintext");
       });
     });
   });

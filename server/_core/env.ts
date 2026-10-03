@@ -20,6 +20,12 @@ const envSchema = z.object({
   turnstileAllowTestKey: z.coerce.boolean(),
   /** AES-256-GCM key for PII field encryption (UU PDP compliance). Optional but strongly recommended in production. */
   piiEncryptionKey: z.string().optional().default(""),
+  /**
+   * Comma-separated PII encryption key ring (rotation support). The FIRST entry
+   * is the primary key used for encryption; the rest are retired keys kept so
+   * old ciphertext still decrypts. Takes precedence over piiEncryptionKey.
+   */
+  piiEncryptionKeys: z.string().optional().default(""),
   /** Redis/Dragonfly connection URL for distributed rate limiting. Optional; falls back to in-memory. */
   redisUrl: z.string().optional().default(""),
   /** Emergency escape hatch: launch production with plaintext PII when the encryption key cannot yet be provisioned. */
@@ -40,6 +46,7 @@ const parsedEnv = envSchema.parse({
   turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY,
   turnstileAllowTestKey: process.env.TURNSTILE_ALLOW_TEST_KEY === "true",
   piiEncryptionKey: process.env.PII_ENCRYPTION_KEY,
+  piiEncryptionKeys: process.env.PII_ENCRYPTION_KEYS,
   redisUrl: process.env.REDIS_URL,
   allowPlaintextPii: process.env.ALLOW_PLAINTEXT_PII,
 });
@@ -86,14 +93,25 @@ export function validateProductionEnv(): void {
     // PII encryption: required in production (UU PDP No. 27/2022 hardening).
     // Set ALLOW_PLAINTEXT_PII=true only for transitional deployments where the
     // key cannot yet be provisioned — the warning keeps that decision visible.
-    if (!ENV.piiEncryptionKey) {
+    // PII_ENCRYPTION_KEYS (comma-separated ring, first = primary) takes
+    // precedence; PII_ENCRYPTION_KEY remains the legacy single-key form.
+    const piiRing = ENV.piiEncryptionKeys
+      ? ENV.piiEncryptionKeys.split(",").map((k) => k.trim()).filter(Boolean)
+      : [];
+    const piiKeys = piiRing.length > 0 ? piiRing : (ENV.piiEncryptionKey ? [ENV.piiEncryptionKey] : []);
+    if (piiKeys.length === 0) {
       if (ENV.allowPlaintextPii) {
-        warnings.push("[SECURITY WARNING] PII_ENCRYPTION_KEY is not set but ALLOW_PLAINTEXT_PII=true — patient NIK and contact data will be stored UNENCRYPTED. Provision the key as soon as possible.");
+        warnings.push("[SECURITY WARNING] PII_ENCRYPTION_KEY / PII_ENCRYPTION_KEYS is not set but ALLOW_PLAINTEXT_PII=true — patient NIK and contact data will be stored UNENCRYPTED. Provision the key as soon as possible.");
       } else {
-        errors.push("PII_ENCRYPTION_KEY must be set in production: patient NIK and contact data are encrypted at rest (UU PDP No. 27/2022). To launch without encryption during migration, set ALLOW_PLAINTEXT_PII=true.");
+        errors.push("PII_ENCRYPTION_KEY or PII_ENCRYPTION_KEYS must be set in production: patient NIK and contact data are encrypted at rest (UU PDP No. 27/2022). To launch without encryption during migration, set ALLOW_PLAINTEXT_PII=true.");
       }
-    } else if (ENV.piiEncryptionKey.length < 32) {
-      errors.push("PII_ENCRYPTION_KEY must be at least 32 characters for sufficient entropy.");
+    } else {
+      piiKeys.forEach((key, i) => {
+        if (key.length < 32) {
+          const label = piiRing.length > 0 ? `PII_ENCRYPTION_KEYS entry #${i + 1}` : "PII_ENCRYPTION_KEY";
+          errors.push(`${label} must be at least 32 characters for sufficient entropy.`);
+        }
+      });
     }
     if (!ENV.redisUrl) {
       warnings.push("[SCALABILITY WARNING] REDIS_URL is not set. Rate limiting uses in-memory state (resets on restart, not shared across instances). Implement the RateLimiter interface with a distributed store for multi-instance deployments.");

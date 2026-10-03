@@ -9,6 +9,7 @@ one is lost. It never contains the secrets themselves.
 | Secret | Live copy (runtime) | Recovery copy |
 |--------|--------------------|----------------|
 | `PII_ENCRYPTION_KEY` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
+| `PII_ENCRYPTION_KEYS` (rotation ring; first = primary) | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
 | `JWT_SECRET` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
 | Backup passphrase (pre-0009 SQL dump) | — (only in the vault) | `/root/secrets/primecare-secrets.asc` |
@@ -51,11 +52,13 @@ curl -fsS http://localhost:3000/healthz
 
 ## Recovery scenarios
 
-### `PII_ENCRYPTION_KEY` lost
-Recover it from the vault (above). If **both** the `.env` and the vault are
-lost, encrypted patient fields (name, contact, NIK, birth data, notes) are
-permanently unrecoverable — they will read as raw `v1:...` envelopes. There
-is no backdoor by design. Restore from the offline master-passphrase copy.
+### `PII_ENCRYPTION_KEY` / `PII_ENCRYPTION_KEYS` lost
+Recover the key(s) from the vault (above) — if a ring was in use, restore
+**every** entry, since ciphertext written under a retired key needs that key
+to decrypt. If **both** the `.env` and the vault are lost, encrypted patient
+fields (name, contact, NIK, birth data, notes) are permanently unrecoverable
+— they will read as raw `v1:...` envelopes. There is no backdoor by design.
+Restore from the offline master-passphrase copy.
 
 ### `JWT_SECRET` lost
 No data loss. Sessions are invalidated; generate a new 64-char key
@@ -111,5 +114,30 @@ Turnstile credentials come from your provider dashboards.
 3. Restart the server and verify `/healthz`.
 
 Rotation caveats: `JWT_SECRET` can be rotated anytime (sessions reset).
-`PII_ENCRYPTION_KEY` rotation requires re-encrypting every `v1:` envelope —
-tooling is not built yet; open an issue before rotating.
+`PII_ENCRYPTION_KEY` rotation is supported — see "Rotating the PII encryption key" below.
+
+### Rotating the PII encryption key
+
+The app reads a key **ring**: `PII_ENCRYPTION_KEYS` is comma-separated, the
+FIRST entry is the primary key used for encryption, and the rest are retired
+keys kept so old ciphertext still decrypts (`server/encryption.ts` tries each
+ring key in order). `PII_ENCRYPTION_KEY` remains the legacy single-key form.
+
+1. Generate the new key (64 chars): `openssl rand -base64 48`.
+2. Prepend it to the ring in `.env` — keep the old key for decryption:
+   `PII_ENCRYPTION_KEYS="<new-key>,<old-key>"`.
+3. Restart the server and verify `/healthz`. New writes now use the new key;
+   old rows still decrypt via the retired key.
+4. Re-encrypt every PII envelope with the new primary (idempotent — safe to
+   re-run after an interruption):
+   `PII_ENCRYPTION_KEYS="<new-key>,<old-key>" npx tsx scripts/rotatePiiKey.ts`
+   The script refuses to run unless at least two keys are present, self-tests
+   the primary key first, skips rows already on the new key, and leaves any
+   undecryptable field untouched (exits 2 so failures are visible).
+5. Re-run the script to confirm convergence (expect `0 row(s) rotated`).
+6. Update the vault manifest with the new ring ("Adding or rotating a secret"
+   above). Once every row is rotated you may drop the old key from the ring
+   and restart — but there is no hurry: keeping it is harmless.
+7. Break-glass: if the new key is lost before rotation finishes, the old key
+   still decrypts everything while it remains in the ring. If ALL keys are
+   lost, encrypted fields are permanently unrecoverable (no backdoor).

@@ -14,7 +14,7 @@ import { randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import type { Request, Response } from "express";
 import { z } from "zod";
-import { ONE_YEAR_MS } from "@shared/const";
+import { SESSION_TTL_MS } from "@shared/const";
 import { getClientIp } from "./appointmentRequest";
 import { ENV } from "./_core/env";
 import { getSessionCookieName, getSessionCookieOptions } from "./_core/cookies";
@@ -208,12 +208,12 @@ export async function handleLocalLogin(req: Request, res: Response): Promise<voi
 
   const sessionToken = await sdk.createSessionToken(LOCAL_ADMIN_OPEN_ID, {
     name: LOCAL_ADMIN_NAME,
-    expiresInMs: ONE_YEAR_MS,
+    expiresInMs: SESSION_TTL_MS,
   });
 
   res.cookie(getSessionCookieName(), sessionToken, {
     ...getSessionCookieOptions(req),
-    maxAge: ONE_YEAR_MS,
+    maxAge: SESSION_TTL_MS,
   });
 
   const admin = await getUserByOpenId(LOCAL_ADMIN_OPEN_ID);
