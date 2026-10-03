@@ -53,8 +53,9 @@ export const appointmentsRouter = router({
    *   3. Server-side schedule validation — pure CPU, no I/O.
    *   4. Turnstile CAPTCHA — outbound HTTPS verification, bounded by (2).
    */
-  create: publicProcedure.input(appointmentInput).mutation(
-    async ({ ctx, input }) => {
+  create: publicProcedure
+    .input(appointmentInput)
+    .mutation(async ({ ctx, input }) => {
       // 1. Honeypot guard — never returns an error to avoid fingerprinting
       if (isAutomatedAppointmentRequest(input.website)) {
         return { success: true, requestId: null } as const;
@@ -83,14 +84,14 @@ export const appointmentsRouter = router({
           input.preferredDate,
           input.preferredHour,
           input.preferredMinute,
-          input.preferredPeriod,
+          input.preferredPeriod
         ),
-        (validationError) =>
+        validationError =>
           new TRPCError({
             code: "BAD_REQUEST",
             message:
               validationError.message ?? "Permintaan kunjungan tidak valid.",
-          }),
+          })
       );
 
       // 4. CAPTCHA verification (conditional on clinic configuration)
@@ -107,7 +108,7 @@ export const appointmentsRouter = router({
         const verification = await verifyTurnstileToken(
           input.captchaToken,
           clientIp,
-          getTurnstileVerificationSecret(),
+          getTurnstileVerificationSecret()
         );
         if (!verification.success) {
           throw new TRPCError({
@@ -127,8 +128,7 @@ export const appointmentsRouter = router({
       });
 
       return { success: true, requestId: request.id } as const;
-    },
-  ),
+    }),
 
   /** Admin: list all appointment requests (latest first). */
   list: adminProcedure.query(() => getAppointmentRequests()),
@@ -139,12 +139,12 @@ export const appointmentsRouter = router({
       z.object({
         id: z.number().int().positive(),
         status: z.enum(["new", "contacted", "closed"]),
-      }),
+      })
     )
     .mutation(async ({ ctx, input }) => {
       const result = await updateAppointmentRequestStatus(
         input.id,
-        input.status,
+        input.status
       );
       await recordAuditLog({
         actorId: ctx.user.id,
@@ -166,14 +166,14 @@ export const appointmentsRouter = router({
   recordFollowUpActivity: adminProcedure
     .input(recordFollowUpActivityInput)
     .mutation(({ ctx, input }) =>
-      createWhatsAppFollowUpActivity({ ...input, recordedBy: ctx.user.id }),
+      createWhatsAppFollowUpActivity({ ...input, recordedBy: ctx.user.id })
     ),
 
   /** Admin: update the WhatsApp message signature template. */
   updateSignatureTemplate: adminProcedure
     .input(z.object({ content: z.string().trim().min(2).max(1000) }))
     .mutation(({ ctx, input }) =>
-      saveWhatsAppSignatureTemplate(input.content, ctx.user.id),
+      saveWhatsAppSignatureTemplate(input.content, ctx.user.id)
     ),
 
   /** Admin: enrich an appointment request with patient demographic data. */
@@ -188,6 +188,6 @@ export const appointmentsRouter = router({
         agama: input.agama ?? undefined,
         email: input.email ?? undefined,
         instagramUrl: input.instagramUrl ?? undefined,
-      }),
+      })
     ),
 });

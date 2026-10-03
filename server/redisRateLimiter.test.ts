@@ -40,7 +40,11 @@ class FakeRedis implements RedisLike {
     return 1;
   }
 
-  async zremrangebyscore(key: string, min: number | string, max: number | string): Promise<number> {
+  async zremrangebyscore(
+    key: string,
+    min: number | string,
+    max: number | string
+  ): Promise<number> {
     this.shouldFail();
     const z = this.zset(key);
     const lo = min === "-inf" ? -Infinity : Number(min);
@@ -61,9 +65,16 @@ class FakeRedis implements RedisLike {
     return this.zset(key).size;
   }
 
-  async zrange(key: string, start: number, stop: number, withScores: "WITHSCORES"): Promise<string[]> {
+  async zrange(
+    key: string,
+    start: number,
+    stop: number,
+    withScores: "WITHSCORES"
+  ): Promise<string[]> {
     this.shouldFail();
-    const entries = Array.from(this.zset(key).entries()).sort((a, b) => a[1] - b[1]);
+    const entries = Array.from(this.zset(key).entries()).sort(
+      (a, b) => a[1] - b[1]
+    );
     const slice = entries.slice(start, stop + 1);
     return slice.flatMap(([member, score]) => [member, String(score)]);
   }
@@ -111,10 +122,14 @@ class FakeRedis implements RedisLike {
 }
 
 function makeLimiter(fake: FakeRedis, failOpen = true) {
-  return new RedisRateLimiter(fake, { maxRequests: 3, windowMs: 60_000 }, {
-    namespace: "test",
-    failOpen,
-  });
+  return new RedisRateLimiter(
+    fake,
+    { maxRequests: 3, windowMs: 60_000 },
+    {
+      namespace: "test",
+      failOpen,
+    }
+  );
 }
 
 describe("RedisRateLimiter", () => {
@@ -190,11 +205,11 @@ describe("RedisRateLimiter", () => {
     await limiter.attempt("ip-b", 1_000);
     // activeKeyCount refreshes opportunistically — give the fire-and-forget
     // refresh a tick to resolve.
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect(limiter.activeKeyCount).toBe(2);
 
     limiter.reset();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
     expect((await limiter.attempt("ip-a", 2_000)).allowed).toBe(true);
   });
 });

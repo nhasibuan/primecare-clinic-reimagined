@@ -19,9 +19,7 @@ const p = 1;
 const keylen = 64;
 const maxmem = 128 * 1024 * 1024;
 
-const password =
-  process.argv[2] ||
-  randomBytes(24).toString("base64url"); // ~192-bit entropy, URL-safe
+const password = process.argv[2] || randomBytes(24).toString("base64url"); // ~192-bit entropy, URL-safe
 
 if (typeof password !== "string" || password.length < 12) {
   console.error("Password must be at least 12 characters.");

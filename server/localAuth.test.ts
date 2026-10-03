@@ -43,18 +43,24 @@ describe("password hashing", () => {
   it("round-trips a password through hash/verify", async () => {
     const hash = await hashPassword("correct horse battery staple");
     expect(hash.startsWith("scrypt$")).toBe(true);
-    await expect(verifyPassword("correct horse battery staple", hash)).resolves.toBe(true);
+    await expect(
+      verifyPassword("correct horse battery staple", hash)
+    ).resolves.toBe(true);
   });
 
   it("rejects a wrong password", async () => {
     const hash = await hashPassword("correct horse battery staple");
-    await expect(verifyPassword("wrong password entirely", hash)).resolves.toBe(false);
+    await expect(verifyPassword("wrong password entirely", hash)).resolves.toBe(
+      false
+    );
   });
 
   it("rejects tampered and malformed hashes", async () => {
     const hash = await hashPassword("some password");
     const tampered = hash.replace(/.{8}$/, "AAAAAAAA");
-    await expect(verifyPassword("some password", tampered)).resolves.toBe(false);
+    await expect(verifyPassword("some password", tampered)).resolves.toBe(
+      false
+    );
     await expect(verifyPassword("x", "not-a-valid-hash")).resolves.toBe(false);
     await expect(verifyPassword("x", "")).resolves.toBe(false);
   });
@@ -80,7 +86,7 @@ describe("attemptLocalLogin", () => {
     await configureCreds("norman", "s3cret-passphrase!");
     const result = await attemptLocalLogin(
       { username: "norman", password: "s3cret-passphrase!" },
-      REAL_IP,
+      REAL_IP
     );
     expect(result).toEqual({ ok: true });
   });
@@ -89,18 +95,21 @@ describe("attemptLocalLogin", () => {
     await configureCreds("norman", "s3cret-passphrase!");
     const wrongPassword = await attemptLocalLogin(
       { username: "norman", password: "nope" },
-      REAL_IP,
+      REAL_IP
     );
     const wrongUser = await attemptLocalLogin(
       { username: "who", password: "s3cret-passphrase!" },
-      REAL_IP,
+      REAL_IP
     );
     expect(wrongPassword).toEqual({ ok: false, reason: "invalid_credentials" });
     expect(wrongUser).toEqual({ ok: false, reason: "invalid_credentials" });
   });
 
   it("reports not_configured when credentials are absent", async () => {
-    const result = await attemptLocalLogin({ username: "x", password: "y" }, REAL_IP);
+    const result = await attemptLocalLogin(
+      { username: "x", password: "y" },
+      REAL_IP
+    );
     expect(result).toEqual({ ok: false, reason: "not_configured" });
   });
 
@@ -109,19 +118,36 @@ describe("attemptLocalLogin", () => {
     mockAttempt.mockResolvedValueOnce({ allowed: false, retryAfterMs: 30_000 });
     const result = await attemptLocalLogin(
       { username: "norman", password: "s3cret-passphrase!" },
-      REAL_IP,
+      REAL_IP
     );
-    expect(result).toEqual({ ok: false, reason: "rate_limited", retryAfterMs: 30_000 });
-    expect(mockAttempt).toHaveBeenCalledWith(`login:${REAL_IP}`, expect.any(Number));
+    expect(result).toEqual({
+      ok: false,
+      reason: "rate_limited",
+      retryAfterMs: 30_000,
+    });
+    expect(mockAttempt).toHaveBeenCalledWith(
+      `login:${REAL_IP}`,
+      expect.any(Number)
+    );
   });
 });
 
 describe("loginRequestSchema", () => {
   it("rejects empty and oversized inputs", () => {
-    expect(loginRequestSchema.safeParse({ username: "", password: "x" }).success).toBe(false);
-    expect(loginRequestSchema.safeParse({ username: "u", password: "" }).success).toBe(false);
-    expect(loginRequestSchema.safeParse({ username: "u".repeat(101), password: "x" }).success).toBe(false);
-    expect(loginRequestSchema.safeParse({ username: "u", password: "p".repeat(201) }).success).toBe(false);
+    expect(
+      loginRequestSchema.safeParse({ username: "", password: "x" }).success
+    ).toBe(false);
+    expect(
+      loginRequestSchema.safeParse({ username: "u", password: "" }).success
+    ).toBe(false);
+    expect(
+      loginRequestSchema.safeParse({ username: "u".repeat(101), password: "x" })
+        .success
+    ).toBe(false);
+    expect(
+      loginRequestSchema.safeParse({ username: "u", password: "p".repeat(201) })
+        .success
+    ).toBe(false);
   });
 });
 
@@ -147,7 +173,8 @@ describe("validateProductionEnv — local auth path", () => {
     });
     // Bypass the file-level ENV mock: we need the real module to parse the
     // process.env values we just set.
-    const actual = await vi.importActual<typeof import("./_core/env")>("./_core/env");
+    const actual =
+      await vi.importActual<typeof import("./_core/env")>("./_core/env");
     return actual.validateProductionEnv;
   }
 
@@ -161,7 +188,9 @@ describe("validateProductionEnv — local auth path", () => {
 
   it("fails without any auth path configured", async () => {
     const validate = await freshValidate({});
-    expect(() => validate()).toThrow(/OWNER_OPEN_ID.*OAUTH_SERVER_URL|OAUTH_SERVER_URL[\s\S]*OWNER_OPEN_ID|self-hosted/);
+    expect(() => validate()).toThrow(
+      /OWNER_OPEN_ID.*OAUTH_SERVER_URL|OAUTH_SERVER_URL[\s\S]*OWNER_OPEN_ID|self-hosted/
+    );
   });
 
   it("still passes for the pure OAuth path", async () => {

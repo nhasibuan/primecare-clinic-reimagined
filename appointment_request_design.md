@@ -6,15 +6,15 @@ This feature records **scheduling requests**, not clinical records. The public f
 
 ## Stored fields
 
-| Field | Required | Reason |
-| --- | --- | --- |
-| Full name | Yes | Lets clinic staff address the requester. |
-| WhatsApp / phone | Yes | Lets clinic staff confirm availability. |
-| Service | Yes | Routes the request to the relevant clinic service. |
-| Preferred date | Yes | Expresses a scheduling preference; it is not a confirmed booking. |
-| Optional note | No | Allows a short scheduling-related note, limited to 600 characters. |
-| Consent timestamp | Yes | Records agreement for staff to use the submission to reply about the request. |
-| Status | System | Tracks `new`, `contacted`, or `closed` in the protected CMS. |
+| Field             | Required | Reason                                                                        |
+| ----------------- | -------- | ----------------------------------------------------------------------------- |
+| Full name         | Yes      | Lets clinic staff address the requester.                                      |
+| WhatsApp / phone  | Yes      | Lets clinic staff confirm availability.                                       |
+| Service           | Yes      | Routes the request to the relevant clinic service.                            |
+| Preferred date    | Yes      | Expresses a scheduling preference; it is not a confirmed booking.             |
+| Optional note     | No       | Allows a short scheduling-related note, limited to 600 characters.            |
+| Consent timestamp | Yes      | Records agreement for staff to use the submission to reply about the request. |
+| Status            | System   | Tracks `new`, `contacted`, or `closed` in the protected CMS.                  |
 
 ## Access and guardrails
 

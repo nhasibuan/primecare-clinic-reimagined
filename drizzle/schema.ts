@@ -1,4 +1,13 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, index } from "drizzle-orm/mysql-core";
+import {
+  boolean,
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+  index,
+} from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -50,8 +59,12 @@ export const clinicians = mysqlTable("clinicians", {
 /** @deprecated Unused — retained for migration compatibility. Will be removed in a future cleanup. */
 export const openingSchedules = mysqlTable("opening_schedules", {
   id: int("id").autoincrement().primaryKey(),
-  clinicianId: int("clinicianId").references(() => clinicians.id, { onDelete: "set null" }),
-  serviceId: int("serviceId").references(() => services.id, { onDelete: "set null" }),
+  clinicianId: int("clinicianId").references(() => clinicians.id, {
+    onDelete: "set null",
+  }),
+  serviceId: int("serviceId").references(() => services.id, {
+    onDelete: "set null",
+  }),
   dayLabel: varchar("dayLabel", { length: 120 }).notNull(),
   startTime: varchar("startTime", { length: 16 }),
   endTime: varchar("endTime", { length: 16 }),
@@ -67,93 +80,151 @@ export const mediaAssets = mysqlTable("media_assets", {
   fileName: varchar("fileName", { length: 255 }).notNull(),
   altText: varchar("altText", { length: 255 }).notNull(),
   mimeType: varchar("mimeType", { length: 120 }).notNull(),
-  category: mysqlEnum("category", ["brand", "service", "clinician", "facility", "document"]).default("service").notNull(),
-  uploadedBy: int("uploadedBy").notNull().references(() => users.id, { onDelete: "restrict" }),
+  category: mysqlEnum("category", [
+    "brand",
+    "service",
+    "clinician",
+    "facility",
+    "document",
+  ])
+    .default("service")
+    .notNull(),
+  uploadedBy: int("uploadedBy")
+    .notNull()
+    .references(() => users.id, { onDelete: "restrict" }),
   uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
 });
 
-export const appointmentRequests = mysqlTable("appointment_requests", {
-  id: int("id").autoincrement().primaryKey(),
-  // ── Column widths for AES-256-GCM envelopes (server/encryption.ts) ──
-  // Encrypted fields store "v1:<iv>:<ct+tag>" base64 envelopes whose length is
-  // 20 + 4*ceil((n+16)/3) for an n-character plaintext. Widths below hold the
-  // largest plaintext accepted by the Zod input schemas. The contract test in
-  // server/encryption.test.ts keeps these in sync.
-  fullName: varchar("fullName", { length: 400 }).notNull(),
-  contactNumber: varchar("contactNumber", { length: 128 }).notNull(),
-  service: varchar("service", { length: 160 }).notNull(),
-  preferredDate: varchar("preferredDate", { length: 10 }).notNull(),
-  preferredTime: varchar("preferredTime", { length: 8 }),
-  note: varchar("note", { length: 1024 }),
-  consentedAt: timestamp("consentedAt").defaultNow().notNull(),
-  status: mysqlEnum("status", ["new", "contacted", "closed"]).default("new").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  // Data tambahan pasien (diisi oleh staf setelah kontak) — encrypted at rest
-  nik: varchar("nik", { length: 128 }),
-  tempatLahir: varchar("tempatLahir", { length: 192 }),
-  tanggalLahir: varchar("tanggalLahir", { length: 64 }),
-  alamatLengkap: varchar("alamatLengkap", { length: 768 }),
-  agama: varchar("agama", { length: 50 }),
-  email: varchar("email", { length: 400 }),
-  instagramUrl: varchar("instagramUrl", { length: 255 }),
-}, (table) => ({
-  statusCreatedIdx: index("appointment_requests_status_created_idx").on(table.status, table.createdAt),
-}));
+export const appointmentRequests = mysqlTable(
+  "appointment_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    // ── Column widths for AES-256-GCM envelopes (server/encryption.ts) ──
+    // Encrypted fields store "v1:<iv>:<ct+tag>" base64 envelopes whose length is
+    // 20 + 4*ceil((n+16)/3) for an n-character plaintext. Widths below hold the
+    // largest plaintext accepted by the Zod input schemas. The contract test in
+    // server/encryption.test.ts keeps these in sync.
+    fullName: varchar("fullName", { length: 400 }).notNull(),
+    contactNumber: varchar("contactNumber", { length: 128 }).notNull(),
+    service: varchar("service", { length: 160 }).notNull(),
+    preferredDate: varchar("preferredDate", { length: 10 }).notNull(),
+    preferredTime: varchar("preferredTime", { length: 8 }),
+    note: varchar("note", { length: 1024 }),
+    consentedAt: timestamp("consentedAt").defaultNow().notNull(),
+    status: mysqlEnum("status", ["new", "contacted", "closed"])
+      .default("new")
+      .notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    // Data tambahan pasien (diisi oleh staf setelah kontak) — encrypted at rest
+    nik: varchar("nik", { length: 128 }),
+    tempatLahir: varchar("tempatLahir", { length: 192 }),
+    tanggalLahir: varchar("tanggalLahir", { length: 64 }),
+    alamatLengkap: varchar("alamatLengkap", { length: 768 }),
+    agama: varchar("agama", { length: 50 }),
+    email: varchar("email", { length: 400 }),
+    instagramUrl: varchar("instagramUrl", { length: 255 }),
+  },
+  table => ({
+    statusCreatedIdx: index("appointment_requests_status_created_idx").on(
+      table.status,
+      table.createdAt
+    ),
+  })
+);
 
-export const whatsappFollowUpActivities = mysqlTable("whatsapp_follow_up_activities", {
-  id: int("id").autoincrement().primaryKey(),
-  appointmentRequestId: int("appointmentRequestId").notNull().references(() => appointmentRequests.id, { onDelete: "cascade" }),
-  messageStatus: mysqlEnum("messageStatus", ["draft_copied", "whatsapp_opened"]).notNull(),
-  finalDraftLength: int("finalDraftLength").notNull(),
-  recordedBy: int("recordedBy").notNull().references(() => users.id, { onDelete: "restrict" }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+export const whatsappFollowUpActivities = mysqlTable(
+  "whatsapp_follow_up_activities",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    appointmentRequestId: int("appointmentRequestId")
+      .notNull()
+      .references(() => appointmentRequests.id, { onDelete: "cascade" }),
+    messageStatus: mysqlEnum("messageStatus", [
+      "draft_copied",
+      "whatsapp_opened",
+    ]).notNull(),
+    finalDraftLength: int("finalDraftLength").notNull(),
+    recordedBy: int("recordedBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  }
+);
 
-export const whatsappSignatureTemplates = mysqlTable("whatsapp_signature_templates", {
-  id: int("id").autoincrement().primaryKey(),
-  content: varchar("content", { length: 1000 }).notNull(),
-  updatedBy: int("updatedBy").notNull().references(() => users.id, { onDelete: "restrict" }),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const whatsappSignatureTemplates = mysqlTable(
+  "whatsapp_signature_templates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    content: varchar("content", { length: 1000 }).notNull(),
+    updatedBy: int("updatedBy")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  }
+);
 
-export const queueEntries = mysqlTable("queue_entries", {
-  id: int("id").autoincrement().primaryKey(),
-  queueNumber: int("queueNumber").notNull(),
-  // Width accommodates the AES-256-GCM envelope (see encryption.ts header note).
-  patientName: varchar("patientName", { length: 400 }).notNull(),
-  poli: varchar("poli", { length: 160 }).notNull(),
-  doctorName: varchar("doctorName", { length: 160 }).notNull(),
-  appointmentRequestId: int("appointmentRequestId").unique().references(() => appointmentRequests.id, { onDelete: "set null" }),
-  status: mysqlEnum("status", ["waiting", "serving", "done", "skipped"]).default("waiting").notNull(),
-  queueDate: varchar("queueDate", { length: 10 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => ({
-  dateNumIdx: index("queue_entries_date_num_idx").on(table.queueDate, table.queueNumber),
-}));
+export const queueEntries = mysqlTable(
+  "queue_entries",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    queueNumber: int("queueNumber").notNull(),
+    // Width accommodates the AES-256-GCM envelope (see encryption.ts header note).
+    patientName: varchar("patientName", { length: 400 }).notNull(),
+    poli: varchar("poli", { length: 160 }).notNull(),
+    doctorName: varchar("doctorName", { length: 160 }).notNull(),
+    appointmentRequestId: int("appointmentRequestId")
+      .unique()
+      .references(() => appointmentRequests.id, { onDelete: "set null" }),
+    status: mysqlEnum("status", ["waiting", "serving", "done", "skipped"])
+      .default("waiting")
+      .notNull(),
+    queueDate: varchar("queueDate", { length: 10 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    dateNumIdx: index("queue_entries_date_num_idx").on(
+      table.queueDate,
+      table.queueNumber
+    ),
+  })
+);
 
 export const osdSettings = mysqlTable("osd_settings", {
   id: int("id").autoincrement().primaryKey(),
-  runningText: varchar("runningText", { length: 1000 }).default("Selamat datang di Klinik Berkat Insani. Mohon menunggu hingga nomor antrean Anda dipanggil.").notNull(),
+  runningText: varchar("runningText", { length: 1000 })
+    .default(
+      "Selamat datang di Klinik Berkat Insani. Mohon menunggu hingga nomor antrean Anda dipanggil."
+    )
+    .notNull(),
   youtubeUrl: varchar("youtubeUrl", { length: 500 }).default("").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export const auditLogs = mysqlTable("audit_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  actorId: int("actorId").references(() => users.id, { onDelete: "set null" }),
-  action: varchar("action", { length: 100 }).notNull(),
-  entityType: varchar("entityType", { length: 50 }).notNull(),
-  entityId: varchar("entityId", { length: 50 }),
-  detail: text("detail"),
-  ipAddress: varchar("ipAddress", { length: 45 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => ({
-  actionIdx: index("audit_logs_action_idx").on(table.action),
-  entityIdx: index("audit_logs_entity_idx").on(table.entityType, table.entityId),
-  createdIdx: index("audit_logs_created_idx").on(table.createdAt),
-}));
+export const auditLogs = mysqlTable(
+  "audit_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    actorId: int("actorId").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    action: varchar("action", { length: 100 }).notNull(),
+    entityType: varchar("entityType", { length: 50 }).notNull(),
+    entityId: varchar("entityId", { length: 50 }),
+    detail: text("detail"),
+    ipAddress: varchar("ipAddress", { length: 45 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => ({
+    actionIdx: index("audit_logs_action_idx").on(table.action),
+    entityIdx: index("audit_logs_entity_idx").on(
+      table.entityType,
+      table.entityId
+    ),
+    createdIdx: index("audit_logs_created_idx").on(table.createdAt),
+  })
+);
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -161,8 +232,10 @@ export type ClinicProfile = typeof clinicProfiles.$inferSelect;
 export type Service = typeof services.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type AppointmentRequest = typeof appointmentRequests.$inferSelect;
-export type WhatsAppFollowUpActivity = typeof whatsappFollowUpActivities.$inferSelect;
-export type WhatsAppSignatureTemplate = typeof whatsappSignatureTemplates.$inferSelect;
+export type WhatsAppFollowUpActivity =
+  typeof whatsappFollowUpActivities.$inferSelect;
+export type WhatsAppSignatureTemplate =
+  typeof whatsappSignatureTemplates.$inferSelect;
 export type QueueEntry = typeof queueEntries.$inferSelect;
 export type OsdSetting = typeof osdSettings.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;

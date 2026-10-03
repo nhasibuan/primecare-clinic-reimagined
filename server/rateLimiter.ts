@@ -79,7 +79,10 @@ export class InMemoryRateLimiter implements RateLimiter {
     if (timestamps.length >= this.maxRequests) {
       // The oldest retained attempt determines when a slot frees up.
       const oldest = timestamps[0];
-      return { allowed: false, retryAfterMs: Math.max(0, oldest + this.windowMs - now) };
+      return {
+        allowed: false,
+        retryAfterMs: Math.max(0, oldest + this.windowMs - now),
+      };
     }
 
     timestamps.push(now);
@@ -127,6 +130,10 @@ export class InMemoryRateLimiter implements RateLimiter {
  */
 export class NullRateLimiter implements RateLimiter {
   readonly activeKeyCount = 0;
-  async attempt(_key: string): Promise<RateLimitResult> { return { allowed: true, retryAfterMs: 0 }; }
-  reset(): void { /* no-op */ }
+  async attempt(_key: string): Promise<RateLimitResult> {
+    return { allowed: true, retryAfterMs: 0 };
+  }
+  reset(): void {
+    /* no-op */
+  }
 }

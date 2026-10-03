@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { notifyOwner } from "./notification";
+import { getLimiterStats } from "../rateLimiterMetrics";
 import { adminProcedure, publicProcedure, router } from "./trpc";
 
 export const systemRouter = router({
@@ -12,6 +13,13 @@ export const systemRouter = router({
     .query(() => ({
       ok: true,
     })),
+
+  /**
+   * Operational telemetry for the pluggable rate limiters (admin only):
+   * which backend each limiter runs on and how often it has degraded.
+   * Backs the WO strategic initiative on limiter observability.
+   */
+  rateLimiterStatus: adminProcedure.query(() => getLimiterStats()),
 
   notifyOwner: adminProcedure
     .input(

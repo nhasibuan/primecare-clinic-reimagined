@@ -30,11 +30,8 @@ export const adminRouter = router({
   toggleCaptcha: adminProcedure
     .input(toggleCaptchaInput)
     .mutation(async ({ ctx, input }) => {
-      const result = await toggleCaptchaEnabled(input.enabled).catch((err) => {
-        if (
-          err instanceof Error &&
-          err.message.includes("tidak ditemukan")
-        ) {
+      const result = await toggleCaptchaEnabled(input.enabled).catch(err => {
+        if (err instanceof Error && err.message.includes("tidak ditemukan")) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Profil klinik tidak ditemukan.",

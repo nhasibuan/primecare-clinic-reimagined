@@ -9,7 +9,8 @@ const dbMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./repositories/userRepository", async importOriginal => {
-  const actual = await importOriginal<typeof import("./repositories/userRepository")>();
+  const actual =
+    await importOriginal<typeof import("./repositories/userRepository")>();
   return {
     ...actual,
     listUsers: dbMocks.listUsers,
@@ -23,7 +24,10 @@ import { appRouter } from "./routers";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function createAdminContext(userId = 1): { ctx: TrpcContext; user: AuthenticatedUser } {
+function createAdminContext(userId = 1): {
+  ctx: TrpcContext;
+  user: AuthenticatedUser;
+} {
   const user: AuthenticatedUser = {
     id: userId,
     openId: `admin-${userId}`,
@@ -68,7 +72,9 @@ describe("admin management", () => {
       const { ctx } = createAdminContext(1);
       const caller = appRouter.createCaller(ctx);
 
-      await expect(caller.admin.promoteUser({ userId: 1 })).rejects.toMatchObject({
+      await expect(
+        caller.admin.promoteUser({ userId: 1 })
+      ).rejects.toMatchObject({
         code: "BAD_REQUEST",
         message: expect.stringContaining("diri sendiri"),
       });
@@ -81,7 +87,9 @@ describe("admin management", () => {
       const { ctx } = createAdminContext(1);
       const caller = appRouter.createCaller(ctx);
 
-      await expect(caller.admin.demoteUser({ userId: 1 })).rejects.toMatchObject({
+      await expect(
+        caller.admin.demoteUser({ userId: 1 })
+      ).rejects.toMatchObject({
         code: "BAD_REQUEST",
         message: expect.stringContaining("diri sendiri"),
       });
@@ -119,12 +127,14 @@ describe("admin management", () => {
     it("rejects demoting the last admin", async () => {
       const { ctx } = createAdminContext(1);
       dbMocks.demoteUser.mockRejectedValue(
-        new Error("Tidak dapat menurunkan administrator terakhir. Tambahkan administrator lain terlebih dahulu."),
+        new Error(
+          "Tidak dapat menurunkan administrator terakhir. Tambahkan administrator lain terlebih dahulu."
+        )
       );
 
       const caller = appRouter.createCaller(ctx);
       await expect(caller.admin.demoteUser({ userId: 5 })).rejects.toThrow(
-        "Tidak dapat menurunkan administrator terakhir",
+        "Tidak dapat menurunkan administrator terakhir"
       );
     });
   });

@@ -35,7 +35,7 @@ export const err = <E = string>(error: E): Err<E> => ({ ok: false, error });
  */
 export function mapResult<T, U, E = string>(
   result: Result<T, E>,
-  fn: (value: T) => U,
+  fn: (value: T) => U
 ): Result<U, E> {
   return result.ok ? ok(fn(result.value)) : result;
 }
@@ -48,7 +48,7 @@ export function mapResult<T, U, E = string>(
  */
 export function unwrapOrThrow<T, E = string>(
   result: Result<T, E>,
-  toError: (error: E) => Error,
+  toError: (error: E) => Error
 ): T {
   if (!result.ok) throw toError(result.error);
   return result.value;
@@ -63,7 +63,7 @@ export function unwrapOrThrow<T, E = string>(
  */
 export async function tryCatch<T, E = string>(
   fn: () => Promise<T>,
-  mapError: (error: unknown) => E,
+  mapError: (error: unknown) => E
 ): Promise<Result<T, E>> {
   try {
     return ok(await fn());

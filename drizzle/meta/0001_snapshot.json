@@ -88,9 +88,7 @@
       "compositePrimaryKeys": {
         "appointment_requests_id": {
           "name": "appointment_requests_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -156,9 +154,7 @@
       "compositePrimaryKeys": {
         "clinic_profiles_id": {
           "name": "clinic_profiles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -240,9 +236,7 @@
       "compositePrimaryKeys": {
         "clinicians_id": {
           "name": "clinicians_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -322,17 +316,13 @@
       "compositePrimaryKeys": {
         "media_assets_id": {
           "name": "media_assets_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "media_assets_storageKey_unique": {
           "name": "media_assets_storageKey_unique",
-          "columns": [
-            "storageKey"
-          ]
+          "columns": ["storageKey"]
         }
       },
       "checkConstraint": {}
@@ -412,9 +402,7 @@
       "compositePrimaryKeys": {
         "opening_schedules_id": {
           "name": "opening_schedules_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -490,9 +478,7 @@
       "compositePrimaryKeys": {
         "services_id": {
           "name": "services_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -575,17 +561,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "checkConstraint": {}

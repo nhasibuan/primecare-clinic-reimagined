@@ -20,8 +20,8 @@ export const profileInput = z.object({
     .string()
     .url()
     .refine(
-      (value) => /^https:\/\/wa\.me\/\d+$/.test(value),
-      "Use an official wa.me WhatsApp link.",
+      value => /^https:\/\/wa\.me\/\d+$/.test(value),
+      "Use an official wa.me WhatsApp link."
     ),
   instagramUrl: z.string().url().nullable().optional(),
 });
@@ -35,9 +35,9 @@ export const serviceInput = z.object({
     .min(1)
     .max(2000)
     .refine(
-      (value) =>
+      value =>
         value.startsWith("/manus-storage/") || value.startsWith("data:image/"),
-      "Image URL must reference an uploaded asset.",
+      "Image URL must reference an uploaded asset."
     ),
   sortOrder: z.number().int().min(0).max(999),
   isPublished: z.boolean(),
@@ -62,7 +62,7 @@ export const appointmentInput = z.object({
     .max(40)
     .regex(
       /^[0-9+\-\s]*[0-9][0-9+\-\s]*$/,
-      "Gunakan nomor telepon atau WhatsApp yang valid.",
+      "Gunakan nomor telepon atau WhatsApp yang valid."
     ),
   service: z.string().trim().min(2).max(160),
   preferredDate: z
@@ -87,11 +87,11 @@ export const updatePatientDataInput = z.object({
     .trim()
     .max(30)
     .refine(
-      (value) => {
+      value => {
         if (!value) return true;
         return /^\d{1,16}$/.test(value);
       },
-      { message: "NIK harus berupa angka 1-16 digit." },
+      { message: "NIK harus berupa angka 1-16 digit." }
     )
     .optional(),
   tempatLahir: z.string().trim().max(100).optional(),
@@ -100,7 +100,7 @@ export const updatePatientDataInput = z.object({
     .trim()
     .max(10)
     .refine(
-      (value) => {
+      value => {
         if (!value) return true;
         if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
         const [year, month, day] = value.split("-").map(Number);
@@ -110,11 +110,11 @@ export const updatePatientDataInput = z.object({
         const todayUtc = Date.UTC(
           today.getUTCFullYear(),
           today.getUTCMonth(),
-          today.getUTCDate(),
+          today.getUTCDate()
         );
         return date.getTime() < todayUtc;
       },
-      { message: "Tanggal lahir tidak valid atau bukan tanggal di masa lalu." },
+      { message: "Tanggal lahir tidak valid atau bukan tanggal di masa lalu." }
     )
     .optional(),
   alamatLengkap: z.string().trim().max(500).optional(),
@@ -123,11 +123,11 @@ export const updatePatientDataInput = z.object({
     .trim()
     .max(50)
     .refine(
-      (value) => {
+      value => {
         if (!value) return true;
         return ([...AGAMA_VALUES, ""] as string[]).includes(value);
       },
-      { message: "Agama tidak dikenali. Gunakan salah satu yang tersedia." },
+      { message: "Agama tidak dikenali. Gunakan salah satu yang tersedia." }
     )
     .optional(),
   email: z
@@ -135,13 +135,13 @@ export const updatePatientDataInput = z.object({
     .trim()
     .max(255)
     .refine(
-      (value) => {
+      value => {
         if (!value) return true;
         return (
           /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value) && value.length <= 254
         );
       },
-      { message: "Format email tidak valid." },
+      { message: "Format email tidak valid." }
     )
     .optional(),
   instagramUrl: z
@@ -149,13 +149,13 @@ export const updatePatientDataInput = z.object({
     .trim()
     .max(255)
     .refine(
-      (value) => {
+      value => {
         if (!value) return true;
         try {
           const url = new URL(
             value.startsWith("@")
               ? `https://instagram.com/${value.slice(1)}`
-              : value,
+              : value
           );
           return (
             url.hostname === "instagram.com" ||
@@ -165,7 +165,7 @@ export const updatePatientDataInput = z.object({
           return false;
         }
       },
-      { message: "URL Instagram tidak valid." },
+      { message: "URL Instagram tidak valid." }
     )
     .optional(),
 });

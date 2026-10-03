@@ -43,7 +43,9 @@ export default function Login() {
         body: JSON.stringify({ username, password }),
       });
       if (response.status === 429) {
-        const data = (await response.json().catch(() => null)) as { error?: string } | null;
+        const data = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
         setError(data?.error ?? "Too many attempts. Please wait a minute.");
         return;
       }

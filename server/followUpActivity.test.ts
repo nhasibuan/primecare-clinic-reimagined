@@ -7,7 +7,10 @@ const dbMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./repositories/appointmentRepository", async importOriginal => {
-  const actual = await importOriginal<typeof import("./repositories/appointmentRepository")>();
+  const actual =
+    await importOriginal<
+      typeof import("./repositories/appointmentRepository")
+    >();
   return {
     ...actual,
     createWhatsAppFollowUpActivity: dbMocks.createWhatsAppFollowUpActivity,
@@ -62,18 +65,22 @@ describe("WhatsApp follow-up activity", () => {
   it("rejects an activity length beyond the enforced WhatsApp draft limit", async () => {
     const caller = appRouter.createCaller(createContext());
 
-    await expect(caller.appointments.recordFollowUpActivity({
-      appointmentRequestId: 17,
-      messageStatus: "draft_copied",
-      finalDraftLength: 1001,
-    })).rejects.toThrow();
+    await expect(
+      caller.appointments.recordFollowUpActivity({
+        appointmentRequestId: 17,
+        messageStatus: "draft_copied",
+        finalDraftLength: 1001,
+      })
+    ).rejects.toThrow();
     expect(dbMocks.createWhatsAppFollowUpActivity).not.toHaveBeenCalled();
   });
 
   it("does not expose follow-up history to non-administrator users", async () => {
     const caller = appRouter.createCaller(createContext("user"));
 
-    await expect(caller.appointments.listFollowUpActivities()).rejects.toThrow();
+    await expect(
+      caller.appointments.listFollowUpActivities()
+    ).rejects.toThrow();
   });
 
   it("forwards validated activity status and date-range filters to the protected history query", async () => {
@@ -82,18 +89,28 @@ describe("WhatsApp follow-up activity", () => {
     const startAt = new Date("2030-01-01T00:00:00.000Z");
     const endAt = new Date("2030-01-31T23:59:59.999Z");
 
-    await caller.appointments.listFollowUpActivities({ messageStatus: "whatsapp_opened", startAt, endAt });
+    await caller.appointments.listFollowUpActivities({
+      messageStatus: "whatsapp_opened",
+      startAt,
+      endAt,
+    });
 
-    expect(dbMocks.getWhatsAppFollowUpActivities).toHaveBeenCalledWith({ messageStatus: "whatsapp_opened", startAt, endAt });
+    expect(dbMocks.getWhatsAppFollowUpActivities).toHaveBeenCalledWith({
+      messageStatus: "whatsapp_opened",
+      startAt,
+      endAt,
+    });
   });
 
   it("rejects a date range whose end precedes its start", async () => {
     const caller = appRouter.createCaller(createContext());
 
-    await expect(caller.appointments.listFollowUpActivities({
-      startAt: new Date("2030-02-01T00:00:00.000Z"),
-      endAt: new Date("2030-01-01T00:00:00.000Z"),
-    })).rejects.toThrow();
+    await expect(
+      caller.appointments.listFollowUpActivities({
+        startAt: new Date("2030-02-01T00:00:00.000Z"),
+        endAt: new Date("2030-01-01T00:00:00.000Z"),
+      })
+    ).rejects.toThrow();
     expect(dbMocks.getWhatsAppFollowUpActivities).not.toHaveBeenCalled();
   });
 });

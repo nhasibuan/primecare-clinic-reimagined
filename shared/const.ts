@@ -12,9 +12,10 @@ export const PROD_COOKIE_NAME = "__Host-app_session_id";
  */
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 export const AXIOS_TIMEOUT_MS = 30_000;
-export const UNAUTHED_ERR_MSG = 'Please login (10001)';
-export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';
-export const DB_UNAVAILABLE_ERR_MSG = 'Database is temporarily unavailable. Please try again later. (10003)';
+export const UNAUTHED_ERR_MSG = "Please login (10001)";
+export const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
+export const DB_UNAVAILABLE_ERR_MSG =
+  "Database is temporarily unavailable. Please try again later. (10003)";
 
 // One-time nonce cookie that binds an OAuth login to the browser that started
 // it. The `__Host-` prefix forces the cookie host-only (Secure, Path=/, no
@@ -52,7 +53,7 @@ export const decodeOAuthState = (state: string): OAuthState => {
  * Recognized Indonesian religion values (UU PDP / KTP standard).
  * Single source of truth — imported by schemas/index.ts (server validation)
  * and client form components to prevent drift between validation and UI.
- */export const AGAMA_VALUES = [
+ */ export const AGAMA_VALUES = [
   "Islam",
   "Kristen",
   "Katolik",

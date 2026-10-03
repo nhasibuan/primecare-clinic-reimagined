@@ -87,9 +87,13 @@ function makeRes(): MockRes {
 describe("POST /api/auth/login handler", () => {
   beforeEach(async () => {
     mockEnv.adminPasswordHash = await hashPassword(PASSWORD);
-    mockAttempt.mockReset().mockResolvedValue({ allowed: true, retryAfterMs: 0 });
+    mockAttempt
+      .mockReset()
+      .mockResolvedValue({ allowed: true, retryAfterMs: 0 });
     upsertUser.mockReset().mockResolvedValue(undefined);
-    getUserByOpenId.mockReset().mockResolvedValue({ id: 1, openId: "local-admin" });
+    getUserByOpenId
+      .mockReset()
+      .mockResolvedValue({ id: 1, openId: "local-admin" });
     createSessionToken.mockReset().mockResolvedValue("signed.jwt.token");
     recordAuditLog.mockReset().mockResolvedValue(undefined);
   });
@@ -103,11 +107,17 @@ describe("POST /api/auth/login handler", () => {
     const cookieName = Object.keys(res.cookies)[0];
     expect(cookieName).toMatch(/app_session_id$/);
     expect(upsertUser).toHaveBeenCalledWith(
-      expect.objectContaining({ openId: "local-admin", role: "admin" }),
+      expect.objectContaining({ openId: "local-admin", role: "admin" })
     );
-    expect(createSessionToken).toHaveBeenCalledWith("local-admin", expect.anything());
+    expect(createSessionToken).toHaveBeenCalledWith(
+      "local-admin",
+      expect.anything()
+    );
     expect(recordAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "auth.login", detail: expect.stringContaining("local password") }),
+      expect.objectContaining({
+        action: "auth.login",
+        detail: expect.stringContaining("local password"),
+      })
     );
   });
 
@@ -118,7 +128,10 @@ describe("POST /api/auth/login handler", () => {
     expect(res.statusCode).toBe(401);
     expect(res.body).toEqual({ error: "Invalid username or password." });
     expect(recordAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({ action: "auth.login", detail: expect.stringContaining("failed") }),
+      expect.objectContaining({
+        action: "auth.login",
+        detail: expect.stringContaining("failed"),
+      })
     );
   });
 
@@ -129,7 +142,9 @@ describe("POST /api/auth/login handler", () => {
     await handleLocalLogin(req, res);
     expect(res.statusCode).toBe(429);
     expect(res.headers["Retry-After"]).toBe("45");
-    expect((res.body as { error: string }).error).toMatch(/Too many login attempts/);
+    expect((res.body as { error: string }).error).toMatch(
+      /Too many login attempts/
+    );
   });
 
   it("returns 400 for malformed bodies", async () => {
@@ -142,7 +157,10 @@ describe("POST /api/auth/login handler", () => {
     mockEnv.adminUsername = "";
     mockEnv.adminPasswordHash = "";
     const res = makeRes();
-    await handleLocalLogin(makeReq({ username: "norman", password: PASSWORD }), res);
+    await handleLocalLogin(
+      makeReq({ username: "norman", password: PASSWORD }),
+      res
+    );
     expect(res.statusCode).toBe(503);
   });
 });

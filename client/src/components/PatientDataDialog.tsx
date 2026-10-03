@@ -34,7 +34,11 @@ type PatientDataDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export default function PatientDataDialog({ requestId, initialData, onOpenChange }: PatientDataDialogProps) {
+export default function PatientDataDialog({
+  requestId,
+  initialData,
+  onOpenChange,
+}: PatientDataDialogProps) {
   const utils = trpc.useUtils();
   const updatePatientData = trpc.appointments.updatePatientData.useMutation({
     onSuccess: async () => {
@@ -55,7 +59,9 @@ export default function PatientDataDialog({ requestId, initialData, onOpenChange
     instagramUrl: initialData.instagramUrl ?? "",
   });
 
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof PatientData, string>>>({});
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof PatientData, string>>
+  >({});
 
   const updateField = (field: keyof PatientData, value: string) => {
     setForm(current => ({ ...current, [field]: value }));
@@ -86,7 +92,8 @@ export default function PatientDataDialog({ requestId, initialData, onOpenChange
               Data pasien
             </DialogTitle>
             <DialogDescription className="text-sm leading-6 text-white/75">
-              Lengkapi data identitas pasien. Data ini hanya untuk keperluan administrasi klinik.
+              Lengkapi data identitas pasien. Data ini hanya untuk keperluan
+              administrasi klinik.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -122,7 +129,9 @@ export default function PatientDataDialog({ requestId, initialData, onOpenChange
                 className="rounded-xl border border-[#173047]/15 bg-white px-4 py-3 text-sm font-medium text-[#173047] outline-none transition focus:border-[#039CB7] focus:ring-4 focus:ring-[#039CB7]/10"
               />
               {fieldErrors.tanggalLahir && (
-                <p className="text-xs text-rose-700">{fieldErrors.tanggalLahir}</p>
+                <p className="text-xs text-rose-700">
+                  {fieldErrors.tanggalLahir}
+                </p>
               )}
             </label>
             <label className="grid gap-2 text-sm font-bold text-[#395568] sm:col-span-2">
@@ -182,9 +191,13 @@ export default function PatientDataDialog({ requestId, initialData, onOpenChange
               className="inline-flex items-center justify-center gap-2 rounded-full bg-[#039CB7] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#007f98] disabled:opacity-60"
             >
               {updatePatientData.isPending ? (
-                <><Loader2 className="animate-spin h-4 w-4" /> Menyimpan...</>
+                <>
+                  <Loader2 className="animate-spin h-4 w-4" /> Menyimpan...
+                </>
               ) : (
-                <><Save size={16} /> Simpan data</>
+                <>
+                  <Save size={16} /> Simpan data
+                </>
               )}
             </button>
           </div>

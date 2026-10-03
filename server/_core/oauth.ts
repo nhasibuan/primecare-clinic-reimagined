@@ -1,4 +1,8 @@
-import { SESSION_TTL_MS, OAUTH_STATE_COOKIE, decodeOAuthState } from "@shared/const";
+import {
+  SESSION_TTL_MS,
+  OAUTH_STATE_COOKIE,
+  decodeOAuthState,
+} from "@shared/const";
 import { parse as parseCookieHeader } from "cookie";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
@@ -24,16 +28,26 @@ export function registerOAuthRoutes(app: Express) {
     // startLogin set in the browser that began this login. An attacker can
     // forge `state`, but cannot plant this cookie in the victim's browser.
     const { nonce } = decodeOAuthState(state);
-    const expectedNonce = parseCookieHeader(req.headers.cookie ?? "")[OAUTH_STATE_COOKIE];
+    const expectedNonce = parseCookieHeader(req.headers.cookie ?? "")[
+      OAUTH_STATE_COOKIE
+    ];
     if (!nonce || nonce !== expectedNonce) {
       res.status(403).json({ error: "invalid oauth state" });
       return;
     }
-    res.clearCookie(OAUTH_STATE_COOKIE, { path: "/", secure: true, sameSite: "lax" });
+    res.clearCookie(OAUTH_STATE_COOKIE, {
+      path: "/",
+      secure: true,
+      sameSite: "lax",
+    });
 
     // Open-redirect guard: only allow relative paths or same-origin redirects.
     const { redirectUri } = decodeOAuthState(state);
-    const isSafe = redirectUri && redirectUri.startsWith("/") && !redirectUri.startsWith("//") && !redirectUri.startsWith("/\\");
+    const isSafe =
+      redirectUri &&
+      redirectUri.startsWith("/") &&
+      !redirectUri.startsWith("//") &&
+      !redirectUri.startsWith("/\\");
     const safeRedirect = isSafe ? redirectUri : "/";
 
     try {
@@ -59,7 +73,10 @@ export function registerOAuthRoutes(app: Express) {
       });
 
       const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(getSessionCookieName(), sessionToken, { ...cookieOptions, maxAge: SESSION_TTL_MS });
+      res.cookie(getSessionCookieName(), sessionToken, {
+        ...cookieOptions,
+        maxAge: SESSION_TTL_MS,
+      });
 
       res.redirect(302, safeRedirect);
     } catch (error) {

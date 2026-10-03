@@ -7,12 +7,17 @@ import { getTodayDateString, redactName } from "../utils/queueUtils";
 export async function getQueueEntries(date?: string) {
   const db = requireDb(await getDb());
   const targetDate = date ?? getTodayDateString();
-  const rows = await db.select().from(queueEntries)
+  const rows = await db
+    .select()
+    .from(queueEntries)
     .where(eq(queueEntries.queueDate, targetDate))
     .orderBy(asc(queueEntries.queueNumber));
   // patientName is encrypted at rest; decrypt for staff views. The public OSD
   // path re-redacts the decrypted name (see getPublicQueueEntries).
-  return rows.map((row) => ({ ...row, patientName: decryptPii(row.patientName) ?? "" }));
+  return rows.map(row => ({
+    ...row,
+    patientName: decryptPii(row.patientName) ?? "",
+  }));
 }
 
 export async function getPublicQueueEntries(date?: string) {
@@ -26,26 +31,44 @@ export async function getPublicQueueEntries(date?: string) {
 export async function getActiveQueueNumber(date?: string): Promise<number> {
   const db = requireDb(await getDb());
   const targetDate = date ?? getTodayDateString();
-  const [serving] = await db.select({ queueNumber: queueEntries.queueNumber })
+  const [serving] = await db
+    .select({ queueNumber: queueEntries.queueNumber })
     .from(queueEntries)
-    .where(and(eq(queueEntries.queueDate, targetDate), eq(queueEntries.status, "serving")))
+    .where(
+      and(
+        eq(queueEntries.queueDate, targetDate),
+        eq(queueEntries.status, "serving")
+      )
+    )
     .orderBy(desc(queueEntries.queueNumber))
     .limit(1);
   if (serving) return serving.queueNumber;
-  const [nextWaiting] = await db.select({ queueNumber: queueEntries.queueNumber })
+  const [nextWaiting] = await db
+    .select({ queueNumber: queueEntries.queueNumber })
     .from(queueEntries)
-    .where(and(eq(queueEntries.queueDate, targetDate), eq(queueEntries.status, "waiting")))
+    .where(
+      and(
+        eq(queueEntries.queueDate, targetDate),
+        eq(queueEntries.status, "waiting")
+      )
+    )
     .orderBy(asc(queueEntries.queueNumber))
     .limit(1);
   return nextWaiting?.queueNumber ?? 0;
 }
 
-export async function addQueueEntry(input: { patientName: string; poli: string; doctorName: string; appointmentRequestId?: number }) {
+export async function addQueueEntry(input: {
+  patientName: string;
+  poli: string;
+  doctorName: string;
+  appointmentRequestId?: number;
+}) {
   const db = requireDb(await getDb());
   const today = getTodayDateString();
 
   if (input.appointmentRequestId) {
-    const [existing] = await db.select({ id: queueEntries.id, queueNumber: queueEntries.queueNumber })
+    const [existing] = await db
+      .select({ id: queueEntries.id, queueNumber: queueEntries.queueNumber })
       .from(queueEntries)
       .where(eq(queueEntries.appointmentRequestId, input.appointmentRequestId))
       .limit(1);
@@ -54,7 +77,8 @@ export async function addQueueEntry(input: { patientName: string; poli: string; 
     }
   }
 
-  const [last] = await db.select({ queueNumber: queueEntries.queueNumber })
+  const [last] = await db
+    .select({ queueNumber: queueEntries.queueNumber })
     .from(queueEntries)
     .where(eq(queueEntries.queueDate, today))
     .orderBy(desc(queueEntries.queueNumber))
@@ -74,26 +98,48 @@ export async function addQueueEntry(input: { patientName: string; poli: string; 
 
 export async function callQueueEntry(id: number) {
   const db = requireDb(await getDb());
-  const [entry] = await db.select().from(queueEntries).where(eq(queueEntries.id, id)).limit(1);
+  const [entry] = await db
+    .select()
+    .from(queueEntries)
+    .where(eq(queueEntries.id, id))
+    .limit(1);
   if (!entry) throw new Error("Entri antrean tidak ditemukan.");
-  if (entry.status !== "waiting") throw new Error("Entri antrean sudah dipanggil atau selesai.");
-  await db.update(queueEntries).set({ status: "serving" }).where(eq(queueEntries.id, id));
+  if (entry.status !== "waiting")
+    throw new Error("Entri antrean sudah dipanggil atau selesai.");
+  await db
+    .update(queueEntries)
+    .set({ status: "serving" })
+    .where(eq(queueEntries.id, id));
   return { success: true };
 }
 
 export async function completeQueueEntry(id: number) {
   const db = requireDb(await getDb());
-  const [entry] = await db.select().from(queueEntries).where(eq(queueEntries.id, id)).limit(1);
+  const [entry] = await db
+    .select()
+    .from(queueEntries)
+    .where(eq(queueEntries.id, id))
+    .limit(1);
   if (!entry) throw new Error("Entri antrean tidak ditemukan.");
-  await db.update(queueEntries).set({ status: "done" }).where(eq(queueEntries.id, id));
+  await db
+    .update(queueEntries)
+    .set({ status: "done" })
+    .where(eq(queueEntries.id, id));
   return { success: true };
 }
 
 export async function skipQueueEntry(id: number) {
   const db = requireDb(await getDb());
-  const [entry] = await db.select().from(queueEntries).where(eq(queueEntries.id, id)).limit(1);
+  const [entry] = await db
+    .select()
+    .from(queueEntries)
+    .where(eq(queueEntries.id, id))
+    .limit(1);
   if (!entry) throw new Error("Entri antrean tidak ditemukan.");
-  await db.update(queueEntries).set({ status: "skipped" }).where(eq(queueEntries.id, id));
+  await db
+    .update(queueEntries)
+    .set({ status: "skipped" })
+    .where(eq(queueEntries.id, id));
   return { success: true };
 }
 
@@ -115,7 +161,8 @@ export async function getOsdSettings() {
   const [settings] = await db.select().from(osdSettings).limit(1);
   if (!settings) {
     await db.insert(osdSettings).values({
-      runningText: "Selamat datang di Klinik Berkat Insani. Mohon menunggu hingga nomor antrean Anda dipanggil.",
+      runningText:
+        "Selamat datang di Klinik Berkat Insani. Mohon menunggu hingga nomor antrean Anda dipanggil.",
       youtubeUrl: "",
     });
     const [created] = await db.select().from(osdSettings).limit(1);
@@ -125,20 +172,29 @@ export async function getOsdSettings() {
   return settings;
 }
 
-export async function updateOsdSettings(input: { runningText?: string; youtubeUrl?: string }) {
+export async function updateOsdSettings(input: {
+  runningText?: string;
+  youtubeUrl?: string;
+}) {
   const db = requireDb(await getDb());
   const [settings] = await db.select().from(osdSettings).limit(1);
   if (!settings) {
     await db.insert(osdSettings).values({
-      runningText: input.runningText ?? "Selamat datang di Klinik Berkat Insani. Mohon menunggu hingga nomor antrean Anda dipanggil.",
+      runningText:
+        input.runningText ??
+        "Selamat datang di Klinik Berkat Insani. Mohon menunggu hingga nomor antrean Anda dipanggil.",
       youtubeUrl: input.youtubeUrl ?? "",
     });
   } else {
     const updates: Record<string, string> = {};
-    if (input.runningText !== undefined) updates.runningText = input.runningText;
+    if (input.runningText !== undefined)
+      updates.runningText = input.runningText;
     if (input.youtubeUrl !== undefined) updates.youtubeUrl = input.youtubeUrl;
     if (Object.keys(updates).length > 0) {
-      await db.update(osdSettings).set(updates).where(eq(osdSettings.id, settings.id));
+      await db
+        .update(osdSettings)
+        .set(updates)
+        .where(eq(osdSettings.id, settings.id));
     }
   }
   return getOsdSettings();

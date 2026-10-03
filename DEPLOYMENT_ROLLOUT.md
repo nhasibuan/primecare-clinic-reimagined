@@ -1,19 +1,19 @@
 # Production Rollout — Security Hardening & PII Encryption
 
-Deploy guide for commit `8f9ce87` (*feat: harden rate limiting and PII encryption*).
+Deploy guide for commit `8f9ce87` (_feat: harden rate limiting and PII encryption_).
 Read this end-to-end before deploying; the order of steps matters because the
 new server **refuses to start** in production without `PII_ENCRYPTION_KEY`.
 
 ## What changed operationally
 
-| Change | Impact on production |
-|--------|---------------------|
-| `PII_ENCRYPTION_KEY` now **required** | Startup fails fast if missing or shorter than 32 chars |
-| Migration `0009` widens 9 columns | Must run **before** the new code writes encrypted rows |
-| Session cookie renamed (`__Host-` prefix) | All users are signed out once; they just log in again |
-| Rate limiter is now async | No action; behavior is identical, limits are stricter at window edges |
-| Optional `REDIS_URL` | Only needed for multi-instance deployments |
-| Optional `ALLOW_PLAINTEXT_PII` | Transitional escape hatch; do not set unless migrating |
+| Change                                    | Impact on production                                                  |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| `PII_ENCRYPTION_KEY` now **required**     | Startup fails fast if missing or shorter than 32 chars                |
+| Migration `0009` widens 9 columns         | Must run **before** the new code writes encrypted rows                |
+| Session cookie renamed (`__Host-` prefix) | All users are signed out once; they just log in again                 |
+| Rate limiter is now async                 | No action; behavior is identical, limits are stricter at window edges |
+| Optional `REDIS_URL`                      | Only needed for multi-instance deployments                            |
+| Optional `ALLOW_PLAINTEXT_PII`            | Transitional escape hatch; do not set unless migrating                |
 
 ## Step 0 — Read the warning boundaries
 

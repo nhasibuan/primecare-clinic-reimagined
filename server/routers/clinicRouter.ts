@@ -24,21 +24,20 @@ import { createRateLimiter } from "../rateLimiterFactory";
 import { storagePut } from "../storage";
 import { normalizeAssetFileName, decodeMediaUpload } from "../utils/mediaUtils";
 import { adminProcedure, publicProcedure, router } from "../_core/trpc";
-import {
-  profileInput,
-  serviceInput,
-  uploadMediaInput,
-} from "../schemas";
+import { profileInput, serviceInput, uploadMediaInput } from "../schemas";
 
 /**
  * Per-user upload rate limiter: max 20 uploads per 5-minute window.
  * Module-scoped to ensure isolation and testability; Redis-backed when
  * REDIS_URL is set (shared quota across instances).
  */
-const uploadLimiter = createRateLimiter({
-  maxRequests: 20,
-  windowMs: 5 * 60_000,
-}, "clinic:uploadMedia");
+const uploadLimiter = createRateLimiter(
+  {
+    maxRequests: 20,
+    windowMs: 5 * 60_000,
+  },
+  "clinic:uploadMedia"
+);
 
 export const clinicRouter = router({
   /**
@@ -97,7 +96,7 @@ export const clinicRouter = router({
       const stored = await storagePut(
         `clinic/${ctx.user.id}/${fileName}`,
         buffer,
-        input.mimeType,
+        input.mimeType
       );
 
       const asset = await createMediaAsset({

@@ -54,7 +54,7 @@ export function getClientIp(request: RequestIpSource): string {
 function isValidIpv4(value: string): boolean {
   const octets = value.split(".");
   if (octets.length !== 4) return false;
-  return octets.every((octet) => {
+  return octets.every(octet => {
     if (!/^\d{1,3}$/.test(octet)) return false;
     const numeric = Number(octet);
     return numeric >= 0 && numeric <= 255;
@@ -77,8 +77,11 @@ function isValidIpv6(value: string): boolean {
 // Protection for the only public write endpoint. In-memory sliding window by
 // default; upgrades to the shared Redis-backed limiter when REDIS_URL is set.
 // The IP is held only for the active window and is never saved with appointment data.
-export const appointmentSubmissionRateLimiter: RateLimiter = createRateLimiter({
-  maxRequests: APPOINTMENT_RATE_LIMIT_MAX_REQUESTS,
-  windowMs: APPOINTMENT_RATE_LIMIT_WINDOW_MS,
-  maxKeys: 10_000,
-}, "appointments:create");
+export const appointmentSubmissionRateLimiter: RateLimiter = createRateLimiter(
+  {
+    maxRequests: APPOINTMENT_RATE_LIMIT_MAX_REQUESTS,
+    windowMs: APPOINTMENT_RATE_LIMIT_WINDOW_MS,
+    maxKeys: 10_000,
+  },
+  "appointments:create"
+);

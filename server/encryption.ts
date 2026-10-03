@@ -31,11 +31,16 @@
  *     — never in source control or plain environment files.
  */
 
-import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  hkdfSync,
+  randomBytes,
+} from "crypto";
 
 const ALGORITHM = "aes-256-gcm" as const;
-const IV_BYTES = 12;      // 96-bit IV recommended for GCM
-const TAG_BYTES = 16;     // 128-bit authentication tag (GCM default)
+const IV_BYTES = 12; // 96-bit IV recommended for GCM
+const TAG_BYTES = 16; // 128-bit authentication tag (GCM default)
 const VERSION_PREFIX = "v1:" as const;
 
 /** Derived 256-bit AES keys (one per ring entry), memoized per process. */
@@ -62,7 +67,7 @@ function getKeySecrets(): string[] {
   if (ring) {
     const keys = ring
       .split(",")
-      .map((s) => s.trim())
+      .map(s => s.trim())
       .filter(Boolean);
     if (keys.length > 0) return keys;
   }
@@ -128,11 +133,14 @@ function decryptWithKey(envelope: ParsedEnvelope, key: Buffer): string {
 export function encryptPii(value: string | null | undefined): string | null {
   if (!value) return value ?? null;
   const key = getPrimaryKey();
-  if (!key) return value;                // encryption not configured — pass-through
+  if (!key) return value; // encryption not configured — pass-through
 
   const iv = randomBytes(IV_BYTES);
   const cipher = createCipheriv(ALGORITHM, key, iv);
-  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  const encrypted = Buffer.concat([
+    cipher.update(value, "utf8"),
+    cipher.final(),
+  ]);
   const tag = cipher.getAuthTag();
 
   // Envelope: "v1:<iv_b64>:<ciphertext+tag_b64>"
@@ -176,7 +184,9 @@ export function decryptPii(value: string | null | undefined): string | null {
  * key — used by scripts/rotatePiiKey.ts to skip rows already rotated.
  * Pass-through semantics match decryptPii for non-envelope / unconfigured cases.
  */
-export function tryDecryptWithPrimary(value: string | null | undefined): string | null {
+export function tryDecryptWithPrimary(
+  value: string | null | undefined
+): string | null {
   if (!value) return value ?? null;
 
   const envelope = parseEnvelope(value);
@@ -199,9 +209,9 @@ export function tryDecryptWithPrimary(value: string | null | undefined): string 
  * @example
  * const safe = encryptPiiFields({ nik: "3201234567890001", phone: "081234567890" });
  */
-export function encryptPiiFields<T extends Record<string, string | null | undefined>>(
-  fields: T,
-): T {
+export function encryptPiiFields<
+  T extends Record<string, string | null | undefined>,
+>(fields: T): T {
   const result = { ...fields };
   for (const key of Object.keys(result) as (keyof T)[]) {
     (result[key] as string | null) = encryptPii(result[key] as string | null);
@@ -215,9 +225,9 @@ export function encryptPiiFields<T extends Record<string, string | null | undefi
  * @example
  * const readable = decryptPiiFields({ nik: "v1:abc123:xyz789", phone: "v1:..." });
  */
-export function decryptPiiFields<T extends Record<string, string | null | undefined>>(
-  fields: T,
-): T {
+export function decryptPiiFields<
+  T extends Record<string, string | null | undefined>,
+>(fields: T): T {
   const result = { ...fields };
   for (const key of Object.keys(result) as (keyof T)[]) {
     (result[key] as string | null) = decryptPii(result[key] as string | null);

@@ -42,14 +42,19 @@ let username = null;
 let generate = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--generate") generate = true;
-  else if (args[i] === "--username") username = args[++i] ?? fail("--username requires a value");
+  else if (args[i] === "--username")
+    username = args[++i] ?? fail("--username requires a value");
   else password = args[i];
 }
-if (generate && password) fail("pass either a password or --generate, not both");
+if (generate && password)
+  fail("pass either a password or --generate, not both");
 if (!generate && !password) {
-  fail("usage: node scripts/setAdminPassword.mjs '<password>' | --generate [--username name]");
+  fail(
+    "usage: node scripts/setAdminPassword.mjs '<password>' | --generate [--username name]"
+  );
 }
-if (username !== null && username.length < 4) fail("username must be at least 4 characters");
+if (username !== null && username.length < 4)
+  fail("username must be at least 4 characters");
 
 // ── Paths ───────────────────────────────────────────────────────────────────
 const repoRoot = new URL("..", import.meta.url).pathname.replace(/\/$/, "");
@@ -61,37 +66,60 @@ const passFile = `${secretsDir}/master-passphrase.txt`;
 if (!existsSync(envPath)) fail(`.env not found at ${envPath}`);
 const haveVault = existsSync(vaultPath) && existsSync(passFile);
 if (!haveVault) {
-  console.error("[warn] vault not found — updating .env only; recovery copy will be stale");
+  console.error(
+    "[warn] vault not found — updating .env only; recovery copy will be stale"
+  );
 }
 
 // ── Generate password if requested ──────────────────────────────────────────
 if (generate) {
-  password = Buffer.from(randomFillSync(new Uint8Array(24))).toString("base64url");
-  console.log(`\nGenerated password (capture it now — it is shown only once):\n\n    ${password}\n`);
+  password = Buffer.from(randomFillSync(new Uint8Array(24))).toString(
+    "base64url"
+  );
+  console.log(
+    `\nGenerated password (capture it now — it is shown only once):\n\n    ${password}\n`
+  );
 }
 
 // ── Hash ────────────────────────────────────────────────────────────────────
 if (password.length < 12) fail("password must be at least 12 characters");
 const salt = randomBytes(16);
 const hash = await scrypt(password, salt, keylen, { N, r, p, maxmem });
-const encoded = ["scrypt", N, r, p, salt.toString("base64"), hash.toString("base64")].join("$");
+const encoded = [
+  "scrypt",
+  N,
+  r,
+  p,
+  salt.toString("base64"),
+  hash.toString("base64"),
+].join("$");
 
 // ── Update .env ─────────────────────────────────────────────────────────────
 let envContent = readFileSync(envPath, "utf8");
 if (username !== null) {
   if (/^ADMIN_USERNAME=/m.test(envContent)) {
-    envContent = envContent.replace(/^ADMIN_USERNAME=.*$/m, `ADMIN_USERNAME="${username}"`);
+    envContent = envContent.replace(
+      /^ADMIN_USERNAME=.*$/m,
+      `ADMIN_USERNAME="${username}"`
+    );
   } else {
     envContent += `\nADMIN_USERNAME="${username}"\n`;
   }
 }
 if (/^ADMIN_PASSWORD_HASH=/m.test(envContent)) {
-  envContent = envContent.replace(/^ADMIN_PASSWORD_HASH=.*$/m, `ADMIN_PASSWORD_HASH="${encoded}"`);
+  envContent = envContent.replace(
+    /^ADMIN_PASSWORD_HASH=.*$/m,
+    `ADMIN_PASSWORD_HASH="${encoded}"`
+  );
 } else {
   envContent += `\nADMIN_PASSWORD_HASH="${encoded}"\n`;
 }
 writeFileSync(envPath, envContent, { mode: 0o600 });
-console.log("[ok] .env updated (ADMIN_PASSWORD_HASH" + (username ? " + ADMIN_USERNAME" : "") + ")");
+console.log(
+  "[ok] .env updated (ADMIN_PASSWORD_HASH" +
+    (username ? " + ADMIN_USERNAME" : "") +
+    ")"
+);
 
 // ── Refresh vault (AES-256-CBC + HMAC, GPG binary container) ────────────────
 // The vault was created by `gpg -c` with iterated SHA-512 S2K; without pinentry
@@ -102,10 +130,20 @@ if (haveVault) {
   if (master.length < 32) fail("master passphrase file looks wrong — aborting");
 
   // Decrypt the existing vault with gpg (it created it, it reads it).
-  const plain = execFileSync("gpg", [
-    "--batch", "--yes", "--pinentry-mode", "loopback",
-    "--passphrase-file", passFile, "-d", vaultPath,
-  ], { maxBuffer: 10 * 1024 * 1024 });
+  const plain = execFileSync(
+    "gpg",
+    [
+      "--batch",
+      "--yes",
+      "--pinentry-mode",
+      "loopback",
+      "--passphrase-file",
+      passFile,
+      "-d",
+      vaultPath,
+    ],
+    { maxBuffer: 10 * 1024 * 1024 }
+  );
 
   // Apply .env-mirrored updates to the manifest.
   const manifest = plain.toString("utf8").split("\n");
@@ -120,21 +158,49 @@ if (haveVault) {
   const updatedManifest = manifest.join("\n");
 
   // Re-encrypt with gpg using the same parameters it was created with.
-  execFileSync("gpg", [
-    "--batch", "--yes", "--pinentry-mode", "loopback",
-    "--cipher-algo", "AES256", "--s2k-mode", "3",
-    "--s2k-digest-algo", "SHA512", "--s2k-count", "65011712",
-    "--passphrase-file", passFile,
-    "-o", vaultPath, "-c",
-  ], { input: updatedManifest, maxBuffer: 10 * 1024 * 1024 });
+  execFileSync(
+    "gpg",
+    [
+      "--batch",
+      "--yes",
+      "--pinentry-mode",
+      "loopback",
+      "--cipher-algo",
+      "AES256",
+      "--s2k-mode",
+      "3",
+      "--s2k-digest-algo",
+      "SHA512",
+      "--s2k-count",
+      "65011712",
+      "--passphrase-file",
+      passFile,
+      "-o",
+      vaultPath,
+      "-c",
+    ],
+    { input: updatedManifest, maxBuffer: 10 * 1024 * 1024 }
+  );
 
   // Verify round-trip.
-  const verify = execFileSync("gpg", [
-    "--batch", "--yes", "--pinentry-mode", "loopback",
-    "--passphrase-file", passFile, "-d", vaultPath,
-  ], { maxBuffer: 10 * 1024 * 1024 }).toString("utf8");
+  const verify = execFileSync(
+    "gpg",
+    [
+      "--batch",
+      "--yes",
+      "--pinentry-mode",
+      "loopback",
+      "--passphrase-file",
+      passFile,
+      "-d",
+      vaultPath,
+    ],
+    { maxBuffer: 10 * 1024 * 1024 }
+  ).toString("utf8");
   if (!verify.includes(`ADMIN_PASSWORD_HASH="${encoded}"`)) {
-    fail("vault verification failed after re-encryption — vault integrity error");
+    fail(
+      "vault verification failed after re-encryption — vault integrity error"
+    );
   }
   console.log("[ok] vault refreshed and verified");
 }

@@ -14,6 +14,10 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["server/**/*.{test,spec}.ts", "client/src/**/*.{test,spec}.{ts,tsx}", "shared/**/*.{test,spec}.ts"],
+    include: [
+      "server/**/*.{test,spec}.ts",
+      "client/src/**/*.{test,spec}.{ts,tsx}",
+      "shared/**/*.{test,spec}.ts",
+    ],
   },
 });

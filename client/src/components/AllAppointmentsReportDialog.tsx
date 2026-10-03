@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FileText, Copy, Check, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -70,7 +76,11 @@ function statusBadgeHtml(status: string): string {
 
 function formatDate(dateStr: string): string {
   const d = new Date(`${dateStr}T00:00:00`);
-  return d.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function formatDateTime(iso: Date): string {
@@ -89,7 +99,9 @@ export default function AllAppointmentsReportDialog({
   onOpenChange,
 }: AllAppointmentsReportDialogProps) {
   const [copied, setCopied] = useState(false);
-  const [copiedFormat, setCopiedFormat] = useState<"text" | "html" | null>(null);
+  const [copiedFormat, setCopiedFormat] = useState<"text" | "html" | null>(
+    null
+  );
 
   const copiedToasterId = "appointment-report-copy";
 
@@ -128,15 +140,24 @@ export default function AllAppointmentsReportDialog({
     try {
       await navigator.clipboard.writeText(lines);
       setCopiedFormat("text");
-      toast.success("Tabel kunjungan disalin ke clipboard sebagai teks.", { id: copiedToasterId });
+      toast.success("Tabel kunjungan disalin ke clipboard sebagai teks.", {
+        id: copiedToasterId,
+      });
       setTimeout(() => setCopiedFormat(null), 2000);
     } catch {
-      toast.error("Tidak dapat menyalin. Salin secara manual.", { id: copiedToasterId });
+      toast.error("Tidak dapat menyalin. Salin secara manual.", {
+        id: copiedToasterId,
+      });
     }
   };
 
   const copyAsHtml = async () => {
-    const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const escape = (s: string) =>
+      s
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
 
     const totalsHtml = `
 <h2>Laporan Seluruh Permintaan Kunjungan</h2>
@@ -170,7 +191,9 @@ export default function AllAppointmentsReportDialog({
     <th style="padding:4px 8px;border:1px solid #173047;color:#0369a1;text-align:left;">Jam</th>
     <th style="padding:4px 8px;border:1px solid #173047;color:#0369a1;text-align:left;">Status</th>
   </tr>
-  ${requests.map(r => `
+  ${requests
+    .map(
+      r => `
   <tr>
     <td style="padding:4px 8px;border:1px solid #173047;">${r.id}</td>
     <td style="padding:4px 8px;border:1px solid #173047;font-weight:bold;">${escape(r.fullName)}</td>
@@ -180,7 +203,9 @@ export default function AllAppointmentsReportDialog({
     <td style="padding:4px 8px;border:1px solid #173047;">${r.preferredTime ?? "—"}</td>
     <td style="padding:4px 8px;border:1px solid #173047;">${statusBadgeHtml(r.status)}</td>
   </tr>
-  `).join("")}
+  `
+    )
+    .join("")}
 </table>
 <p style="margin-top:12px;font-size:11px;color:#607684;">Diperbarui: ${formatDateTime(new Date())}</p>
 `;
@@ -188,10 +213,14 @@ export default function AllAppointmentsReportDialog({
     try {
       await navigator.clipboard.writeText(totalsHtml);
       setCopiedFormat("html");
-      toast.success("Laporan tabel disalin ke clipboard sebagai HTML.", { id: copiedToasterId });
+      toast.success("Laporan tabel disalin ke clipboard sebagai HTML.", {
+        id: copiedToasterId,
+      });
       setTimeout(() => setCopiedFormat(null), 2000);
     } catch {
-      toast.error("Tidak dapat menyalin. Salin secara manual.", { id: copiedToasterId });
+      toast.error("Tidak dapat menyalin. Salin secara manual.", {
+        id: copiedToasterId,
+      });
     }
   };
 
@@ -216,19 +245,27 @@ export default function AllAppointmentsReportDialog({
           {/* Ringkasan totals */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-2xl border border-[#173047]/10 bg-white p-4">
             <div className="text-center">
-              <p className="text-2xl font-display font-semibold text-[#173047]">{totals.total}</p>
+              <p className="text-2xl font-display font-semibold text-[#173047]">
+                {totals.total}
+              </p>
               <p className="text-xs text-[#607684]">Total permintaan</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-display font-semibold text-amber-700">{totals.new}</p>
+              <p className="text-2xl font-display font-semibold text-amber-700">
+                {totals.new}
+              </p>
               <p className="text-xs text-[#607684]">Baru</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-display font-semibold text-[#039CB7]">{totals.contacted}</p>
+              <p className="text-2xl font-display font-semibold text-[#039CB7]">
+                {totals.contacted}
+              </p>
               <p className="text-xs text-[#607684]">Dihubungi</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-display font-semibold text-slate-600">{totals.closed}</p>
+              <p className="text-2xl font-display font-semibold text-slate-600">
+                {totals.closed}
+              </p>
               <p className="text-xs text-[#607684]">Selesai</p>
             </div>
           </div>
@@ -236,31 +273,59 @@ export default function AllAppointmentsReportDialog({
           {/* Tabel interaktif */}
           <div className="rounded-2xl border border-[#173047]/10 bg-white overflow-hidden">
             <div className="sticky top-0 bg-white border-b border-[#173047]/10 px-4 py-2 flex items-center justify-between gap-2">
-              <p className="text-xs font-bold text-[#0369a1]">Data tabel kunjungan</p>
-              <span className="text-[11px] text-[#607684]">{requests.length} baris</span>
+              <p className="text-xs font-bold text-[#0369a1]">
+                Data tabel kunjungan
+              </p>
+              <span className="text-[11px] text-[#607684]">
+                {requests.length} baris
+              </span>
             </div>
             <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
               <table className="w-full text-sm">
                 <thead className="bg-[#eef8f8] sticky top-0">
                   <tr>
-                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">No.</th>
-                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">Nama</th>
-                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">Telepon</th>
-                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">Layanan</th>
-                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">Tanggal</th>
-                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">Jam pilihan</th>
-                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">Status</th>
+                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">
+                      No.
+                    </th>
+                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">
+                      Nama
+                    </th>
+                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">
+                      Telepon
+                    </th>
+                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">
+                      Layanan
+                    </th>
+                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">
+                      Tanggal
+                    </th>
+                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">
+                      Jam pilihan
+                    </th>
+                    <th className="px-4 py-2 text-left font-bold text-[#0369a1]">
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {requests.map(r => (
                     <tr key={r.id} className="border-t border-[#173047]/10">
-                      <td className="px-4 py-2 font-bold text-[#173047]">{r.id}</td>
-                      <td className="px-4 py-2 font-semibold text-[#173047]">{r.fullName}</td>
-                      <td className="px-4 py-2 text-[#607684]">{r.contactNumber}</td>
+                      <td className="px-4 py-2 font-bold text-[#173047]">
+                        {r.id}
+                      </td>
+                      <td className="px-4 py-2 font-semibold text-[#173047]">
+                        {r.fullName}
+                      </td>
+                      <td className="px-4 py-2 text-[#607684]">
+                        {r.contactNumber}
+                      </td>
                       <td className="px-4 py-2 text-[#395568]">{r.service}</td>
-                      <td className="px-4 py-2 text-[#607684]">{formatDate(r.preferredDate)}</td>
-                      <td className="px-4 py-2 text-[#607684]">{r.preferredTime ?? "—"}</td>
+                      <td className="px-4 py-2 text-[#607684]">
+                        {formatDate(r.preferredDate)}
+                      </td>
+                      <td className="px-4 py-2 text-[#607684]">
+                        {r.preferredTime ?? "—"}
+                      </td>
                       <td className="px-4 py-2">{statusBadge(r.status)}</td>
                     </tr>
                   ))}
@@ -276,9 +341,13 @@ export default function AllAppointmentsReportDialog({
               className="inline-flex items-center justify-center gap-2 rounded-full border border-[#173047]/15 px-5 py-3 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#007f98]"
             >
               {copiedFormat === "text" ? (
-                <><Check size={16} /> Tersalin (teks)</>
+                <>
+                  <Check size={16} /> Tersalin (teks)
+                </>
               ) : (
-                <><Copy size={16} /> Salin sebagai teks</>
+                <>
+                  <Copy size={16} /> Salin sebagai teks
+                </>
               )}
             </button>
             <button
@@ -286,9 +355,13 @@ export default function AllAppointmentsReportDialog({
               className="inline-flex items-center justify-center gap-2 rounded-full border border-[#173047]/15 px-5 py-3 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#007f98]"
             >
               {copiedFormat === "html" ? (
-                <><Check size={16} /> Tersalin (HTML)</>
+                <>
+                  <Check size={16} /> Tersalin (HTML)
+                </>
               ) : (
-                <><Copy size={16} /> Salin sebagai HTML</>
+                <>
+                  <Copy size={16} /> Salin sebagai HTML
+                </>
               )}
             </button>
             <button

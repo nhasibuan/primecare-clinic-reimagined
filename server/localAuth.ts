@@ -27,7 +27,7 @@ const scrypt = promisify(scryptCb) as (
   password: string | Buffer,
   salt: string | Buffer,
   keylen: number,
-  options: { N: number; r: number; p: number; maxmem: number },
+  options: { N: number; r: number; p: number; maxmem: number }
 ) => Promise<Buffer>;
 
 const SCRYPT_PARAMS = { N: 1 << 15, r: 8, p: 1 } as const;
@@ -41,7 +41,7 @@ export const LOCAL_ADMIN_NAME = "Clinic Owner";
 /** Sliding window: 5 attempts per minute per client IP. */
 export const loginRateLimiter = createRateLimiter(
   { maxRequests: 5, windowMs: 60_000 },
-  "admin-login",
+  "admin-login"
 );
 
 export const loginRequestSchema = z.object({
@@ -95,7 +95,7 @@ export function timingSafeEqualString(a: string, b: string): boolean {
  */
 export async function verifyPassword(
   password: string,
-  stored: string,
+  stored: string
 ): Promise<boolean> {
   const parts = stored.split("$");
   if (parts.length !== 6 || parts[0] !== "scrypt") return false;
@@ -104,7 +104,8 @@ export async function verifyPassword(
   const N = Number(nStr);
   const r = Number(rStr);
   const p = Number(pStr);
-  if (!Number.isInteger(N) || !Number.isInteger(r) || !Number.isInteger(p)) return false;
+  if (!Number.isInteger(N) || !Number.isInteger(r) || !Number.isInteger(p))
+    return false;
   if (N < 2 || N > 1 << 21 || r < 1 || p < 1) return false;
   let salt: Buffer;
   let expected: Buffer;
@@ -141,17 +142,24 @@ export type LoginAttempt =
 export async function attemptLocalLogin(
   input: LoginRequest,
   clientIp: string,
-  now: number = Date.now(),
+  now: number = Date.now()
 ): Promise<LoginAttempt> {
   const limit = await loginRateLimiter.attempt(`login:${clientIp}`, now);
   if (!limit.allowed) {
-    return { ok: false, reason: "rate_limited", retryAfterMs: limit.retryAfterMs };
+    return {
+      ok: false,
+      reason: "rate_limited",
+      retryAfterMs: limit.retryAfterMs,
+    };
   }
 
   if (!isLocalAuthEnabled()) return { ok: false, reason: "not_configured" };
 
   const usernameOk = timingSafeEqualString(input.username, ENV.adminUsername);
-  const passwordOk = await verifyPassword(input.password, ENV.adminPasswordHash);
+  const passwordOk = await verifyPassword(
+    input.password,
+    ENV.adminPasswordHash
+  );
   if (!usernameOk || !passwordOk) {
     return { ok: false, reason: "invalid_credentials" };
   }
@@ -163,7 +171,10 @@ export async function attemptLocalLogin(
  * Creates/updates the local admin user row, signs the same session cookie the
  * OAuth flow uses, and records the attempt in the audit log.
  */
-export async function handleLocalLogin(req: Request, res: Response): Promise<void> {
+export async function handleLocalLogin(
+  req: Request,
+  res: Response
+): Promise<void> {
   const parsed = loginRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "username and password are required" });
@@ -183,7 +194,9 @@ export async function handleLocalLogin(req: Request, res: Response): Promise<voi
       return;
     }
     if (result.reason === "not_configured") {
-      res.status(503).json({ error: "Admin login is not configured on this server." });
+      res
+        .status(503)
+        .json({ error: "Admin login is not configured on this server." });
       return;
     }
     await recordAuditLog({

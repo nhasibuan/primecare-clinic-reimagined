@@ -39,8 +39,8 @@ export default function QueueDisplay() {
   }
 
   const { entries, activeNumber, settings } = data;
-  const serving = entries.filter((e) => e.status === "serving");
-  const waiting = entries.filter((e) => e.status === "waiting");
+  const serving = entries.filter(e => e.status === "serving");
+  const waiting = entries.filter(e => e.status === "waiting");
   const videoId = extractYouTubeId(settings.youtubeUrl);
 
   const formattedDate = currentTime.toLocaleDateString("id-ID", {
@@ -62,7 +62,12 @@ export default function QueueDisplay() {
         {/* Left: YouTube video */}
         <div className="flex w-3/5 flex-col p-4">
           <div className="mb-2 flex items-center gap-3">
-            <img src="/favicon.ico" alt="" className="h-8 w-8" onError={(e) => (e.currentTarget.style.display = "none")} />
+            <img
+              src="/favicon.ico"
+              alt=""
+              className="h-8 w-8"
+              onError={e => (e.currentTarget.style.display = "none")}
+            />
             <h1 className="text-xl font-bold tracking-wide text-blue-100">
               KLINIK BERKAT INSANI
             </h1>
@@ -82,8 +87,18 @@ export default function QueueDisplay() {
             ) : (
               <div className="flex h-full items-center justify-center text-blue-400 text-lg">
                 <div className="text-center">
-                  <svg className="mx-auto mb-3 h-16 w-16 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                  <svg
+                    className="mx-auto mb-3 h-16 w-16 opacity-50"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z"
+                    />
                   </svg>
                   Video Edukasi Kesehatan
                 </div>
@@ -99,7 +114,10 @@ export default function QueueDisplay() {
             <div className="text-sm font-semibold uppercase tracking-widest text-green-100">
               Nomor Antrean
             </div>
-            <div className="text-8xl font-black leading-none tabular-nums text-white drop-shadow-lg" style={{ fontVariantNumeric: "tabular-nums" }}>
+            <div
+              className="text-8xl font-black leading-none tabular-nums text-white drop-shadow-lg"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
               {activeNumber > 0 ? String(activeNumber).padStart(3, "0") : "---"}
             </div>
           </div>
@@ -118,7 +136,7 @@ export default function QueueDisplay() {
                   Belum ada pasien dilayani
                 </div>
               ) : (
-                serving.map((entry) => (
+                serving.map(entry => (
                   <div
                     key={entry.id}
                     className="flex items-center gap-3 rounded-lg bg-green-500/20 px-3 py-2 border border-green-500/30"
@@ -154,7 +172,7 @@ export default function QueueDisplay() {
                   Tidak ada pasien menunggu
                 </div>
               ) : (
-                waiting.map((entry) => (
+                waiting.map(entry => (
                   <div
                     key={entry.id}
                     className="flex items-center gap-3 rounded-lg bg-white/5 px-3 py-1.5 border border-white/10"

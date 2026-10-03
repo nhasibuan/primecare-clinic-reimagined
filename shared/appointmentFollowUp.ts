@@ -20,13 +20,19 @@ export function formatPreferredAppointmentDate(preferredDate: string) {
   }).format(new Date(`${preferredDate}T00:00:00Z`));
 }
 
-export function buildAppointmentFollowUpMessage(request: AppointmentFollowUpDetails, signatureTemplate = "") {
+export function buildAppointmentFollowUpMessage(
+  request: AppointmentFollowUpDetails,
+  signatureTemplate = ""
+) {
   const date = formatPreferredAppointmentDate(request.preferredDate);
   const body = `Halo ${request.fullName}, terima kasih telah mengajukan permintaan kunjungan ke Klinik Berkat Insani untuk layanan ${request.service} pada ${date}. Kami ingin membantu mengonfirmasi ketersediaan jadwal Anda. Mohon balas pesan ini untuk melanjutkan. Terima kasih.`;
   const signature = signatureTemplate.trim();
   return signature ? `${body}\n\n${signature}` : body;
 }
 
-export function buildWhatsAppFollowUpUrl(request: AppointmentFollowUpDetails, message: string) {
+export function buildWhatsAppFollowUpUrl(
+  request: AppointmentFollowUpDetails,
+  message: string
+) {
   return `https://wa.me/${normalizeWhatsAppNumber(request.contactNumber)}?text=${encodeURIComponent(message)}`;
 }

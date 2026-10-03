@@ -23,7 +23,7 @@ const failures = [];
 const passes = [];
 
 function findRow(readme, marker) {
-  return readme.split("\n").find((line) => line.includes(marker));
+  return readme.split("\n").find(line => line.includes(marker));
 }
 
 function check(name, fn) {
@@ -39,7 +39,10 @@ function check(name, fn) {
 check("dependency versions", () => {
   const readme = readFileSync(join(ROOT, "README.md"), "utf8");
   const row = findRow(readme, "**Dependency Versions**");
-  if (!row) throw new Error('README has no "**Dependency Versions**" table row to verify against');
+  if (!row)
+    throw new Error(
+      'README has no "**Dependency Versions**" table row to verify against'
+    );
   const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
   const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
   const claims = {
@@ -51,13 +54,21 @@ check("dependency versions", () => {
   const verified = [];
   for (const [pkgName, re] of Object.entries(claims)) {
     const m = row.match(re);
-    if (!m) throw new Error(`Dependency Versions row does not name a ${pkgName} version`);
+    if (!m)
+      throw new Error(
+        `Dependency Versions row does not name a ${pkgName} version`
+      );
     const claimed = m[1];
     const spec = deps[pkgName];
-    if (!spec) throw new Error(`package.json has no "${pkgName}" dependency to compare against`);
+    if (!spec)
+      throw new Error(
+        `package.json has no "${pkgName}" dependency to compare against`
+      );
     const specVersion = String(spec).replace(/^[\^~]/, "");
     if (specVersion !== claimed) {
-      throw new Error(`README claims ${pkgName} ${claimed} but package.json specifies "${spec}"`);
+      throw new Error(
+        `README claims ${pkgName} ${claimed} but package.json specifies "${spec}"`
+      );
     }
     verified.push(`${pkgName} ${claimed}`);
   }
@@ -68,14 +79,22 @@ check("dependency versions", () => {
 check("database schema", () => {
   const readme = readFileSync(join(ROOT, "README.md"), "utf8");
   const row = findRow(readme, "**Database Schema**");
-  if (!row) throw new Error('README has no "**Database Schema**" table row to verify against');
+  if (!row)
+    throw new Error(
+      'README has no "**Database Schema**" table row to verify against'
+    );
   const m = row.match(/(\d+)\s+MySQL tables/);
-  if (!m) throw new Error('Database Schema row does not state a "<n> MySQL tables" count');
+  if (!m)
+    throw new Error(
+      'Database Schema row does not state a "<n> MySQL tables" count'
+    );
   const claimed = parseInt(m[1], 10);
   const schemaSrc = readFileSync(join(ROOT, "drizzle", "schema.ts"), "utf8");
   const actual = (schemaSrc.match(/mysqlTable\(/g) || []).length;
   if (claimed !== actual) {
-    throw new Error(`README claims ${claimed} MySQL tables but drizzle/schema.ts declares ${actual}`);
+    throw new Error(
+      `README claims ${claimed} MySQL tables but drizzle/schema.ts declares ${actual}`
+    );
   }
   return `${actual} tables`;
 });
@@ -86,16 +105,23 @@ function collectTestFiles() {
   //   server/**/*.{test,spec}.ts, client/src/**/*.{test,spec}.{ts,tsx}, shared/**/*.{test,spec}.ts
   const roots = [
     { dir: "server", exts: [".test.ts", ".spec.ts"] },
-    { dir: join("client", "src"), exts: [".test.ts", ".spec.ts", ".test.tsx", ".spec.tsx"] },
+    {
+      dir: join("client", "src"),
+      exts: [".test.ts", ".spec.ts", ".test.tsx", ".spec.tsx"],
+    },
     { dir: "shared", exts: [".test.ts", ".spec.ts"] },
   ];
   const files = [];
-  const walk = (dir) => {
+  const walk = dir => {
     for (const entry of readdirSync(join(ROOT, dir))) {
       const rel = join(dir, entry);
       const st = statSync(join(ROOT, rel));
       if (st.isDirectory()) walk(rel);
-      else if (roots.some((r) => rel.startsWith(r.dir) && r.exts.some((e) => entry.endsWith(e)))) {
+      else if (
+        roots.some(
+          r => rel.startsWith(r.dir) && r.exts.some(e => entry.endsWith(e))
+        )
+      ) {
         files.push(rel);
       }
     }
@@ -107,13 +133,21 @@ function collectTestFiles() {
 check("test files", () => {
   const readme = readFileSync(join(ROOT, "README.md"), "utf8");
   const row = findRow(readme, "**Unit & Integration Tests**");
-  if (!row) throw new Error('README has no "**Unit & Integration Tests**" table row to verify against');
+  if (!row)
+    throw new Error(
+      'README has no "**Unit & Integration Tests**" table row to verify against'
+    );
   const m = row.match(/\((\d+)\s+files?\)/);
-  if (!m) throw new Error('Unit & Integration Tests row does not state a "(<n> files)" count');
+  if (!m)
+    throw new Error(
+      'Unit & Integration Tests row does not state a "(<n> files)" count'
+    );
   const claimed = parseInt(m[1], 10);
   const actual = collectTestFiles().length;
   if (claimed !== actual) {
-    throw new Error(`README claims ${claimed} test files but the repo has ${actual}`);
+    throw new Error(
+      `README claims ${claimed} test files but the repo has ${actual}`
+    );
   }
   return `${actual} files`;
 });

@@ -95,9 +95,7 @@
       "compositePrimaryKeys": {
         "appointment_requests_id": {
           "name": "appointment_requests_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -171,9 +169,7 @@
       "compositePrimaryKeys": {
         "clinic_profiles_id": {
           "name": "clinic_profiles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -255,9 +251,7 @@
       "compositePrimaryKeys": {
         "clinicians_id": {
           "name": "clinicians_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -338,12 +332,8 @@
           "name": "media_assets_uploadedBy_users_id_fk",
           "tableFrom": "media_assets",
           "tableTo": "users",
-          "columnsFrom": [
-            "uploadedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploadedBy"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -351,17 +341,13 @@
       "compositePrimaryKeys": {
         "media_assets_id": {
           "name": "media_assets_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "media_assets_storageKey_unique": {
           "name": "media_assets_storageKey_unique",
-          "columns": [
-            "storageKey"
-          ]
+          "columns": ["storageKey"]
         }
       },
       "checkConstraint": {}
@@ -442,12 +428,8 @@
           "name": "opening_schedules_clinicianId_clinicians_id_fk",
           "tableFrom": "opening_schedules",
           "tableTo": "clinicians",
-          "columnsFrom": [
-            "clinicianId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["clinicianId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -455,12 +437,8 @@
           "name": "opening_schedules_serviceId_services_id_fk",
           "tableFrom": "opening_schedules",
           "tableTo": "services",
-          "columnsFrom": [
-            "serviceId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["serviceId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -468,9 +446,7 @@
       "compositePrimaryKeys": {
         "opening_schedules_id": {
           "name": "opening_schedules_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -517,9 +493,7 @@
       "compositePrimaryKeys": {
         "osd_settings_id": {
           "name": "osd_settings_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -601,9 +575,7 @@
       "compositePrimaryKeys": {
         "queue_entries_id": {
           "name": "queue_entries_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -679,9 +651,7 @@
       "compositePrimaryKeys": {
         "services_id": {
           "name": "services_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -764,17 +734,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "checkConstraint": {}
@@ -832,12 +798,8 @@
           "name": "whatsapp_follow_up_activities_appointmentRequestId_appointment_requests_id_fk",
           "tableFrom": "whatsapp_follow_up_activities",
           "tableTo": "appointment_requests",
-          "columnsFrom": [
-            "appointmentRequestId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["appointmentRequestId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -845,12 +807,8 @@
           "name": "whatsapp_follow_up_activities_recordedBy_users_id_fk",
           "tableFrom": "whatsapp_follow_up_activities",
           "tableTo": "users",
-          "columnsFrom": [
-            "recordedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recordedBy"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -858,9 +816,7 @@
       "compositePrimaryKeys": {
         "whatsapp_follow_up_activities_id": {
           "name": "whatsapp_follow_up_activities_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -906,12 +862,8 @@
           "name": "whatsapp_signature_templates_updatedBy_users_id_fk",
           "tableFrom": "whatsapp_signature_templates",
           "tableTo": "users",
-          "columnsFrom": [
-            "updatedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updatedBy"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -919,9 +871,7 @@
       "compositePrimaryKeys": {
         "whatsapp_signature_templates_id": {
           "name": "whatsapp_signature_templates_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

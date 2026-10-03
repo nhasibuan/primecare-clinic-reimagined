@@ -1,5 +1,8 @@
 import { and, desc, eq, gte, lte, type SQL } from "drizzle-orm";
-import { appointmentRequests, whatsappFollowUpActivities } from "../../drizzle/schema";
+import {
+  appointmentRequests,
+  whatsappFollowUpActivities,
+} from "../../drizzle/schema";
 import { getDb, requireDb } from "../db";
 import { encryptPiiFields, decryptPiiFields } from "../encryption";
 
@@ -26,7 +29,16 @@ export type WhatsAppFollowUpActivityFilters = {
 };
 
 /** PII fields that are encrypted at rest (names, contact details, demographics, notes). */
-const PII_FIELDS = ["fullName", "contactNumber", "note", "nik", "tempatLahir", "tanggalLahir", "alamatLengkap", "email"] as const;
+const PII_FIELDS = [
+  "fullName",
+  "contactNumber",
+  "note",
+  "nik",
+  "tempatLahir",
+  "tanggalLahir",
+  "alamatLengkap",
+  "email",
+] as const;
 type PiiField = (typeof PII_FIELDS)[number];
 type PiiRecord = Record<PiiField, string | null | undefined>;
 
@@ -62,34 +74,59 @@ export async function createAppointmentRequest(input: AppointmentRequestInput) {
 
 export async function getAppointmentRequests() {
   const db = requireDb(await getDb());
-  const rows = await db.select().from(appointmentRequests).orderBy(desc(appointmentRequests.createdAt));
+  const rows = await db
+    .select()
+    .from(appointmentRequests)
+    .orderBy(desc(appointmentRequests.createdAt));
   return rows.map(decryptAppointmentPii);
 }
 
-export async function updateAppointmentRequestStatus(id: number, status: "new" | "contacted" | "closed") {
+export async function updateAppointmentRequestStatus(
+  id: number,
+  status: "new" | "contacted" | "closed"
+) {
   const db = requireDb(await getDb());
-  await db.update(appointmentRequests).set({ status }).where(eq(appointmentRequests.id, id));
-  const [request] = await db.select().from(appointmentRequests).where(eq(appointmentRequests.id, id)).limit(1);
+  await db
+    .update(appointmentRequests)
+    .set({ status })
+    .where(eq(appointmentRequests.id, id));
+  const [request] = await db
+    .select()
+    .from(appointmentRequests)
+    .where(eq(appointmentRequests.id, id))
+    .limit(1);
   return request ? decryptAppointmentPii(request) : null;
 }
 
-export async function updatePatientData(id: number, data: {
-  nik?: string;
-  tempatLahir?: string;
-  tanggalLahir?: string;
-  alamatLengkap?: string;
-  agama?: string;
-  email?: string;
-  instagramUrl?: string;
-}) {
+export async function updatePatientData(
+  id: number,
+  data: {
+    nik?: string;
+    tempatLahir?: string;
+    tanggalLahir?: string;
+    alamatLengkap?: string;
+    agama?: string;
+    email?: string;
+    instagramUrl?: string;
+  }
+) {
   const db = requireDb(await getDb());
   const safeData = encryptAppointmentPii(data);
-  await db.update(appointmentRequests).set(safeData).where(eq(appointmentRequests.id, id));
-  const [request] = await db.select().from(appointmentRequests).where(eq(appointmentRequests.id, id)).limit(1);
+  await db
+    .update(appointmentRequests)
+    .set(safeData)
+    .where(eq(appointmentRequests.id, id));
+  const [request] = await db
+    .select()
+    .from(appointmentRequests)
+    .where(eq(appointmentRequests.id, id))
+    .limit(1);
   return request ? decryptAppointmentPii(request) : null;
 }
 
-export async function createWhatsAppFollowUpActivity(input: WhatsAppFollowUpActivityInput) {
+export async function createWhatsAppFollowUpActivity(
+  input: WhatsAppFollowUpActivityInput
+) {
   const db = requireDb(await getDb());
   const [request] = await db
     .select({ id: appointmentRequests.id })
@@ -103,19 +140,29 @@ export async function createWhatsAppFollowUpActivity(input: WhatsAppFollowUpActi
     .from(whatsappFollowUpActivities)
     .where(eq(whatsappFollowUpActivities.id, Number(inserted[0].insertId)))
     .limit(1);
-  if (!activity) throw new Error("Gagal merekam aktivitas tindak lanjut WhatsApp.");
+  if (!activity)
+    throw new Error("Gagal merekam aktivitas tindak lanjut WhatsApp.");
   return activity;
 }
 
-export async function getWhatsAppFollowUpActivities(filters: WhatsAppFollowUpActivityFilters = {}) {
+export async function getWhatsAppFollowUpActivities(
+  filters: WhatsAppFollowUpActivityFilters = {}
+) {
   const db = requireDb(await getDb());
   const conditions: SQL[] = [];
-  if (filters.messageStatus) conditions.push(eq(whatsappFollowUpActivities.messageStatus, filters.messageStatus));
-  if (filters.startAt) conditions.push(gte(whatsappFollowUpActivities.createdAt, filters.startAt));
-  if (filters.endAt) conditions.push(lte(whatsappFollowUpActivities.createdAt, filters.endAt));
+  if (filters.messageStatus)
+    conditions.push(
+      eq(whatsappFollowUpActivities.messageStatus, filters.messageStatus)
+    );
+  if (filters.startAt)
+    conditions.push(gte(whatsappFollowUpActivities.createdAt, filters.startAt));
+  if (filters.endAt)
+    conditions.push(lte(whatsappFollowUpActivities.createdAt, filters.endAt));
 
   const query = db.select().from(whatsappFollowUpActivities);
   return conditions.length
-    ? query.where(and(...conditions)).orderBy(desc(whatsappFollowUpActivities.createdAt))
+    ? query
+        .where(and(...conditions))
+        .orderBy(desc(whatsappFollowUpActivities.createdAt))
     : query.orderBy(desc(whatsappFollowUpActivities.createdAt));
 }

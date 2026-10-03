@@ -1,5 +1,10 @@
 import { asc, eq } from "drizzle-orm";
-import { clinicProfiles, services, mediaAssets, whatsappSignatureTemplates } from "../../drizzle/schema";
+import {
+  clinicProfiles,
+  services,
+  mediaAssets,
+  whatsappSignatureTemplates,
+} from "../../drizzle/schema";
 import { getDb, requireDb } from "../db";
 
 export type ClinicProfileInput = {
@@ -35,19 +40,46 @@ export async function getPublicClinicContent() {
 export async function getAdminClinicContent() {
   const db = requireDb(await getDb());
   const [profile] = await db.select().from(clinicProfiles).limit(1);
-  const allServices = await db.select().from(services).orderBy(asc(services.sortOrder));
-  const assets = await db.select().from(mediaAssets).orderBy(asc(mediaAssets.uploadedAt));
-  const [signatureTemplate] = await db.select().from(whatsappSignatureTemplates).limit(1);
-  return { profile: profile ?? null, services: allServices, mediaAssets: assets, signatureTemplate: signatureTemplate ?? null, captchaEnabled: profile?.captchaEnabled ?? true };
+  const allServices = await db
+    .select()
+    .from(services)
+    .orderBy(asc(services.sortOrder));
+  const assets = await db
+    .select()
+    .from(mediaAssets)
+    .orderBy(asc(mediaAssets.uploadedAt));
+  const [signatureTemplate] = await db
+    .select()
+    .from(whatsappSignatureTemplates)
+    .limit(1);
+  return {
+    profile: profile ?? null,
+    services: allServices,
+    mediaAssets: assets,
+    signatureTemplate: signatureTemplate ?? null,
+    captchaEnabled: profile?.captchaEnabled ?? true,
+  };
 }
 
 export async function saveClinicProfile(input: ClinicProfileInput) {
   const db = requireDb(await getDb());
-  const [existing] = await db.select({ id: clinicProfiles.id }).from(clinicProfiles).limit(1);
+  const [existing] = await db
+    .select({ id: clinicProfiles.id })
+    .from(clinicProfiles)
+    .limit(1);
   if (existing) {
-    await db.update(clinicProfiles).set({ ...input, instagramUrl: input.instagramUrl ?? null }).where(eq(clinicProfiles.id, existing.id));
+    await db
+      .update(clinicProfiles)
+      .set({ ...input, instagramUrl: input.instagramUrl ?? null })
+      .where(eq(clinicProfiles.id, existing.id));
   } else {
-    await db.insert(clinicProfiles).values({ ...input, instagramUrl: input.instagramUrl ?? null, captchaEnabled: input.captchaEnabled ?? true });
+    await db
+      .insert(clinicProfiles)
+      .values({
+        ...input,
+        instagramUrl: input.instagramUrl ?? null,
+        captchaEnabled: input.captchaEnabled ?? true,
+      });
   }
   const [profile] = await db.select().from(clinicProfiles).limit(1);
   if (!profile) throw new Error("Gagal menyimpan profil klinik.");
@@ -68,7 +100,10 @@ export async function saveService(input: ServiceInput) {
   } else {
     await db.insert(services).values(values);
   }
-  const result = await db.select().from(services).orderBy(asc(services.sortOrder));
+  const result = await db
+    .select()
+    .from(services)
+    .orderBy(asc(services.sortOrder));
   return result;
 }
 
@@ -83,7 +118,11 @@ export async function createMediaAsset(input: {
 }) {
   const db = requireDb(await getDb());
   await db.insert(mediaAssets).values(input);
-  const [asset] = await db.select().from(mediaAssets).where(eq(mediaAssets.storageKey, input.storageKey)).limit(1);
+  const [asset] = await db
+    .select()
+    .from(mediaAssets)
+    .where(eq(mediaAssets.storageKey, input.storageKey))
+    .limit(1);
   if (!asset) throw new Error("Gagal menyimpan aset media.");
   return asset;
 }
@@ -91,20 +130,36 @@ export async function createMediaAsset(input: {
 export async function getCaptchaEnabled(): Promise<boolean> {
   const db = await getDb();
   if (!db) return true;
-  const [profile] = await db.select({ captchaEnabled: clinicProfiles.captchaEnabled }).from(clinicProfiles).limit(1);
+  const [profile] = await db
+    .select({ captchaEnabled: clinicProfiles.captchaEnabled })
+    .from(clinicProfiles)
+    .limit(1);
   return profile?.captchaEnabled ?? true;
 }
 
-export async function saveWhatsAppSignatureTemplate(content: string, updatedBy: number) {
+export async function saveWhatsAppSignatureTemplate(
+  content: string,
+  updatedBy: number
+) {
   const db = requireDb(await getDb());
-  const [existing] = await db.select({ id: whatsappSignatureTemplates.id }).from(whatsappSignatureTemplates).limit(1);
+  const [existing] = await db
+    .select({ id: whatsappSignatureTemplates.id })
+    .from(whatsappSignatureTemplates)
+    .limit(1);
   if (existing) {
-    await db.update(whatsappSignatureTemplates).set({ content, updatedBy }).where(eq(whatsappSignatureTemplates.id, existing.id));
+    await db
+      .update(whatsappSignatureTemplates)
+      .set({ content, updatedBy })
+      .where(eq(whatsappSignatureTemplates.id, existing.id));
   } else {
     await db.insert(whatsappSignatureTemplates).values({ content, updatedBy });
   }
-  const [template] = await db.select().from(whatsappSignatureTemplates).limit(1);
-  if (!template) throw new Error("Gagal menyimpan template tanda tangan WhatsApp.");
+  const [template] = await db
+    .select()
+    .from(whatsappSignatureTemplates)
+    .limit(1);
+  if (!template)
+    throw new Error("Gagal menyimpan template tanda tangan WhatsApp.");
   return template;
 }
 
@@ -118,7 +173,7 @@ export async function saveWhatsAppSignatureTemplate(content: string, updatedBy: 
  * without an additional round-trip.
  */
 export async function toggleCaptchaEnabled(
-  enabled: boolean,
+  enabled: boolean
 ): Promise<{ profileId: number; enabled: boolean }> {
   const db = requireDb(await getDb());
   const [profile] = await db

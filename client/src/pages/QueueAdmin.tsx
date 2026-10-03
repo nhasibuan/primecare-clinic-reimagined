@@ -27,8 +27,13 @@ export default function QueueAdmin() {
   const utils = trpc.useUtils();
 
   // ── Data ──
-  const queueQuery = trpc.queue.list.useQuery(undefined, { enabled: isAdmin, refetchInterval: 5000 });
-  const settingsQuery = trpc.queue.settings.useQuery(undefined, { enabled: isAdmin });
+  const queueQuery = trpc.queue.list.useQuery(undefined, {
+    enabled: isAdmin,
+    refetchInterval: 5000,
+  });
+  const settingsQuery = trpc.queue.settings.useQuery(undefined, {
+    enabled: isAdmin,
+  });
 
   // ── Form states ──
   const [patientName, setPatientName] = useState("");
@@ -49,14 +54,14 @@ export default function QueueAdmin() {
 
   // ── Mutations ──
   const addMutation = trpc.queue.add.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(`Nomor antrean ${data.queueNumber} ditambahkan.`);
       setPatientName("");
       setPoli("");
       setDoctorName("");
       utils.queue.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   const callMutation = trpc.queue.callNext.useMutation({
@@ -64,7 +69,7 @@ export default function QueueAdmin() {
       toast.success("Pasien dipanggil.");
       utils.queue.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   const completeMutation = trpc.queue.complete.useMutation({
@@ -72,7 +77,7 @@ export default function QueueAdmin() {
       toast.success("Pasien selesai dilayani.");
       utils.queue.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   const skipMutation = trpc.queue.skip.useMutation({
@@ -80,7 +85,7 @@ export default function QueueAdmin() {
       toast.info("Pasien dilewati.");
       utils.queue.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   const resetMutation = trpc.queue.reset.useMutation({
@@ -88,7 +93,7 @@ export default function QueueAdmin() {
       toast.success("Semua antrean hari ini direset.");
       utils.queue.list.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   const settingsMutation = trpc.queue.updateSettings.useMutation({
@@ -96,7 +101,7 @@ export default function QueueAdmin() {
       toast.success("Pengaturan OSD diperbarui.");
       utils.queue.settings.invalidate();
     },
-    onError: (err) => toast.error(err.message),
+    onError: err => toast.error(err.message),
   });
 
   // ── Loading / Auth guard ──
@@ -124,16 +129,22 @@ export default function QueueAdmin() {
   }
 
   const entries = queueQuery.data ?? [];
-  const serving = entries.filter((e) => e.status === "serving");
-  const waiting = entries.filter((e) => e.status === "waiting");
-  const done = entries.filter((e) => e.status === "done" || e.status === "skipped");
+  const serving = entries.filter(e => e.status === "serving");
+  const waiting = entries.filter(e => e.status === "waiting");
+  const done = entries.filter(
+    e => e.status === "done" || e.status === "skipped"
+  );
 
   const handleAdd = () => {
     if (!patientName.trim() || !poli.trim() || !doctorName.trim()) {
       toast.error("Lengkapi semua kolom untuk menambah antrean.");
       return;
     }
-    addMutation.mutate({ patientName: patientName.trim(), poli: poli.trim(), doctorName: doctorName.trim() });
+    addMutation.mutate({
+      patientName: patientName.trim(),
+      poli: poli.trim(),
+      doctorName: doctorName.trim(),
+    });
   };
 
   const handleSaveSettings = () => {
@@ -143,7 +154,14 @@ export default function QueueAdmin() {
   const statusBadge = (status: string) => {
     switch (status) {
       case "waiting":
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-600">Menunggu</Badge>;
+        return (
+          <Badge
+            variant="outline"
+            className="border-yellow-500 text-yellow-600"
+          >
+            Menunggu
+          </Badge>
+        );
       case "serving":
         return <Badge className="bg-green-500 text-white">Dilayani</Badge>;
       case "done":
@@ -205,25 +223,29 @@ export default function QueueAdmin() {
               <Input
                 placeholder="Nama Pasien"
                 value={patientName}
-                onChange={(e) => setPatientName(e.target.value)}
+                onChange={e => setPatientName(e.target.value)}
                 className="flex-1"
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                onKeyDown={e => e.key === "Enter" && handleAdd()}
               />
               <Input
                 placeholder="Poli (cth: Poli Umum)"
                 value={poli}
-                onChange={(e) => setPoli(e.target.value)}
+                onChange={e => setPoli(e.target.value)}
                 className="flex-1"
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                onKeyDown={e => e.key === "Enter" && handleAdd()}
               />
               <Input
                 placeholder="Nama Dokter"
                 value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
+                onChange={e => setDoctorName(e.target.value)}
                 className="flex-1"
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                onKeyDown={e => e.key === "Enter" && handleAdd()}
               />
-              <Button onClick={handleAdd} disabled={addMutation.isPending} className="shrink-0">
+              <Button
+                onClick={handleAdd}
+                disabled={addMutation.isPending}
+                className="shrink-0"
+              >
                 <Plus className="mr-1.5 h-4 w-4" />
                 Tambah
               </Button>
@@ -243,16 +265,25 @@ export default function QueueAdmin() {
             </CardHeader>
             <CardContent className="space-y-2">
               {serving.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">Belum ada pasien dilayani.</p>
+                <p className="text-sm text-muted-foreground italic">
+                  Belum ada pasien dilayani.
+                </p>
               ) : (
-                serving.map((entry) => (
-                  <div key={entry.id} className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30">
+                serving.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/30"
+                  >
                     <span className="flex h-10 w-10 items-center justify-center rounded-md bg-green-500 text-lg font-black text-white">
                       {entry.queueNumber}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold truncate">{entry.patientName}</div>
-                      <div className="text-xs text-muted-foreground truncate">{entry.poli} — {entry.doctorName}</div>
+                      <div className="font-semibold truncate">
+                        {entry.patientName}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {entry.poli} — {entry.doctorName}
+                      </div>
                     </div>
                     <Button
                       size="sm"
@@ -279,16 +310,25 @@ export default function QueueAdmin() {
             </CardHeader>
             <CardContent className="space-y-2">
               {waiting.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">Tidak ada pasien menunggu.</p>
+                <p className="text-sm text-muted-foreground italic">
+                  Tidak ada pasien menunggu.
+                </p>
               ) : (
-                waiting.map((entry) => (
-                  <div key={entry.id} className="flex items-center gap-3 rounded-lg border p-3">
+                waiting.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center gap-3 rounded-lg border p-3"
+                  >
                     <span className="flex h-10 w-10 items-center justify-center rounded-md bg-yellow-500 text-lg font-black text-yellow-950">
                       {entry.queueNumber}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold truncate">{entry.patientName}</div>
-                      <div className="text-xs text-muted-foreground truncate">{entry.poli} — {entry.doctorName}</div>
+                      <div className="font-semibold truncate">
+                        {entry.patientName}
+                      </div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {entry.poli} — {entry.doctorName}
+                      </div>
                     </div>
                     <div className="flex gap-1.5">
                       <Button
@@ -325,10 +365,17 @@ export default function QueueAdmin() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-1.5 sm:grid-cols-2 md:grid-cols-3">
-                {done.map((entry) => (
-                  <div key={entry.id} className="flex items-center gap-2 rounded-md border p-2 opacity-60">
-                    <span className="text-sm font-bold tabular-nums">#{entry.queueNumber}</span>
-                    <span className="truncate text-sm flex-1">{entry.patientName}</span>
+                {done.map(entry => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center gap-2 rounded-md border p-2 opacity-60"
+                  >
+                    <span className="text-sm font-bold tabular-nums">
+                      #{entry.queueNumber}
+                    </span>
+                    <span className="truncate text-sm flex-1">
+                      {entry.patientName}
+                    </span>
                     {statusBadge(entry.status)}
                   </div>
                 ))}
@@ -349,11 +396,13 @@ export default function QueueAdmin() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Teks Berjalan (Running Text)</label>
+              <label className="text-sm font-medium">
+                Teks Berjalan (Running Text)
+              </label>
               <Input
                 placeholder="Teks pengumuman yang berjalan di bawah layar..."
                 value={runningText}
-                onChange={(e) => setRunningText(e.target.value)}
+                onChange={e => setRunningText(e.target.value)}
                 className="mt-1"
                 maxLength={1000}
               />
@@ -366,11 +415,12 @@ export default function QueueAdmin() {
               <Input
                 placeholder="https://www.youtube.com/watch?v=..."
                 value={youtubeUrl}
-                onChange={(e) => setYoutubeUrl(e.target.value)}
+                onChange={e => setYoutubeUrl(e.target.value)}
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                Video edukasi kesehatan yang diputar di layar OSD. Kosongkan untuk menonaktifkan.
+                Video edukasi kesehatan yang diputar di layar OSD. Kosongkan
+                untuk menonaktifkan.
               </p>
             </div>
             <Button

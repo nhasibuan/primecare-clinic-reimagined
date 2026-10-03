@@ -48,8 +48,9 @@ export const queueRouter = router({
   settings: adminProcedure.query(() => getOsdSettings()),
 
   /** Admin: add a new patient to the queue. */
-  add: adminProcedure.input(addQueueEntryInput).mutation(
-    async ({ ctx, input }) => {
+  add: adminProcedure
+    .input(addQueueEntryInput)
+    .mutation(async ({ ctx, input }) => {
       const result = await addQueueEntry(input);
       await recordAuditLog({
         actorId: ctx.user.id,
@@ -60,12 +61,12 @@ export const queueRouter = router({
         ipAddress: getClientIp(ctx.req),
       });
       return result;
-    },
-  ),
+    }),
 
   /** Admin: call a patient to the consultation room. */
-  callNext: adminProcedure.input(queueEntryIdInput).mutation(
-    async ({ ctx, input }) => {
+  callNext: adminProcedure
+    .input(queueEntryIdInput)
+    .mutation(async ({ ctx, input }) => {
       const result = await callQueueEntry(input.id);
       await recordAuditLog({
         actorId: ctx.user.id,
@@ -75,12 +76,12 @@ export const queueRouter = router({
         ipAddress: getClientIp(ctx.req),
       });
       return result;
-    },
-  ),
+    }),
 
   /** Admin: mark a patient's consultation as completed. */
-  complete: adminProcedure.input(queueEntryIdInput).mutation(
-    async ({ ctx, input }) => {
+  complete: adminProcedure
+    .input(queueEntryIdInput)
+    .mutation(async ({ ctx, input }) => {
       const result = await completeQueueEntry(input.id);
       await recordAuditLog({
         actorId: ctx.user.id,
@@ -90,12 +91,12 @@ export const queueRouter = router({
         ipAddress: getClientIp(ctx.req),
       });
       return result;
-    },
-  ),
+    }),
 
   /** Admin: mark a patient's queue entry as skipped. */
-  skip: adminProcedure.input(queueEntryIdInput).mutation(
-    async ({ ctx, input }) => {
+  skip: adminProcedure
+    .input(queueEntryIdInput)
+    .mutation(async ({ ctx, input }) => {
       const result = await skipQueueEntry(input.id);
       await recordAuditLog({
         actorId: ctx.user.id,
@@ -105,8 +106,7 @@ export const queueRouter = router({
         ipAddress: getClientIp(ctx.req),
       });
       return result;
-    },
-  ),
+    }),
 
   /** Admin: reset (delete) all queue entries for today. */
   reset: adminProcedure.mutation(async ({ ctx }) => {
@@ -122,8 +122,9 @@ export const queueRouter = router({
   }),
 
   /** Admin: update the OSD running text and/or YouTube embed URL. */
-  updateSettings: adminProcedure.input(updateOsdSettingsInput).mutation(
-    async ({ ctx, input }) => {
+  updateSettings: adminProcedure
+    .input(updateOsdSettingsInput)
+    .mutation(async ({ ctx, input }) => {
       const result = await updateOsdSettings(input);
       await recordAuditLog({
         actorId: ctx.user.id,
@@ -132,6 +133,5 @@ export const queueRouter = router({
         ipAddress: getClientIp(ctx.req),
       });
       return result;
-    },
-  ),
+    }),
 });

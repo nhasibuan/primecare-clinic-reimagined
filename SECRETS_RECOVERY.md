@@ -6,14 +6,14 @@ one is lost. It never contains the secrets themselves.
 
 ## Where secrets live (as of 2026-10-01)
 
-| Secret | Live copy (runtime) | Recovery copy |
-|--------|--------------------|----------------|
-| `PII_ENCRYPTION_KEY` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
-| `PII_ENCRYPTION_KEYS` (rotation ring; first = primary) | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
-| `JWT_SECRET` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH` | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc` |
-| Backup passphrase (pre-0009 SQL dump) | — (only in the vault) | `/root/secrets/primecare-secrets.asc` |
-| Vault master passphrase | `/root/secrets/master-passphrase.txt` | **Your offline copy — mandatory, see below** |
+| Secret                                                 | Live copy (runtime)                   | Recovery copy                                |
+| ------------------------------------------------------ | ------------------------------------- | -------------------------------------------- |
+| `PII_ENCRYPTION_KEY`                                   | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc`        |
+| `PII_ENCRYPTION_KEYS` (rotation ring; first = primary) | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc`        |
+| `JWT_SECRET`                                           | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc`        |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH`               | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc`        |
+| Backup passphrase (pre-0009 SQL dump)                  | — (only in the vault)                 | `/root/secrets/primecare-secrets.asc`        |
+| Vault master passphrase                                | `/root/secrets/master-passphrase.txt` | **Your offline copy — mandatory, see below** |
 
 Properties of the vault:
 
@@ -53,6 +53,7 @@ curl -fsS http://localhost:3000/healthz
 ## Recovery scenarios
 
 ### `PII_ENCRYPTION_KEY` / `PII_ENCRYPTION_KEYS` lost
+
 Recover the key(s) from the vault (above) — if a ring was in use, restore
 **every** entry, since ciphertext written under a retired key needs that key
 to decrypt. If **both** the `.env` and the vault are lost, encrypted patient
@@ -61,11 +62,13 @@ fields (name, contact, NIK, birth data, notes) are permanently unrecoverable
 Restore from the offline master-passphrase copy.
 
 ### `JWT_SECRET` lost
+
 No data loss. Sessions are invalidated; generate a new 64-char key
 (`openssl rand -base64 48`), update `.env` and the vault, restart. Users just
 sign in again.
 
 ### Admin password lost
+
 The vault stores only the **hash** (`ADMIN_PASSWORD_HASH`) — passwords are
 never recoverable by design. Generate a new one and redeploy it:
 
@@ -78,10 +81,12 @@ sudo systemctl restart primecare
 Update the vault copy afterwards (see "Adding or rotating a secret").
 
 ### Vault master passphrase lost
+
 The vault is unrecoverable — symmetric GPG has no reset. This is why the
 offline copy below is mandatory.
 
 ### Whole VM lost
+
 Restore from your offline master-passphrase copy plus the latest database
 backup. Daily encrypted dumps live in `/root/backups/` (14-day retention);
 each needs `BACKUP_PASSPHRASE` from the vault:

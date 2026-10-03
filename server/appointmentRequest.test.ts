@@ -12,7 +12,9 @@ function makeLimiter(maxKeys?: number) {
 
 describe("appointment request privacy helpers", () => {
   it("normalizes optional scheduling notes without retaining blank data", async () => {
-    expect(normalizeAppointmentNote("  Mohon   konfirmasi  jadwal. ")).toBe("Mohon konfirmasi jadwal.");
+    expect(normalizeAppointmentNote("  Mohon   konfirmasi  jadwal. ")).toBe(
+      "Mohon konfirmasi jadwal."
+    );
     expect(normalizeAppointmentNote("   ")).toBeNull();
   });
 
@@ -38,8 +40,15 @@ describe("appointment request privacy helpers", () => {
   });
 
   it("uses Express's resolved client IP and falls back safely when unavailable", () => {
-    expect(getClientIp({ ip: "203.0.113.42", socket: { remoteAddress: "127.0.0.1" } })).toBe("203.0.113.42");
-    expect(getClientIp({ socket: { remoteAddress: "198.51.100.7" } })).toBe("198.51.100.7");
+    expect(
+      getClientIp({
+        ip: "203.0.113.42",
+        socket: { remoteAddress: "127.0.0.1" },
+      })
+    ).toBe("203.0.113.42");
+    expect(getClientIp({ socket: { remoteAddress: "198.51.100.7" } })).toBe(
+      "198.51.100.7"
+    );
     expect(getClientIp({})).toBe("unknown");
   });
 
@@ -79,6 +88,8 @@ describe("appointment request privacy helpers", () => {
     expect(getClientIp({ ip: "300.1.2.3" })).toBe("unknown");
     expect(getClientIp({ ip: "999.999.999.999" })).toBe("unknown");
     expect(getClientIp({ ip: "2001:db8::1" })).toBe("2001:db8::1");
-    expect(getClientIp({ ip: "::ffff:203.0.113.9" })).toBe("::ffff:203.0.113.9");
+    expect(getClientIp({ ip: "::ffff:203.0.113.9" })).toBe(
+      "::ffff:203.0.113.9"
+    );
   });
 });

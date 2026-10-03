@@ -48,9 +48,11 @@ export class ValidationError extends AppError {
 export class NotFoundError extends AppError {
   constructor(entity: string, id?: string | number) {
     super(
-      id ? `${entity} dengan ID ${id} tidak ditemukan.` : `${entity} tidak ditemukan.`,
+      id
+        ? `${entity} dengan ID ${id} tidak ditemukan.`
+        : `${entity} tidak ditemukan.`,
       "NOT_FOUND",
-      404,
+      404
     );
     this.name = "NotFoundError";
   }
@@ -59,7 +61,10 @@ export class NotFoundError extends AppError {
 export class RateLimitError extends AppError {
   public readonly retryAfterMs: number;
 
-  constructor(message = "Terlalu banyak permintaan. Silakan coba lagi nanti.", retryAfterMs = 0) {
+  constructor(
+    message = "Terlalu banyak permintaan. Silakan coba lagi nanti.",
+    retryAfterMs = 0
+  ) {
     super(message, "RATE_LIMITED", 429);
     this.name = "RateLimitError";
     this.retryAfterMs = retryAfterMs;

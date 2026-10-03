@@ -25,7 +25,11 @@
  */
 
 import { randomBytes } from "crypto";
-import type { RateLimitResult, RateLimiter, RateLimiterConfig } from "./rateLimiter";
+import type {
+  RateLimitResult,
+  RateLimiter,
+  RateLimiterConfig,
+} from "./rateLimiter";
 
 /**
  * Structural subset of the ioredis API used by this limiter. Keeping the
@@ -34,9 +38,18 @@ import type { RateLimitResult, RateLimiter, RateLimiterConfig } from "./rateLimi
  */
 export interface RedisLike {
   zadd(key: string, score: number, member: string): Promise<unknown>;
-  zremrangebyscore(key: string, min: number | string, max: number | string): Promise<unknown>;
+  zremrangebyscore(
+    key: string,
+    min: number | string,
+    max: number | string
+  ): Promise<unknown>;
   zcard(key: string): Promise<number>;
-  zrange(key: string, start: number, stop: number, withScores: "WITHSCORES"): Promise<string[]>;
+  zrange(
+    key: string,
+    start: number,
+    stop: number,
+    withScores: "WITHSCORES"
+  ): Promise<string[]>;
   pexpire(key: string, ms: number): Promise<unknown>;
   sadd(key: string, member: string): Promise<unknown>;
   srem(key: string, member: string): Promise<unknown>;
@@ -50,6 +63,13 @@ export type RedisRateLimiterOptions = {
   namespace: string;
   /** When Redis errors occur: true → allow the request (default), false → deny. */
   failOpen?: boolean;
+  /**
+   * Observer callback invoked on every degradation event (Redis command
+   * failure → fail-open/fail-closed). Unlike the log line, this is NOT
+   * cooldown-throttled: observers use it for counters and alerting, where
+   * every event matters. Must never throw.
+   */
+  onDegraded?: () => void;
 };
 
 export class RedisRateLimiter implements RateLimiter {
@@ -58,13 +78,18 @@ export class RedisRateLimiter implements RateLimiter {
   private readonly windowMs: number;
   private readonly failOpen: boolean;
   private readonly namespace: string;
+  private readonly onDegraded: (() => void) | undefined;
   /** Redis set of this limiter's active window keys (for reset + activeKeyCount). */
   private readonly indexKey: string;
   /** Cached key count refreshed opportunistically — the interface is sync. */
   private lastKnownKeyCount = 0;
   private nextDegradedLogAt = 0;
 
-  constructor(redis: RedisLike, config: RateLimiterConfig, options: RedisRateLimiterOptions) {
+  constructor(
+    redis: RedisLike,
+    config: RateLimiterConfig,
+    options: RedisRateLimiterOptions
+  ) {
     if (config.maxRequests <= 0) throw new Error("maxRequests must be > 0");
     if (config.windowMs <= 0) throw new Error("windowMs must be > 0");
     if (!options.namespace) throw new Error("namespace is required");
@@ -73,6 +98,7 @@ export class RedisRateLimiter implements RateLimiter {
     this.windowMs = config.windowMs;
     this.failOpen = options.failOpen ?? true;
     this.namespace = options.namespace;
+    this.onDegraded = options.onDegraded;
     this.indexKey = `rl:${this.namespace}:__keys__`;
   }
 
@@ -91,7 +117,10 @@ export class RedisRateLimiter implements RateLimiter {
 
       if (count >= this.maxRequests) {
         const oldest = await this.oldestTimestamp(windowKey);
-        return { allowed: false, retryAfterMs: Math.max(0, oldest + this.windowMs - now) };
+        return {
+          allowed: false,
+          retryAfterMs: Math.max(0, oldest + this.windowMs - now),
+        };
       }
 
       const member = `${now}:${randomBytes(6).toString("hex")}`;
@@ -104,6 +133,7 @@ export class RedisRateLimiter implements RateLimiter {
       return { allowed: true, retryAfterMs: 0 };
     } catch (error) {
       this.logDegraded(error);
+      this.notifyDegraded();
       return this.failOpen
         ? { allowed: true, retryAfterMs: 0 }
         : { allowed: false, retryAfterMs: this.windowMs };
@@ -117,7 +147,10 @@ export class RedisRateLimiter implements RateLimiter {
       if (keys.length > 0) await this.redis.del(...keys);
       await this.redis.del(this.indexKey);
       this.lastKnownKeyCount = 0;
-    })().catch((error) => this.logDegraded(error));
+    })().catch(error => {
+      this.logDegraded(error);
+      this.notifyDegraded();
+    });
   }
 
   /**
@@ -137,8 +170,25 @@ export class RedisRateLimiter implements RateLimiter {
   private refreshKeyCount(): void {
     void this.redis
       .scard(this.indexKey)
-      .then((n) => { this.lastKnownKeyCount = n; })
-      .catch(() => { /* metric only — never surface */ });
+      .then(n => {
+        this.lastKnownKeyCount = n;
+      })
+      .catch(() => {
+        /* metric only — never surface */
+      });
+  }
+
+  /**
+   * Observer notification for degradation events. Unlike `logDegraded`, this
+   * fires on every event (no cooldown) so metrics/alerting see the full
+   * picture. Never throws: a broken observer must not break rate limiting.
+   */
+  private notifyDegraded(): void {
+    try {
+      this.onDegraded?.();
+    } catch {
+      /* observer errors are swallowed by design */
+    }
   }
 
   /** Cooldown-throttled warning so a Redis outage doesn't flood the logs. */
@@ -146,12 +196,14 @@ export class RedisRateLimiter implements RateLimiter {
     const now = Date.now();
     if (now < this.nextDegradedLogAt) return;
     this.nextDegradedLogAt = now + 30_000;
-    console.warn(JSON.stringify({
-      timestamp: new Date(now).toISOString(),
-      level: "warn",
-      component: "rateLimiter",
-      message: `Redis rate limiter degraded (namespace=${this.namespace}); failing ${this.failOpen ? "open" : "closed"}.`,
-      error: error instanceof Error ? error.message : "Unknown",
-    }));
+    console.warn(
+      JSON.stringify({
+        timestamp: new Date(now).toISOString(),
+        level: "warn",
+        component: "rateLimiter",
+        message: `Redis rate limiter degraded (namespace=${this.namespace}); failing ${this.failOpen ? "open" : "closed"}.`,
+        error: error instanceof Error ? error.message : "Unknown",
+      })
+    );
   }
 }

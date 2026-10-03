@@ -15,11 +15,23 @@ vi.mock("drizzle-orm/mysql2", () => ({
 vi.mock("../drizzle/schema", () => ({
   clinicProfiles: { id: "id", name: "name" },
   services: { id: "id", isPublished: "isPublished", sortOrder: "sortOrder" },
-  users: { id: "id", openId: "openId", role: "role", name: "name", email: "email", lastSignedIn: "lastSignedIn" },
+  users: {
+    id: "id",
+    openId: "openId",
+    role: "role",
+    name: "name",
+    email: "email",
+    lastSignedIn: "lastSignedIn",
+  },
   mediaAssets: { id: "id", uploadedAt: "uploadedAt" },
   whatsappSignatureTemplates: { id: "id", content: "content" },
   appointmentRequests: { id: "id", createdAt: "createdAt" },
-  whatsappFollowUpActivities: { id: "id", createdAt: "createdAt", messageStatus: "messageStatus", finalDraftLength: "finalDraftLength" },
+  whatsappFollowUpActivities: {
+    id: "id",
+    createdAt: "createdAt",
+    messageStatus: "messageStatus",
+    finalDraftLength: "finalDraftLength",
+  },
 }));
 
 describe("getDb behavior", () => {
@@ -52,12 +64,16 @@ describe("getDb behavior", () => {
     const { getDb } = await import("./db");
     const db = await getDb();
     expect(db).not.toBeNull();
-    expect(drizzleMock).toHaveBeenCalledWith("mysql://user:pass@localhost:3306/test");
+    expect(drizzleMock).toHaveBeenCalledWith(
+      "mysql://user:pass@localhost:3306/test"
+    );
   });
 
   it("returns null when drizzle constructor throws", async () => {
     process.env.DATABASE_URL = "mysql://bad:connection@localhost:3306/test";
-    drizzleMock.mockImplementation(() => { throw new Error("Connection refused"); });
+    drizzleMock.mockImplementation(() => {
+      throw new Error("Connection refused");
+    });
     const { getDb } = await import("./db");
     const db = await getDb();
     expect(db).toBeNull();
@@ -68,6 +84,8 @@ describe("getPublicClinicContent error surfacing", () => {
   it("throws when database is unavailable", async () => {
     delete process.env.DATABASE_URL;
     const { getPublicClinicContent } = await import("./db");
-    await expect(getPublicClinicContent()).rejects.toThrow("temporarily unavailable");
+    await expect(getPublicClinicContent()).rejects.toThrow(
+      "temporarily unavailable"
+    );
   });
 });

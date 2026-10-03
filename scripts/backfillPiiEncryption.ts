@@ -30,9 +30,13 @@ async function main() {
     process.exit(1);
   }
 
-  const conn = await mysql.createConnection(process.env.DATABASE_URL!.split("?")[0]);
-  const columns = FIELDS.map((f) => `\`${f}\``).join(", ");
-  const [rows] = await conn.execute(`SELECT id, ${columns} FROM appointment_requests`);
+  const conn = await mysql.createConnection(
+    process.env.DATABASE_URL!.split("?")[0]
+  );
+  const columns = FIELDS.map(f => `\`${f}\``).join(", ");
+  const [rows] = await conn.execute(
+    `SELECT id, ${columns} FROM appointment_requests`
+  );
   let updated = 0;
 
   for (const row of rows as Record<string, unknown>[]) {
@@ -40,7 +44,11 @@ async function main() {
     const vals: unknown[] = [];
     for (const field of FIELDS) {
       const value = row[field];
-      if (typeof value === "string" && value.length > 0 && !value.startsWith("v1:")) {
+      if (
+        typeof value === "string" &&
+        value.length > 0 &&
+        !value.startsWith("v1:")
+      ) {
         sets.push(`\`${field}\` = ?`);
         vals.push(encryptPii(value));
       }
@@ -48,7 +56,7 @@ async function main() {
     if (sets.length > 0) {
       await conn.execute(
         `UPDATE appointment_requests SET ${sets.join(", ")} WHERE id = ?`,
-        [...vals, row.id],
+        [...vals, row.id]
       );
       updated += 1;
       console.log(`encrypted row ${row.id} (${sets.length} field(s))`);
@@ -59,7 +67,7 @@ async function main() {
   await conn.end();
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error("backfill failed:", error);
   process.exit(1);
 });

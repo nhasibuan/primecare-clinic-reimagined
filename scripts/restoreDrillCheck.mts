@@ -21,18 +21,21 @@ const PII_FIELDS = ["fullName", "contactNumber", "nik", "email"] as const;
 async function main(): Promise<void> {
   const url = process.env.DRILL_DATABASE_URL;
   if (!url) throw new Error("DRILL_DATABASE_URL is not set");
-  if (!process.env.PII_ENCRYPTION_KEY) throw new Error("PII_ENCRYPTION_KEY is not set");
+  if (!process.env.PII_ENCRYPTION_KEY)
+    throw new Error("PII_ENCRYPTION_KEY is not set");
 
   const conn = await mysql.createConnection(url.split("?")[0]);
   try {
-    const columns = PII_FIELDS.map((f) => `\`${f}\``).join(", ");
+    const columns = PII_FIELDS.map(f => `\`${f}\``).join(", ");
     const [rows] = await conn.execute(
-      `SELECT id, ${columns} FROM appointment_requests ORDER BY id DESC LIMIT ${SAMPLE_ROWS}`,
+      `SELECT id, ${columns} FROM appointment_requests ORDER BY id DESC LIMIT ${SAMPLE_ROWS}`
     );
     const records = rows as Record<string, string | null>[];
 
     if (records.length === 0) {
-      console.log("decrypt-check ok: appointment_requests has no rows — nothing to decrypt");
+      console.log(
+        "decrypt-check ok: appointment_requests has no rows — nothing to decrypt"
+      );
       return;
     }
 
@@ -46,7 +49,9 @@ async function main(): Promise<void> {
         // Throws on GCM auth-tag mismatch (tampered/wrong-key ciphertext).
         const plain = decryptPii(value);
         if (plain === null || plain.length === 0) {
-          throw new Error(`row ${String(row.id)}: ${field} decrypted to empty plaintext`);
+          throw new Error(
+            `row ${String(row.id)}: ${field} decrypted to empty plaintext`
+          );
         }
         decrypted += 1;
       }
@@ -55,20 +60,23 @@ async function main(): Promise<void> {
     if (envelopes === 0) {
       console.log(
         `decrypt-check WARN: ${records.length} row(s) sampled, none carry v1: envelopes ` +
-          "(plaintext PII — run scripts/backfillPiiEncryption.ts against production)",
+          "(plaintext PII — run scripts/backfillPiiEncryption.ts against production)"
       );
       return;
     }
     console.log(
       `decrypt-check ok: ${envelopes} v1 envelope(s) across ${records.length} row(s), ` +
-        `${decrypted} decrypted cleanly`,
+        `${decrypted} decrypted cleanly`
     );
   } finally {
     await conn.end();
   }
 }
 
-main().catch((error) => {
-  console.error("decrypt-check FAILED:", error instanceof Error ? error.message : error);
+main().catch(error => {
+  console.error(
+    "decrypt-check FAILED:",
+    error instanceof Error ? error.message : error
+  );
   process.exit(1);
 });

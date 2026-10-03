@@ -15,6 +15,11 @@
 import { ENV } from "./_core/env";
 import type { RedisLike } from "./redisRateLimiter";
 import {
+  recordLimiterDegradation,
+  registerLimiter,
+  setLimiterBackend,
+} from "./rateLimiterMetrics";
+import {
   InMemoryRateLimiter,
   type RateLimiter,
   type RateLimiterConfig,
@@ -46,7 +51,11 @@ class DelegatingRateLimiter implements RateLimiter {
   }
 }
 
-export function createRateLimiter(config: RateLimiterConfig, name: string): RateLimiter {
+export function createRateLimiter(
+  config: RateLimiterConfig,
+  name: string
+): RateLimiter {
+  registerLimiter(name);
   const wrapper = new DelegatingRateLimiter(new InMemoryRateLimiter(config));
 
   if (!ENV.redisUrl) {
@@ -71,22 +80,36 @@ export function createRateLimiter(config: RateLimiterConfig, name: string): Rate
       // RedisLike contract at the type level; at runtime the commands used
       // here (zadd/zcard/zrange WITHSCORES/pexpire) match exactly.
       wrapper.upgradeTo(
-        new RedisRateLimiter(client as unknown as RedisLike, config, { namespace: name, failOpen: true }),
+        new RedisRateLimiter(client as unknown as RedisLike, config, {
+          namespace: name,
+          failOpen: true,
+          // Observer: every fail-open/fail-closed event is counted in the
+          // metrics registry (the log line stays cooldown-throttled).
+          onDegraded: () => recordLimiterDegradation(name),
+        })
       );
-      console.log(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: "info",
-        component: "rateLimiter",
-        message: `Distributed rate limiting enabled via REDIS_URL (limiter=${name}).`,
-      }));
+      setLimiterBackend(name, "redis");
+      console.log(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "info",
+          component: "rateLimiter",
+          message: `Distributed rate limiting enabled via REDIS_URL (limiter=${name}).`,
+        })
+      );
     } catch (error) {
-      console.warn(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        level: "warn",
-        component: "rateLimiter",
-        message: `REDIS_URL is set but the Redis limiter could not be initialised; keeping in-memory rate limiting (limiter=${name}).`,
-        error: error instanceof Error ? error.message : "Unknown",
-      }));
+      // REDIS_URL is set but Redis never became usable: the limiter keeps
+      // running on the in-memory implementation, flagged as degraded.
+      recordLimiterDegradation(name);
+      console.warn(
+        JSON.stringify({
+          timestamp: new Date().toISOString(),
+          level: "warn",
+          component: "rateLimiter",
+          message: `REDIS_URL is set but the Redis limiter could not be initialised; keeping in-memory rate limiting (limiter=${name}).`,
+          error: error instanceof Error ? error.message : "Unknown",
+        })
+      );
     }
   })();
 

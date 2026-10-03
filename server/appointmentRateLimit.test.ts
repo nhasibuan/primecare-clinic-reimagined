@@ -12,12 +12,19 @@ const turnstileMocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./repositories/appointmentRepository", async importOriginal => {
-  const actual = await importOriginal<typeof import("./repositories/appointmentRepository")>();
-  return { ...actual, createAppointmentRequest: dbMocks.createAppointmentRequest };
+  const actual =
+    await importOriginal<
+      typeof import("./repositories/appointmentRepository")
+    >();
+  return {
+    ...actual,
+    createAppointmentRequest: dbMocks.createAppointmentRequest,
+  };
 });
 
 vi.mock("./repositories/clinicRepository", async importOriginal => {
-  const actual = await importOriginal<typeof import("./repositories/clinicRepository")>();
+  const actual =
+    await importOriginal<typeof import("./repositories/clinicRepository")>();
   return { ...actual, getCaptchaEnabled: dbMocks.getCaptchaEnabled };
 });
 
@@ -55,7 +62,10 @@ describe("appointment create rate limiting", () => {
     dbMocks.createAppointmentRequest.mockReset();
     dbMocks.createAppointmentRequest.mockResolvedValue({ id: 150001 });
     turnstileMocks.verifyTurnstileToken.mockReset();
-    turnstileMocks.verifyTurnstileToken.mockResolvedValue({ success: true, errorCodes: [] });
+    turnstileMocks.verifyTurnstileToken.mockResolvedValue({
+      success: true,
+      errorCodes: [],
+    });
   });
 
   it("allows normal submissions but rejects rapid fourth submission from the same IP", async () => {
@@ -64,21 +74,30 @@ describe("appointment create rate limiting", () => {
     await caller.appointments.create(input);
     await caller.appointments.create(input);
     await caller.appointments.create(input);
-    await expect(caller.appointments.create(input)).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    await expect(caller.appointments.create(input)).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+    });
     expect(dbMocks.createAppointmentRequest).toHaveBeenCalledTimes(3);
   });
 
   it("rejects submission without captcha token", async () => {
     const caller = appRouter.createCaller(createContext("203.0.113.99"));
     const inputWithoutCaptcha = { ...input, captchaToken: undefined };
-    await expect(caller.appointments.create(inputWithoutCaptcha)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      caller.appointments.create(inputWithoutCaptcha)
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(dbMocks.createAppointmentRequest).not.toHaveBeenCalled();
   });
 
   it("rejects submission with invalid captcha token", async () => {
-    turnstileMocks.verifyTurnstileToken.mockResolvedValueOnce({ success: false, errorCodes: ["invalid-input-response"] });
+    turnstileMocks.verifyTurnstileToken.mockResolvedValueOnce({
+      success: false,
+      errorCodes: ["invalid-input-response"],
+    });
     const caller = appRouter.createCaller(createContext("203.0.113.100"));
-    await expect(caller.appointments.create({ ...input, captchaToken: "invalid-token" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      caller.appointments.create({ ...input, captchaToken: "invalid-token" })
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(dbMocks.createAppointmentRequest).not.toHaveBeenCalled();
   });
 
@@ -89,14 +108,18 @@ describe("appointment create rate limiting", () => {
     await caller.appointments.create(input);
 
     // Fourth submission should be rate-limited (even with valid captcha)
-    await expect(caller.appointments.create(input)).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    await expect(caller.appointments.create(input)).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+    });
     expect(dbMocks.createAppointmentRequest).toHaveBeenCalledTimes(3);
   });
 
   it("keeps the honeypot short-circuit intact without consuming a rate-limit slot", async () => {
     const caller = appRouter.createCaller(createContext("198.51.100.7"));
 
-    await expect(caller.appointments.create({ ...input, website: "https://spam.example" })).resolves.toEqual({
+    await expect(
+      caller.appointments.create({ ...input, website: "https://spam.example" })
+    ).resolves.toEqual({
       success: true,
       requestId: null,
     });

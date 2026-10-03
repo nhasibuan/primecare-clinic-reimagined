@@ -114,17 +114,25 @@ export default function PatientReportDialog({
           <div className="rounded-2xl border border-[#173047]/10 bg-[#eef8f8] px-4 py-3">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="font-display text-lg font-semibold text-[#173047]">{fullName}</p>
+                <p className="font-display text-lg font-semibold text-[#173047]">
+                  {fullName}
+                </p>
                 <p className="mt-1 text-xs text-[#607684]">
-                  {service} · {new Date(`${preferredDate}T00:00:00`).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                  {service} ·{" "}
+                  {new Date(`${preferredDate}T00:00:00`).toLocaleDateString(
+                    "id-ID",
+                    { day: "numeric", month: "long", year: "numeric" }
+                  )}
                   {preferredTime ? ` · Jam pilihan: ${preferredTime}` : ""}
                 </p>
               </div>
-              <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                isComplete
-                  ? "bg-[#039CB7]/15 text-[#039CB7]"
-                  : "bg-amber-100 text-amber-800"
-              }`}>
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                  isComplete
+                    ? "bg-[#039CB7]/15 text-[#039CB7]"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
                 {isComplete ? "Lengkap" : "Belum lengkap"}
               </span>
             </div>
@@ -148,7 +156,10 @@ export default function PatientReportDialog({
             {!isComplete && (
               <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                 <AlertCircle className="mt-0.5 shrink-0 h-4 w-4 text-amber-600" />
-                <span>Beberapa data belum lengkap. Klik &quot;Lengkapi data&quot; untuk mengisi.</span>
+                <span>
+                  Beberapa data belum lengkap. Klik &quot;Lengkapi data&quot;
+                  untuk mengisi.
+                </span>
               </div>
             )}
           </div>
@@ -160,9 +171,13 @@ export default function PatientReportDialog({
               className="inline-flex items-center justify-center gap-2 rounded-full border border-[#173047]/15 px-5 py-3 text-sm font-bold text-[#173047] transition hover:border-[#039CB7] hover:text-[#007f98]"
             >
               {copied ? (
-                <><CheckCircle2 size={16} /> Tersalin</>
+                <>
+                  <CheckCircle2 size={16} /> Tersalin
+                </>
               ) : (
-                <><Copy size={16} /> Salin laporan</>
+                <>
+                  <Copy size={16} /> Salin laporan
+                </>
               )}
             </button>
             <button

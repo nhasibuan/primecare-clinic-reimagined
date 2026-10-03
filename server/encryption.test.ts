@@ -21,7 +21,9 @@ const TEST_KEY = "test_pii_key_that_is_sufficiently_long_for_sha256_derivation";
 function withKey(fn: () => void) {
   process.env.PII_ENCRYPTION_KEY = TEST_KEY;
   _resetKeyCache();
-  try { fn(); } finally {
+  try {
+    fn();
+  } finally {
     delete process.env.PII_ENCRYPTION_KEY;
     _resetKeyCache();
   }
@@ -115,7 +117,11 @@ describe("PII Encryption", () => {
   describe("encryptPiiFields / decryptPiiFields", () => {
     it("encrypts and decrypts multiple fields", () => {
       withKey(() => {
-        const original = { nik: "3201234567890001", phone: "08123456789", address: null };
+        const original = {
+          nik: "3201234567890001",
+          phone: "08123456789",
+          address: null,
+        };
         const encrypted = encryptPiiFields(original);
         expect(encrypted.nik).not.toBe(original.nik);
         expect(encrypted.phone).not.toBe(original.phone);
@@ -133,26 +139,70 @@ describe("PII Encryption", () => {
     // Keep in sync with drizzle/schema.ts: encrypted columns must be wide
     // enough for the AES-256-GCM envelope of the longest plaintext the Zod
     // input schemas accept. Envelope length = 20 + 4*ceil((n+16)/3).
-    const COLUMN_CAPACITIES: { field: string; plainMaxLength: number; columnWidth: number }[] = [
-      { field: "appointment_requests.fullName", plainMaxLength: 160, columnWidth: 400 },
-      { field: "appointment_requests.contactNumber", plainMaxLength: 40, columnWidth: 128 },
-      { field: "appointment_requests.note", plainMaxLength: 600, columnWidth: 1024 },
-      { field: "appointment_requests.nik", plainMaxLength: 30, columnWidth: 128 },
-      { field: "appointment_requests.tempatLahir", plainMaxLength: 100, columnWidth: 192 },
-      { field: "appointment_requests.tanggalLahir", plainMaxLength: 10, columnWidth: 64 },
-      { field: "appointment_requests.alamatLengkap", plainMaxLength: 500, columnWidth: 768 },
-      { field: "appointment_requests.email", plainMaxLength: 255, columnWidth: 400 },
-      { field: "queue_entries.patientName", plainMaxLength: 160, columnWidth: 400 },
+    const COLUMN_CAPACITIES: {
+      field: string;
+      plainMaxLength: number;
+      columnWidth: number;
+    }[] = [
+      {
+        field: "appointment_requests.fullName",
+        plainMaxLength: 160,
+        columnWidth: 400,
+      },
+      {
+        field: "appointment_requests.contactNumber",
+        plainMaxLength: 40,
+        columnWidth: 128,
+      },
+      {
+        field: "appointment_requests.note",
+        plainMaxLength: 600,
+        columnWidth: 1024,
+      },
+      {
+        field: "appointment_requests.nik",
+        plainMaxLength: 30,
+        columnWidth: 128,
+      },
+      {
+        field: "appointment_requests.tempatLahir",
+        plainMaxLength: 100,
+        columnWidth: 192,
+      },
+      {
+        field: "appointment_requests.tanggalLahir",
+        plainMaxLength: 10,
+        columnWidth: 64,
+      },
+      {
+        field: "appointment_requests.alamatLengkap",
+        plainMaxLength: 500,
+        columnWidth: 768,
+      },
+      {
+        field: "appointment_requests.email",
+        plainMaxLength: 255,
+        columnWidth: 400,
+      },
+      {
+        field: "queue_entries.patientName",
+        plainMaxLength: 160,
+        columnWidth: 400,
+      },
     ];
 
     it("ciphertext envelope fits the widened column for max-length plaintext", () => {
       withKey(() => {
-        for (const { field, plainMaxLength, columnWidth } of COLUMN_CAPACITIES) {
+        for (const {
+          field,
+          plainMaxLength,
+          columnWidth,
+        } of COLUMN_CAPACITIES) {
           const envelope = encryptPii("x".repeat(plainMaxLength));
           expect(envelope, field).toBeTruthy();
           expect(
             (envelope as string).length,
-            `${field}: envelope must fit varchar(${columnWidth})`,
+            `${field}: envelope must fit varchar(${columnWidth})`
           ).toBeLessThanOrEqual(columnWidth);
         }
       });
@@ -163,7 +213,11 @@ describe("PII Encryption", () => {
     const KEY_A = "rotation-test-key-A-0123456789abcdef";
     const KEY_B = "rotation-test-key-B-0123456789abcdef";
 
-    function withRingEnv(ring: string | undefined, single: string | undefined, fn: () => void) {
+    function withRingEnv(
+      ring: string | undefined,
+      single: string | undefined,
+      fn: () => void
+    ) {
       if (ring === undefined) delete process.env.PII_ENCRYPTION_KEYS;
       else process.env.PII_ENCRYPTION_KEYS = ring;
       if (single === undefined) delete process.env.PII_ENCRYPTION_KEY;
@@ -204,9 +258,11 @@ describe("PII Encryption", () => {
         ct = encryptPii("3201234567890001");
       });
       // Encrypted with B (the ring primary), not A.
-      withRingEnv(KEY_B, undefined, () => expect(decryptPii(ct)).toBe("3201234567890001"));
+      withRingEnv(KEY_B, undefined, () =>
+        expect(decryptPii(ct)).toBe("3201234567890001")
+      );
       withRingEnv(undefined, KEY_A, () =>
-        expect(() => decryptPii(ct)).toThrow("authentication tag mismatch"),
+        expect(() => decryptPii(ct)).toThrow("authentication tag mismatch")
       );
     });
 
@@ -235,7 +291,9 @@ describe("PII Encryption", () => {
       });
       // ...but not with the retired key A alone.
       withRingEnv(undefined, KEY_A, () =>
-        expect(() => decryptPii(newCiphertext)).toThrow("authentication tag mismatch"),
+        expect(() => decryptPii(newCiphertext)).toThrow(
+          "authentication tag mismatch"
+        )
       );
     });
 
@@ -257,7 +315,9 @@ describe("PII Encryption", () => {
 
     it("tryDecryptWithPrimary passes plaintext through", () => {
       withRingEnv(`${KEY_B},${KEY_A}`, undefined, () => {
-        expect(tryDecryptWithPrimary("legacy-plaintext")).toBe("legacy-plaintext");
+        expect(tryDecryptWithPrimary("legacy-plaintext")).toBe(
+          "legacy-plaintext"
+        );
       });
     });
   });

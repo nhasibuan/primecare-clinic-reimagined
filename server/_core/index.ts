@@ -43,7 +43,8 @@ async function startServer() {
   app.set("trust proxy", 1);
   // ── Request ID for tracing ──
   app.use((req, _res, next) => {
-    req.headers["x-request-id"] = req.headers["x-request-id"] || crypto.randomUUID();
+    req.headers["x-request-id"] =
+      req.headers["x-request-id"] || crypto.randomUUID();
     next();
   });
   // The media-upload tRPC mutation sends base64-encoded files (up to 5 MB raw →
@@ -67,18 +68,30 @@ async function startServer() {
     "form-action 'self'",
   ];
   // Vite HMR injects inline scripts; production keeps strict self-only policy.
-  const cspDev  = [...cspBase, "script-src 'self' 'unsafe-inline' 'unsafe-eval'"].join("; ");
+  const cspDev = [
+    ...cspBase,
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  ].join("; ");
   const cspProd = [...cspBase, "script-src 'self'"].join("; ");
 
   app.use((_req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("X-XSS-Protection", "0"); // modern browsers use CSP instead
-    res.setHeader("Content-Security-Policy", process.env.NODE_ENV === "production" ? cspProd : cspDev);
+    res.setHeader(
+      "Content-Security-Policy",
+      process.env.NODE_ENV === "production" ? cspProd : cspDev
+    );
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()"
+    );
     if (process.env.NODE_ENV === "production") {
-      res.setHeader("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+      res.setHeader(
+        "Strict-Transport-Security",
+        "max-age=63072000; includeSubDomains"
+      );
     }
     next();
   });
@@ -107,7 +120,11 @@ async function startServer() {
       // Optionally ping the DB to verify the connection is alive
       try {
         await db.execute("SELECT 1");
-        res.json({ status: "ok", db: "connected", timestamp: new Date().toISOString() });
+        res.json({
+          status: "ok",
+          db: "connected",
+          timestamp: new Date().toISOString(),
+        });
       } catch (error) {
         res.status(503).json({
           status: "degraded",

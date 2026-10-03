@@ -142,10 +142,7 @@
       "indexes": {
         "appointment_requests_status_created_idx": {
           "name": "appointment_requests_status_created_idx",
-          "columns": [
-            "status",
-            "createdAt"
-          ],
+          "columns": ["status", "createdAt"],
           "isUnique": false
         }
       },
@@ -153,9 +150,7 @@
       "compositePrimaryKeys": {
         "appointment_requests_id": {
           "name": "appointment_requests_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -225,24 +220,17 @@
       "indexes": {
         "audit_logs_action_idx": {
           "name": "audit_logs_action_idx",
-          "columns": [
-            "action"
-          ],
+          "columns": ["action"],
           "isUnique": false
         },
         "audit_logs_entity_idx": {
           "name": "audit_logs_entity_idx",
-          "columns": [
-            "entityType",
-            "entityId"
-          ],
+          "columns": ["entityType", "entityId"],
           "isUnique": false
         },
         "audit_logs_created_idx": {
           "name": "audit_logs_created_idx",
-          "columns": [
-            "createdAt"
-          ],
+          "columns": ["createdAt"],
           "isUnique": false
         }
       },
@@ -251,12 +239,8 @@
           "name": "audit_logs_actorId_users_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "actorId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actorId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -264,9 +248,7 @@
       "compositePrimaryKeys": {
         "audit_logs_id": {
           "name": "audit_logs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -340,9 +322,7 @@
       "compositePrimaryKeys": {
         "clinic_profiles_id": {
           "name": "clinic_profiles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -424,9 +404,7 @@
       "compositePrimaryKeys": {
         "clinicians_id": {
           "name": "clinicians_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -507,12 +485,8 @@
           "name": "media_assets_uploadedBy_users_id_fk",
           "tableFrom": "media_assets",
           "tableTo": "users",
-          "columnsFrom": [
-            "uploadedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["uploadedBy"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -520,17 +494,13 @@
       "compositePrimaryKeys": {
         "media_assets_id": {
           "name": "media_assets_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "media_assets_storageKey_unique": {
           "name": "media_assets_storageKey_unique",
-          "columns": [
-            "storageKey"
-          ]
+          "columns": ["storageKey"]
         }
       },
       "checkConstraint": {}
@@ -611,12 +581,8 @@
           "name": "opening_schedules_clinicianId_clinicians_id_fk",
           "tableFrom": "opening_schedules",
           "tableTo": "clinicians",
-          "columnsFrom": [
-            "clinicianId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["clinicianId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -624,12 +590,8 @@
           "name": "opening_schedules_serviceId_services_id_fk",
           "tableFrom": "opening_schedules",
           "tableTo": "services",
-          "columnsFrom": [
-            "serviceId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["serviceId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -637,9 +599,7 @@
       "compositePrimaryKeys": {
         "opening_schedules_id": {
           "name": "opening_schedules_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -686,9 +646,7 @@
       "compositePrimaryKeys": {
         "osd_settings_id": {
           "name": "osd_settings_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -775,10 +733,7 @@
       "indexes": {
         "queue_entries_date_num_idx": {
           "name": "queue_entries_date_num_idx",
-          "columns": [
-            "queueDate",
-            "queueNumber"
-          ],
+          "columns": ["queueDate", "queueNumber"],
           "isUnique": false
         }
       },
@@ -787,12 +742,8 @@
           "name": "queue_entries_appointmentRequestId_appointment_requests_id_fk",
           "tableFrom": "queue_entries",
           "tableTo": "appointment_requests",
-          "columnsFrom": [
-            "appointmentRequestId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["appointmentRequestId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -800,17 +751,13 @@
       "compositePrimaryKeys": {
         "queue_entries_id": {
           "name": "queue_entries_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "queue_entries_appointmentRequestId_unique": {
           "name": "queue_entries_appointmentRequestId_unique",
-          "columns": [
-            "appointmentRequestId"
-          ]
+          "columns": ["appointmentRequestId"]
         }
       },
       "checkConstraint": {}
@@ -885,9 +832,7 @@
       "compositePrimaryKeys": {
         "services_id": {
           "name": "services_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -970,17 +915,13 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         }
       },
       "checkConstraint": {}
@@ -1038,12 +979,8 @@
           "name": "whatsapp_follow_up_activities_appointmentRequestId_appointment_requests_id_fk",
           "tableFrom": "whatsapp_follow_up_activities",
           "tableTo": "appointment_requests",
-          "columnsFrom": [
-            "appointmentRequestId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["appointmentRequestId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1051,12 +988,8 @@
           "name": "whatsapp_follow_up_activities_recordedBy_users_id_fk",
           "tableFrom": "whatsapp_follow_up_activities",
           "tableTo": "users",
-          "columnsFrom": [
-            "recordedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recordedBy"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1064,9 +997,7 @@
       "compositePrimaryKeys": {
         "whatsapp_follow_up_activities_id": {
           "name": "whatsapp_follow_up_activities_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -1112,12 +1043,8 @@
           "name": "whatsapp_signature_templates_updatedBy_users_id_fk",
           "tableFrom": "whatsapp_signature_templates",
           "tableTo": "users",
-          "columnsFrom": [
-            "updatedBy"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["updatedBy"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1125,9 +1052,7 @@
       "compositePrimaryKeys": {
         "whatsapp_signature_templates_id": {
           "name": "whatsapp_signature_templates_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

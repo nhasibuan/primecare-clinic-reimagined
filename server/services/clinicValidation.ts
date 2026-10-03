@@ -29,7 +29,7 @@ export function validateAppointmentTime(
   dateStr: string,
   hour12: string,
   minute: string,
-  period: "AM" | "PM",
+  period: "AM" | "PM"
 ): TimeValidationResult {
   if (!service || !dateStr || !hour12 || !minute || !period) {
     return err({
@@ -62,11 +62,11 @@ export function validateAppointmentTime(
   const selectedMinutes = parseTimeToMinutes(hour24, minute);
   const openMinutes = parseTimeToMinutes(
     daySchedule.start.split(":")[0],
-    daySchedule.start.split(":")[1] || "00",
+    daySchedule.start.split(":")[1] || "00"
   );
   const closeMinutes = parseTimeToMinutes(
     daySchedule.end.split(":")[0],
-    daySchedule.end.split(":")[1] || "00",
+    daySchedule.end.split(":")[1] || "00"
   );
 
   if (selectedMinutes < openMinutes || selectedMinutes >= closeMinutes) {

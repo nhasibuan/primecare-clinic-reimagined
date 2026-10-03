@@ -12,7 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  */
 const FALLBACK_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
-  "base64",
+  "base64"
 );
 
 export function registerStorageProxy(app: Express) {
@@ -29,9 +29,13 @@ export function registerStorageProxy(app: Express) {
       const publicFavicon = resolve(__dirname, "../../client/public", key);
       if (key.endsWith(".png") || key.endsWith(".ico")) {
         try {
-          const stat = await import("node:fs").then((fs) => fs.promises.stat(publicFavicon));
+          const stat = await import("node:fs").then(fs =>
+            fs.promises.stat(publicFavicon)
+          );
           if (stat) {
-            const buf = await import("node:fs").then((fs) => fs.promises.readFile(publicFavicon));
+            const buf = await import("node:fs").then(fs =>
+              fs.promises.readFile(publicFavicon)
+            );
             if (buf) {
               res.set("Content-Type", "image/png");
               res.send(buf);
@@ -50,7 +54,7 @@ export function registerStorageProxy(app: Express) {
     try {
       const forgeUrl = new URL(
         "v1/storage/presign/get",
-        ENV.forgeApiUrl.replace(/\/+$/, "") + "/",
+        ENV.forgeApiUrl.replace(/\/+$/, "") + "/"
       );
       forgeUrl.searchParams.set("path", key);
 
@@ -60,7 +64,9 @@ export function registerStorageProxy(app: Express) {
 
       if (!forgeResp.ok) {
         const body = await forgeResp.text().catch(() => "");
-        console.error(`[StorageProxy] forge error: ${forgeResp.status} ${body}`);
+        console.error(
+          `[StorageProxy] forge error: ${forgeResp.status} ${body}`
+        );
         res.status(502).send("Storage backend error");
         return;
       }

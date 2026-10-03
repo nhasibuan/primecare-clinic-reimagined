@@ -56,16 +56,17 @@ export function getSessionCookieOptions(
     sameSite: "lax",
     secure,
     // __Host- mandates no Domain attribute; only set one when the prefix is off.
-    domain: !isProduction && shouldSetDomain(req) ? resolveCookieDomain(req) : undefined,
+    domain:
+      !isProduction && shouldSetDomain(req)
+        ? resolveCookieDomain(req)
+        : undefined,
   };
 }
 
 function shouldSetDomain(req: Request): boolean {
   const hostname = req.hostname;
   return Boolean(
-    hostname &&
-    !LOCAL_HOSTS.has(hostname) &&
-    !isIpAddress(hostname)
+    hostname && !LOCAL_HOSTS.has(hostname) && !isIpAddress(hostname)
   );
 }
 

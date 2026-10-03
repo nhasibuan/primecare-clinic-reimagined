@@ -47,13 +47,15 @@ export async function recordAuditLog(entry: AuditEntry): Promise<void> {
       ipAddress: entry.ipAddress ?? null,
     });
   } catch (error) {
-    console.error(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: "error",
-      component: "audit",
-      message: "Failed to record audit log",
-      action: entry.action,
-      error: error instanceof Error ? error.message : "Unknown",
-    }));
+    console.error(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "error",
+        component: "audit",
+        message: "Failed to record audit log",
+        action: entry.action,
+        error: error instanceof Error ? error.message : "Unknown",
+      })
+    );
   }
 }
