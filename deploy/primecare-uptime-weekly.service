@@ -1,0 +1,18 @@
+# Weekly uptime review for the PrimeCare stack.
+# Runs the 7-day uptime report and emails it when alert credentials are
+# configured (deploy/primecare-notify.sh); the report always lands in the
+# journal. Install with:
+#   sudo cp scripts/uptime-weekly.sh /usr/local/lib/ && chmod +x /usr/local/lib/uptime-weekly.sh
+#   sudo cp deploy/primecare-notify.sh /usr/local/lib/
+#   sudo cp deploy/primecare-uptime-weekly.service deploy/primecare-uptime-weekly.timer /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now primecare-uptime-weekly.timer
+# Logs: journalctl -u primecare-uptime-weekly.service
+
+[Unit]
+Description=PrimeCare weekly uptime review (7-day report + optional email)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/uptime-weekly.sh
