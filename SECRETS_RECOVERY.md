@@ -4,7 +4,7 @@ Companion to `DEPLOYMENT_ROLLOUT.md`. This file documents **where production
 secrets live on VM-17-99-ubuntu**, how to recover them, and what to do when
 one is lost. It never contains the secrets themselves.
 
-## Where secrets live (as of 2026-10-01)
+## Where secrets live (as of 2026-10-04)
 
 | Secret                                                 | Live copy (runtime)                   | Recovery copy                                |
 | ------------------------------------------------------ | ------------------------------------- | -------------------------------------------- |
@@ -14,6 +14,8 @@ one is lost. It never contains the secrets themselves.
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD_HASH`               | `/g/primecare-clinic-reimagined/.env` | `/root/secrets/primecare-secrets.asc`        |
 | Backup passphrase (pre-0009 SQL dump)                  | — (only in the vault)                 | `/root/secrets/primecare-secrets.asc`        |
 | Vault master passphrase                                | `/root/secrets/master-passphrase.txt` | **Your offline copy — mandatory, see below** |
+| `RESEND_API_KEY` (email alerts)                        | `/usr/local/lib/primecare-alert.env`  | `/root/secrets/primecare-secrets.asc`        |
+| `ALERT_EMAIL_TO` (recipient; not a secret)             | `/usr/local/lib/primecare-alert.env`  | `/root/secrets/primecare-secrets.asc`        |
 
 Properties of the vault:
 
@@ -79,6 +81,14 @@ sudo systemctl restart primecare
 ```
 
 Update the vault copy afterwards (see "Adding or rotating a secret").
+
+### `RESEND_API_KEY` lost or leaked
+
+Rotate it in the Resend dashboard (API Keys → Create API Key), then update
+`/usr/local/lib/primecare-alert.env` (keep `chmod 600`) and the vault. No
+restart is needed — `primecare-notify.sh` reads the file on every call. Until
+a sending domain is verified, the free tier delivers only to the account
+owner's address, which must match `ALERT_EMAIL_TO`.
 
 ### Vault master passphrase lost
 
