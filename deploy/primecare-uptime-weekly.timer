@@ -1,0 +1,13 @@
+# Weekly PrimeCare uptime review: Saturday 03:17 UTC — after the Friday
+# clinic rush, before the Saturday-morning backup window.
+
+[Unit]
+Description=Weekly PrimeCare uptime review
+
+[Timer]
+OnCalendar=Sat *-*-* 03:17:00 UTC
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target
