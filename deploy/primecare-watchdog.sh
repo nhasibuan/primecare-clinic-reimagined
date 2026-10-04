@@ -32,6 +32,10 @@ LASTCHANGE_FILE="/root/.uptime-watchdog-lastchange"
 REMINDER_SECS=3600
 DRY_RUN="${DRY_RUN:-0}"
 
+# Optional email alerts: silent no-op unless /usr/local/lib/primecare-alert.env
+# holds RESEND_API_KEY + ALERT_EMAIL_TO (see deploy/primecare-notify.sh).
+. /usr/local/lib/primecare-notify.sh 2>/dev/null || true
+
 now=$(date -u +%FT%TZ)
 nowepoch=$(date +%s)
 
@@ -61,6 +65,7 @@ act() { # act <description> <command...>
 notify() {
   echo "$now $1 $2" >> "$HISTORY"
   echo "watchdog: $1 $2"
+  primecare_notify "PrimeCare uptime: $1" "$2"
 }
 
 rotate_check_log() {

@@ -64,7 +64,8 @@ if [ "$FORMAT" = "json" ]; then
 fi
 
 echo "PrimeCare uptime — last ${HOURS}h (as of $(date -u +%FT%TZ))"
-echo "  checks:            $total (~$(( total * 2 / 60 ))h covered at 2-min cadence)"
+coverage=$(awk -v t="$total" 'BEGIN{printf "%.1f", t*2/60}')
+echo "  checks:            $total (~${coverage}h covered at 2-min cadence)"
 echo "  uptime:            ${pct}%  (UP: $up, DEGRADED: $degraded, DOWN: $down)"
 echo "  avg response:      ${avg_ms} ms"
 echo "  incident starts:   $incident_count"

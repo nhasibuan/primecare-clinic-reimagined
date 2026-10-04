@@ -47,6 +47,7 @@ check_unit cloudflared || fail=1
 check_timer primecare-backup.timer        || fail=1
 check_timer primecare-restore-drill.timer || fail=1
 check_timer primecare-watchdog.timer      || fail=1
+check_timer primecare-uptime-weekly.timer || fail=1
 
 if wait_local_health; then
   echo "ok      local /healthz responded" >> "$REPORT"
