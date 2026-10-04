@@ -84,11 +84,15 @@ Update the vault copy afterwards (see "Adding or rotating a secret").
 
 ### `RESEND_API_KEY` lost or leaked
 
-Rotate it in the Resend dashboard (API Keys → Create API Key), then update
-`/usr/local/lib/primecare-alert.env` (keep `chmod 600`) and the vault. No
-restart is needed — `primecare-notify.sh` reads the file on every call. Until
-a sending domain is verified, the free tier delivers only to the account
-owner's address, which must match `ALERT_EMAIL_TO`.
+Rotate it in the Resend dashboard (API Keys → Create API Key), then on the VM
+run `sudo primecare-resend-rotate 're_NEW_KEY'` — it proves the new key with a
+real pre-flight send, atomically swaps `/usr/local/lib/primecare-alert.env`
+(keeps `chmod 600`), verifies a live `SENT` in `/root/primecare-notify.log`,
+and updates this vault with a byte-verified round-trip. `DRY_RUN=1` rehearses
+without writes. No restart is needed — `primecare-notify.sh` reads the file on
+every call. Revoke the old key in the Resend dashboard afterwards. Until a
+sending domain is verified, the free tier delivers only to the account owner's
+address, which must match `ALERT_EMAIL_TO`.
 
 ### Vault master passphrase lost
 

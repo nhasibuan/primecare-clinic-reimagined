@@ -92,7 +92,10 @@ the current admin login depends on the dev backdoor (`/api/dev/login`).
   transitions and the weekly review are already wired through
   `deploy/primecare-notify.sh`. Resend's free tier delivers only to the
   account owner's address until a custom domain is verified; add both
-  values to the secrets vault when set.
+  values to the secrets vault when set. Rotate the key self-service with
+  `sudo primecare-resend-rotate 're_NEW'` (pre-flight send, atomic swap,
+  live verification, vault update — the key never needs to transit chat;
+  `DRY_RUN=1` rehearses without writes).
 
 ## Cutover runbook
 
