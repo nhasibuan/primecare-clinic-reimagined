@@ -402,7 +402,7 @@ pnpm test        # Run all tests (vitest run)
 pnpm check       # TypeScript type checking
 ```
 
-**151 tests passing (1 skipped) across 19 test files**, covering:
+**162 tests passing (1 skipped) across 20 test files**, covering:
 - Role resolution and admin management logic
 - Rate limiter behavior (window expiry, eviction; in-memory and Redis sorted-set)
 - Appointment request validation (honeypot, note normalization, rate limits)
@@ -413,6 +413,7 @@ pnpm check       # TypeScript type checking
 - Local auth routes (login, password hashing)
 - PII encryption envelopes (AES-256-GCM, capacity contracts)
 - Rate limiter degradation observability (metrics registry, observer hook)
+- Rate limiter degradation alerting (episode edge-triggering, cooldown, kill switch)
 - Schedule validation (client + server)
 
 ## Deployment
@@ -480,7 +481,7 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 - **Privacy-by-Design Architecture**: Strict data minimization avoids persisting clinical diagnosis notes in the web layer; patient names are dynamically redacted on public waiting-room displays, and WhatsApp follow-up logs preserve only telemetry/metadata. Sensitive PII columns are AES-256-GCM encrypted at rest with fail-fast production enforcement.
 - **Comprehensive Immutable Audit Trail**: Admin actions (user role alterations, queue resets, clinic profile updates, media uploads) are recorded with actor ID, entity reference, mutation detail, and remote IP address.
 - **Self-Healing Production Operations**: Daily encrypted MySQL backups, monthly automated restore drills, an uptime watchdog, post-boot self-checks, and a CI production-audit gate — backup restorability is *proven*, not assumed.
-- **Robust Automated Verification**: 151 tests passing across 19 suites provide high confidence in scheduling logic, role guards, failover behavior, encryption envelopes, ciphertext capacity, PII key-ring rotation, and limiter degradation observability.
+- **Robust Automated Verification**: 162 tests passing across 20 suites provide high confidence in scheduling logic, role guards, failover behavior, encryption envelopes, ciphertext capacity, PII key-ring rotation, limiter degradation observability, and degradation alerting.
 
 ### Weaknesses
 - **Operational Dependency for Distributed Rate Limiting**: The Redis-backed limiter shares quota across instances but depends on a reachable Redis; a Redis outage degrades to per-instance fail-open limits with throttled warnings until connectivity returns.
@@ -490,7 +491,7 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 
 ### Opportunities
 - **Official WhatsApp Business Platform (Cloud API)**: Transition from desktop URI links (`wa.me`) to verified template messaging with automated webhooks and bi-directional status tracking.
-- **Rate-Limiter Observability**: Implemented — every degradation event is counted via an Observer hook (`onDegraded` → `rateLimiterMetrics.ts` registry) and exposed to admins through `system.rateLimiterStatus` (backend, degradation count, last event per limiter). Next step: alerting thresholds on degradation spikes.
+- **Rate-Limiter Observability**: Implemented — every degradation event is counted via an Observer hook (`onDegraded` → `rateLimiterMetrics.ts` registry) and exposed to admins through `system.rateLimiterStatus` (backend, degradation count, last event per limiter). Degradation alerting implemented 2026-10-06: the first failure of each episode emails the ops address via the shared alert channel (`rateLimiterAlerts.ts` — edge-triggered, 30-minute reminders while failures continue, 5-minute process-wide cooldown; disable with `RATE_LIMITER_ALERTS_DISABLED=true`).
 - **Indonesian UU PDP Compliance Hardening**: Extend encryption coverage to backups and add explicit consent logs and patient data deletion workflows on top of the existing field-level AES-256-GCM.
 - **PWA & Offline Queue Display**: Enable Progressive Web App caching and service workers for the clinic waiting-room TV display to survive intermittent internet drops.
 - **Key Management Maturity**: Implemented 2026-10-03 — PII key rotation via the `PII_ENCRYPTION_KEYS` ring (decryption tries each key in order; `v1:` envelope retained), `scripts/rotatePiiKey.ts` idempotent re-encryption, and the rotation/break-glass runbook in `SECRETS_RECOVERY.md`. Next: versioned envelopes beyond `v1:` and multi-admin recovery.
@@ -519,7 +520,7 @@ A codebase verification pass was executed against the live repository on **2026-
 
 | Claim / Specification | Target in Codebase | Verification Method | Status | Notes |
 |-----------------------|--------------------|---------------------|:------:|-------|
-| **Unit & Integration Tests** | 151 passing, 1 skipped (19 files) | `vitest run` | ✅ **Verified** | 151 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 19 test files, in ~10s. |
+| **Unit & Integration Tests** | 162 passing, 1 skipped (20 files) | `vitest run` | ✅ **Verified** | 162 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 20 test files, in ~12s. |
 | **Type Checking** | Strict TypeScript 7 | `tsc --noEmit` | ✅ **Verified** | 0 errors across frontend and backend modules. |
 | **Production Build** | Client + Server bundles | `pnpm build` | ✅ **Verified** | Vite client bundle (`dist/public/`) and esbuild ESM server (`dist/index.js`) generate cleanly. |
 | **Database Schema** | 12 MySQL tables | `drizzle/schema.ts` | ✅ **Verified** | Exactly 12 tables: `users`, `clinic_profiles`, `clinicians` (deprecated), `services`, `media_assets`, `appointment_requests`, `whatsapp_follow_up_activities`, `whatsapp_signature_templates`, `queue_entries`, `opening_schedules` (deprecated), `osd_settings`, `audit_logs`. |

@@ -65,3 +65,11 @@ primecare_notify() { # primecare_notify <subject> <body>
   rm -f "$tmp" "$tmp.err"
   return 0
 }
+
+# CLI mode: `bash primecare-notify.sh "subject" "body"`. Lets the Node app
+# (server/rateLimiterAlerts.ts) reuse this channel — one credential source,
+# one outcome log — without duplicating RESEND_API_KEY into the app env.
+# Sourcing this file (watchdog, weekly review) is unaffected.
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  primecare_notify "${1:-}" "${2:-}"
+fi

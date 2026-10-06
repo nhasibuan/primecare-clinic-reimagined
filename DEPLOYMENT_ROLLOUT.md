@@ -118,4 +118,9 @@ Verification checklist:
   controls.
 - If `REDIS_URL` is set and Redis becomes unreachable, rate limiting fails
   open (per-instance in-memory behavior) with throttled warnings in the logs
-  — watch for `Redis rate limiter degraded` entries.
+  — watch for `Redis rate limiter degraded` entries. Since 2026-10-06 the
+  first failure of each degradation episode also emails the alert address
+  through the shared notify channel (one email per episode, 30-minute
+  reminders while failures continue, 5-minute process-wide cooldown across
+  limiters; outcomes in `/root/primecare-notify.log`; disable with
+  `RATE_LIMITER_ALERTS_DISABLED=true`).

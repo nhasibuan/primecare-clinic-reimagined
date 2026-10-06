@@ -14,6 +14,7 @@
 
 import { ENV } from "./_core/env";
 import type { RedisLike } from "./redisRateLimiter";
+import { notifyLimiterDegraded } from "./rateLimiterAlerts";
 import {
   recordLimiterDegradation,
   registerLimiter,
@@ -84,8 +85,13 @@ export function createRateLimiter(
           namespace: name,
           failOpen: true,
           // Observer: every fail-open/fail-closed event is counted in the
-          // metrics registry (the log line stays cooldown-throttled).
-          onDegraded: () => recordLimiterDegradation(name),
+          // metrics registry (the log line stays cooldown-throttled) and
+          // drives the edge-triggered ops email (rateLimiterAlerts dedups
+          // the per-event stream into episodes).
+          onDegraded: () => {
+            recordLimiterDegradation(name);
+            notifyLimiterDegraded(name);
+          },
         })
       );
       setLimiterBackend(name, "redis");
@@ -99,8 +105,10 @@ export function createRateLimiter(
       );
     } catch (error) {
       // REDIS_URL is set but Redis never became usable: the limiter keeps
-      // running on the in-memory implementation, flagged as degraded.
+      // running on the in-memory implementation, flagged as degraded — and
+      // this is the one boot-time condition worth waking someone up for.
       recordLimiterDegradation(name);
+      notifyLimiterDegraded(name);
       console.warn(
         JSON.stringify({
           timestamp: new Date().toISOString(),

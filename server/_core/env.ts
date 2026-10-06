@@ -27,6 +27,8 @@ const envSchema = z.object({
   piiEncryptionKeys: z.string().optional().default(""),
   /** Redis/Dragonfly connection URL for distributed rate limiting. Optional; falls back to in-memory. */
   redisUrl: z.string().optional().default(""),
+  /** Kill switch for rate-limiter degradation email alerts (default: on in production). */
+  rateLimiterAlertsDisabled: z.boolean().optional().default(false),
   /** Emergency escape hatch: launch production with plaintext PII when the encryption key cannot yet be provisioned. */
   allowPlaintextPii: z.coerce.boolean().optional().default(false),
 });
@@ -47,6 +49,7 @@ const parsedEnv = envSchema.parse({
   piiEncryptionKey: process.env.PII_ENCRYPTION_KEY,
   piiEncryptionKeys: process.env.PII_ENCRYPTION_KEYS,
   redisUrl: process.env.REDIS_URL,
+  rateLimiterAlertsDisabled: process.env.RATE_LIMITER_ALERTS_DISABLED === "true",
   allowPlaintextPii: process.env.ALLOW_PLAINTEXT_PII,
 });
 
