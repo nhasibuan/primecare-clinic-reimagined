@@ -95,7 +95,7 @@
     "baseline-browser-mapping": "^2.11.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.28.2",
-    "pnpm": "^12.8.0",
+    "pnpm": "^12.9.1",
     "postcss": "^8.5.28",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.3.3",
