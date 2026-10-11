@@ -38,8 +38,8 @@ const whatsappUrl = "https://wa.me/6285215862526";
 const serviceTabs = [
   "Laboratorium",
   "IGD",
-  "Rehabilitasi Medik",
-  "Optik",
+  "Rawat Inap",
+  "Apotek",
 ];
 
 const careCards = [
@@ -430,7 +430,7 @@ export default function Home() {
               [
                 ShieldCheck,
                 "Layanan Kesehatan",
-                "Pilihan layanan untuk Laboratorium, IGD, Rehabilitasi Medik, dan Optik",
+                "Pilihan layanan untuk Laboratorium, IGD, Rawat Inap, dan Apotek",
               ],
               [
                 Clock3,
