@@ -45,7 +45,7 @@ const serviceTabs = [
 const careCards = [
   {
     title: "Poli Kandungan",
-    text: "Dr. Vera Bahar, Sp.PD. Senin–Minggu pukul 09.00–21.00 WITA, sesuai perjanjian.",
+    text: "Dr. Syaiful Aspiannur Sp.OG. Minggu pukul 11.00–21.00 WITA dan Senin pukul 17.00–21.00 WITA, sesuai perjanjian.",
     image: assets.motherChild,
     tag: "Kandungan & USG",
   },
@@ -63,7 +63,7 @@ const careCards = [
   },
   {
     title: "Poli Penyakit Dalam",
-    text: "Hubungi Klinik Berkat Insani melalui WhatsApp untuk menanyakan layanan dan mengonfirmasi jadwal praktik terkini.",
+    text: "Dr. Vera Bahar, Sp.PD. Senin–Minggu pukul 09.00–21.00 WITA, sesuai perjanjian.",
     image: assets.dentalStudio,
     tag: "Penyakit Dalam",
   },
