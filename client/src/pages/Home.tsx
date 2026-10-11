@@ -57,7 +57,7 @@ const careCards = [
   },
   {
     title: "Poli Gigi",
-    text: "Sampaikan kebutuhan perawatan gigi Anda dan tanyakan pilihan pemeriksaan maupun tindak lanjut yang tersedia.",
+    text: "Drg. Ulia Idiantoro. Senin–Jumat dan Minggu pukul 16.30–21.00 WITA, sesuai perjanjian.",
     image: assets.homecare,
     tag: "Kesehatan gigi",
   },

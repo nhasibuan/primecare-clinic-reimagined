@@ -34,7 +34,6 @@ export const CLINIC_SCHEDULE: ClinicScheduleMap = {
     Rabu: { start: "16:30", end: "21:00", note: "Sesuai perjanjian" },
     Kamis: { start: "16:30", end: "21:00", note: "Sesuai perjanjian" },
     Jumat: { start: "16:30", end: "21:00", note: "Sesuai perjanjian" },
-    Sabtu: { start: "16:30", end: "21:00", note: "Sesuai perjanjian" },
     Minggu: { start: "16:30", end: "21:00", note: "Sesuai perjanjian" },
   },
   "Poli Penyakit Dalam": {
