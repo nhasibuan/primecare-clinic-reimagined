@@ -44,10 +44,10 @@ const serviceTabs = [
 
 const careCards = [
   {
-    title: "Poli Kandungan",
-    text: "Dr. Syaiful Aspiannur Sp.OG. Minggu pukul 11.00–21.00 WITA dan Senin pukul 17.00–21.00 WITA, sesuai perjanjian.",
-    image: assets.motherChild,
-    tag: "Kandungan & USG",
+    title: "Poli Penyakit Dalam",
+    text: "Dr. Vera Bahar, Sp.PD. Senin–Minggu pukul 09.00–21.00 WITA, sesuai perjanjian.",
+    image: assets.dentalStudio,
+    tag: "Penyakit Dalam",
   },
   {
     title: "Poli Umum",
@@ -62,10 +62,10 @@ const careCards = [
     tag: "Kesehatan gigi",
   },
   {
-    title: "Poli Penyakit Dalam",
-    text: "Dr. Vera Bahar, Sp.PD. Senin–Minggu pukul 09.00–21.00 WITA, sesuai perjanjian.",
-    image: assets.dentalStudio,
-    tag: "Penyakit Dalam",
+    title: "Poli Kandungan",
+    text: "Dr. Syaiful Aspiannur Sp.OG. Minggu pukul 11.00–21.00 WITA dan Senin pukul 17.00–21.00 WITA, sesuai perjanjian.",
+    image: assets.motherChild,
+    tag: "Kandungan & USG",
   },
   {
     title: "Poli Bedah",
