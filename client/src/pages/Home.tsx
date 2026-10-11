@@ -37,7 +37,7 @@ const whatsappUrl = "https://wa.me/6285215862526";
 
 const serviceTabs = [
   "Laboratorium",
-  "Radiology",
+  "IGD",
   "Rehabilitasi Medik",
   "Optik",
 ];
@@ -193,7 +193,8 @@ export default function Home() {
       text: (
         <>
           Klinik Berkat Insani menyediakan laboratorium hematologi, urine, kimia
-          klinik imunoserologi, dan swab antigen.
+          klinik imunoserologi, dan swab antigen. Layanan Laboratorium melayani
+          permintaan pemeriksaan dari internal maupun rujukan dari luar klinik.
         </>
       ),
     },
@@ -431,7 +432,7 @@ export default function Home() {
               [
                 ShieldCheck,
                 "Layanan Kesehatan",
-                "Pilihan layanan untuk Laboratorium, Radiology, Rehabilitasi Medik, dan Optik",
+                "Pilihan layanan untuk Laboratorium, IGD, Rehabilitasi Medik, dan Optik",
               ],
               [
                 Clock3,
