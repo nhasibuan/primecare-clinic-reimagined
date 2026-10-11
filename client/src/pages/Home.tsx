@@ -202,11 +202,9 @@ export default function Home() {
       images: ["https://i.imgur.com/aDOdWLV.png"],
       text: (
         <>
-          Klinik Berkat Insani dilengkapi dengan berbagai layanan yang siap
-          melayani Anda selama 24 jam tanpa henti. Ada layanan Laboratorium yang
-          melayani permintaan pemeriksaan dari internal maupun rujukan dari luar
-          klinik. Ada Instalasi Gawat Darurat (IGD), yang siap melayani pasien
-          dengan ketersediaan dokter IGD setiap saat.
+          Klinik Berkat Insani dilengkapi dengan Instalasi Gawat Darurat (IGD),
+          yang siap melayani pasien dengan ketersediaan dokter setiap saat selama
+          24 jam tanpa henti.
         </>
       ),
     },
