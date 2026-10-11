@@ -621,14 +621,6 @@ export default function Home() {
                 alt="Ruang klinik yang bersih dan nyaman"
                 className="aspect-[1.13] w-full rounded-[30px] object-cover shadow-[0_24px_50px_rgba(0,0,0,.18)]"
               />
-              <div className="absolute -bottom-6 -left-4 max-w-[225px] rounded-2xl bg-white p-5 text-[#173047] shadow-[0_20px_40px_rgba(0,0,0,.14)] sm:-left-8">
-                <p className="font-display text-xl font-semibold leading-tight">
-                  Datang dengan tenang.
-                </p>
-                <p className="mt-2 text-xs leading-5 text-[#607684]">
-                  Kami bantu arahkan langkah awal kunjungan Anda.
-                </p>
-              </div>
             </div>
           </div>
         </section>
