@@ -51,7 +51,7 @@ const careCards = [
   },
   {
     title: "Poli Umum",
-    text: "Konsultasikan keluhan kesehatan sehari-hari bersama dr. Suriani dan dapatkan arahan untuk langkah berikutnya.",
+    text: "Dr. Suriani. Senin–Sabtu pukul 09.00–21.00 WITA; Minggu pukul 16.00–21.00 WITA.",
     image: assets.facilityStay,
     tag: "Pelayanan umum",
   },
