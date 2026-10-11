@@ -11,7 +11,6 @@ import {
   Clock3,
   HeartHandshake,
   Menu,
-  Phone,
   ShieldCheck,
   Stethoscope,
   X,
@@ -46,7 +45,7 @@ const serviceTabs = [
 const careCards = [
   {
     title: "Poli Kandungan",
-    text: "Konsultasi kandungan bersama dr. Syaiful Aspiannur, Sp.OG, untuk pemeriksaan kehamilan, USG, serta pemantauan ibu dan janin.",
+    text: "Dr. Vera Bahar, Sp.PD. Senin–Minggu pukul 09.00–21.00 WITA, sesuai perjanjian.",
     image: assets.motherChild,
     tag: "Kandungan & USG",
   },
@@ -712,14 +711,6 @@ export default function Home() {
               Kelumpang Hilir, Kotabaru. Konfirmasi layanan dan jadwal melalui
               WhatsApp sebelum berkunjung.
             </p>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/35 px-5 py-3 text-sm font-bold text-white transition hover:bg-white hover:text-[#007f98] active:scale-[.97]"
-            >
-              <Phone size={16} /> WhatsApp 0852-1586-2526
-            </a>
           </div>
           <div className="grid gap-8 sm:grid-cols-3">
             {locations.map(location => (
