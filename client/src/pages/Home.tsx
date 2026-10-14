@@ -28,6 +28,7 @@ const assets = {
   homecare: "https://i.imgur.com/O1fJpCK.jpeg",
   welcome: "https://i.imgur.com/1rvnwyz.jpeg",
   facilityStay: "https://i.imgur.com/7WEnaqE.jpeg",
+  clinicRoom: "https://i.imgur.com/uVzZTMB.jpeg",
   delivery: "/manus-storage/delivery-room_77732972.png",
   blueLight: "/manus-storage/blue-light_f1a96e26.png",
   dentalDigital: "/manus-storage/dental-digital_dee1ece8.webp",
@@ -618,7 +619,7 @@ export default function Home() {
             </div>
             <div className="relative">
               <img
-                src={assets.facilityStay}
+                src={assets.clinicRoom}
                 alt="Ruang klinik yang bersih dan nyaman"
                 className="aspect-[1.13] w-full rounded-[30px] object-cover shadow-[0_24px_50px_rgba(0,0,0,.18)]"
               />
