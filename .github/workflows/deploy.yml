@@ -1,0 +1,68 @@
+# Builds, tests, and — on a green gate — deploys to the production VM over SSH.
+#
+# The VM is the only server (primecare.service, systemd). This workflow is the
+# single path code takes to reach production: GitHub is the source of truth,
+# and scripts/deploy.sh on the VM pulls origin/main, rebuilds, restarts, and
+# health-checks with automatic rollback.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   DEPLOY_SSH_KEY  private key GitHub Actions uses to SSH into the VM
+#   DEPLOY_HOST     VM public IP or a direct hostname (NOT berkatinsani.id —
+#                   the domain is proxied and does not accept SSH)
+#   DEPLOY_USER     user to SSH as (e.g. root)
+
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# One deploy at a time. cancel-in-progress is false so an in-flight deploy is
+# never killed mid-restart; a superseded run simply waits its turn.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Typecheck, test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+        # No `version` input: reads packageManager from package.json.
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm check
+
+      - name: Unit & integration tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build
+
+  deploy:
+    name: Deploy to production VM
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+      - name: Run deploy script on the VM
+        run: |
+          ssh -o StrictHostKeyChecking=accept-new \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            'bash /g/primecare-clinic-reimagined/scripts/deploy.sh'
