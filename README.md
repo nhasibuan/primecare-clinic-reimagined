@@ -2,7 +2,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-7.0-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-151%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-162%20passing-brightgreen)](#testing)
 
 A production-hardened, full-stack TypeScript platform that runs both the public face and the daily operations of **Klinik Berkat Insani**, a healthcare clinic in Kotabaru, Kalimantan Selatan, Indonesia. A single codebase serves the marketing website, online appointment booking with layered anti-spam defenses, a WhatsApp follow-up workflow for staff, a waiting-room patient queue display, patient records management, and a complete admin CMS — all exposed through a type-safe tRPC API, persisted in MySQL 8, shipped as one Node binary, and supervised in production by systemd units covering encrypted backups, restore drills, boot self-checks, and uptime watchdogs.
 
@@ -447,6 +447,21 @@ The `deploy/` directory ships production systemd units — the app is supervised
 | `primecare-bootcheck.service` | on boot | Post-boot self-check of the production stack |
 
 A CI **production-audit gate** additionally blocks releases that fail the audit checklist, and Dependabot merges are batched and verified before landing.
+
+### Continuous Deployment (GitHub Actions → VM)
+
+Production deploys are triggered by pushes to `main` (or a manual `workflow_dispatch`) via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
+
+1. **verify** job — `pnpm install --frozen-lockfile` → `pnpm check` → `pnpm test` → `pnpm build`.
+2. **deploy** job — on a green gate, SSHes into the production VM and runs [`scripts/deploy.sh`](scripts/deploy.sh): `git reset --hard origin/main` → `pnpm install --frozen-lockfile` → `pnpm build` → `systemctl restart primecare` → poll `/healthz`.
+
+`deploy.sh` refuses to run over a dirty working tree, treats HTTP 200/503 on `/healthz` as "serving" (a database outage must not trigger a code rollback), and **auto-rolls-back** to the previously running commit if the app fails to come up. Every attempt appends one line to `/var/log/primecare-deploy.log` (UTC timestamp, `result`, prev/new commit, health code, `trigger=ci|manual`), so each deploy — including CI-triggered ones — is traceable on the VM independently of the Actions UI.
+
+**Required repository secrets** (Settings → Secrets and variables → Actions): `DEPLOY_SSH_KEY` (private key for VM SSH), `DEPLOY_HOST` (VM public IP — not the proxied domain), `DEPLOY_USER`.
+
+**Deploy-key hardening**: the deploy public key in the VM's `authorized_keys` is restricted with `command=".../deploy.sh",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty`, so it can only ever run the deploy script — never an arbitrary shell, port/agent forward, or PTY.
+
+GitHub is the single source of truth: the VM mirrors `origin/main` and carries no local commits.
 
 ### Production Environment Variables
 

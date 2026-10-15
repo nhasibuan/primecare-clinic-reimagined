@@ -152,6 +152,33 @@ check("test files", () => {
   return `${actual} files`;
 });
 
+// (d) test-count badge consistency: the header badge must agree with the
+// "Unit & Integration Tests" body row. Reality itself is checked by `pnpm
+// test`; this fast, static guard catches the two README locations drifting
+// apart (e.g. a stale badge left behind when the body count was updated).
+check("test-count badge consistency", () => {
+  const readme = readFileSync(join(ROOT, "README.md"), "utf8");
+  const badge = readme.match(/Tests-(\d+)%20passing/);
+  if (!badge)
+    throw new Error('README has no "Tests-<n>passing" badge to verify');
+  const row = findRow(readme, "**Unit & Integration Tests**");
+  if (!row)
+    throw new Error('README has no "**Unit & Integration Tests**" row');
+  const body = row.match(/(\d+)\s+passing/);
+  if (!body)
+    throw new Error(
+      'Unit & Integration Tests row does not state an "<n> passing" count'
+    );
+  const badgeN = parseInt(badge[1], 10);
+  const bodyN = parseInt(body[1], 10);
+  if (badgeN !== bodyN) {
+    throw new Error(
+      `badge claims ${badgeN} passing but the test row claims ${bodyN}`
+    );
+  }
+  return `badge and body agree: ${bodyN} passing`;
+});
+
 for (const p of passes) console.log(`  ok   ${p}`);
 if (failures.length > 0) {
   console.error("README drift detected:");
