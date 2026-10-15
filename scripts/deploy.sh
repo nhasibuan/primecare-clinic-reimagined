@@ -23,12 +23,27 @@ export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
 
 log() { echo "[deploy] $*"; }
 
+# Append-only audit trail for every deploy attempt (VM-side, mirrors the app's
+# audit-log discipline). Best-effort: a logging failure must never abort a
+# deploy. trigger=ci when invoked over SSH by the workflow, else manual.
+LOG_FILE="/var/log/primecare-deploy.log"
+audit() {
+  local result="$1" prev="${2:-}" new="${3:-}" health="${4:-}"
+  local trigger="manual"
+  [ -n "${SSH_ORIGINAL_COMMAND:-}" ] && trigger="ci"
+  printf '%s result=%s prev=%s new=%s health=%s trigger=%s\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$result" "$prev" "$new" "$health" "$trigger" \
+    >>"$LOG_FILE" 2>/dev/null || true
+}
+touch "$LOG_FILE" 2>/dev/null && chmod 600 "$LOG_FILE" 2>/dev/null || true
+
 cd "$APP_DIR"
 
 # --- Safety: never deploy over uncommitted local changes ----------------------
 if [ -n "$(git status --porcelain)" ]; then
   log "ERROR: working tree is not clean; refusing to deploy."
   git status --short
+  audit "ABORTED_DIRTY"
   exit 1
 fi
 
@@ -78,6 +93,7 @@ done
 
 if [ -n "$healthy" ]; then
   log "Healthy (HTTP ${healthy}). Deployed ${NEW_COMMIT:0:7}."
+  audit "SUCCESS" "$PREV_COMMIT" "$NEW_COMMIT" "$healthy"
   exit 0
 fi
 
@@ -100,7 +116,9 @@ done
 
 if [ -n "$rb" ]; then
   log "Rollback OK; serving ${PREV_COMMIT:0:7} (HTTP ${rb}). Deploy FAILED."
+  audit "FAILED_ROLLED_BACK" "$PREV_COMMIT" "$NEW_COMMIT" "$rb"
 else
   log "CRITICAL: rollback did not restore the service. Manual intervention required."
+  audit "CRITICAL_ROLLBACK_FAILED" "$PREV_COMMIT" "$NEW_COMMIT" ""
 fi
 exit 1
