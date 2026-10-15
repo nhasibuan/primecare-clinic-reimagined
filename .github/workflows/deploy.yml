@@ -49,6 +49,18 @@ jobs:
       - name: Unit & integration tests
         run: pnpm test
 
+      # Documentation drift is a release blocker, not a nice-to-have: the
+      # runbooks are what an operator follows during an incident. `pnpm test`
+      # also covers the README↔router contract (server/readmeFacts.test.ts).
+      - name: Verify README claims
+        run: pnpm docs:verify
+
+      # The production dependency audit runs on the release path too (not only
+      # on dependency PRs and the weekly sweep), so a new advisory published
+      # against an unchanged lockfile cannot be deployed unnoticed.
+      - name: Audit production dependencies
+        run: pnpm audit --prod
+
       - name: Production build
         run: pnpm build
 

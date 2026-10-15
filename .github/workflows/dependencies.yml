@@ -16,6 +16,7 @@ on:
       - "pnpm-lock.yaml"
       - "README.md"
       - "scripts/verifyReadme.mjs"
+      - "scripts/updateReadmeChanges.mjs"
       - ".github/workflows/dependencies.yml"
   push:
     branches:
@@ -25,6 +26,7 @@ on:
       - "pnpm-lock.yaml"
       - "README.md"
       - "scripts/verifyReadme.mjs"
+      - "scripts/updateReadmeChanges.mjs"
       - ".github/workflows/dependencies.yml"
   schedule:
     # Weekly audit sweep, Sat 03:07 UTC.

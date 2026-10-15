@@ -12,6 +12,7 @@
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "docs:verify": "node scripts/verifyReadme.mjs",
+    "docs:changes": "node scripts/updateReadmeChanges.mjs",
     "audit": "pnpm audit --prod"
   },
   "dependencies": {
@@ -95,7 +96,6 @@
     "baseline-browser-mapping": "^2.11.21",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.28.2",
-    "pnpm": "^12.8.0",
     "postcss": "^8.5.28",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.3.3",

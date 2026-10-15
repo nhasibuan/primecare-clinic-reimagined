@@ -2,7 +2,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-7.0-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-162%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-176%20passing-brightgreen)](#testing)
 
 A production-hardened, full-stack TypeScript platform that runs both the public face and the daily operations of **Klinik Berkat Insani**, a healthcare clinic in Kotabaru, Kalimantan Selatan, Indonesia. A single codebase serves the marketing website, online appointment booking with layered anti-spam defenses, a WhatsApp follow-up workflow for staff, a waiting-room patient queue display, patient records management, and a complete admin CMS — all exposed through a type-safe tRPC API, persisted in MySQL 8, shipped as one Node binary, and supervised in production by systemd units covering encrypted backups, restore drills, boot self-checks, and uptime watchdogs.
 
@@ -21,6 +21,7 @@ A production-hardened, full-stack TypeScript platform that runs both the public 
 - [SWOT Analysis](#swot-analysis)
 - [Fact Verification & System Integrity](#fact-verification--system-integrity)
 - [Adversarial & Threat Review](#adversarial--threat-review)
+- [Recent Changes](#recent-changes)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -69,7 +70,7 @@ flowchart TD
     end
 
     subgraph Server["Server (Express + tRPC)"]
-        Router["tRPC App Router<br/>30 procedures across 7 domains + system"]
+        Router["tRPC App Router<br/>29 procedures across 7 domains + 3 system"]
         Auth["Auth Middleware<br/>public · protected · admin"]
         AuditLog["Audit Logger"]
         RateLimiter["Rate Limiter<br/>(pluggable interface)"]
@@ -99,7 +100,7 @@ flowchart TD
 
 **Monorepo structure**: `client/`, `server/`, `shared/`, `drizzle/` with path aliases (`@/`, `@shared/`) and end-to-end type safety from database schema to React components.
 
-**Design patterns in use**: Factory + Strategy for the pluggable rate limiter (`rateLimiterFactory.ts` selects in-memory vs Redis; `DelegatingRateLimiter` decorates the active implementation), Observer for degradation telemetry (`onDegraded` hook → `rateLimiterMetrics.ts` registry, exposed via `system.rateLimiterStatus`), and versioned envelopes for PII encryption key rotation.
+**Design patterns in use**: **Factory + Strategy** for the pluggable rate limiter (`rateLimiterFactory.ts` selects in-memory vs Redis), **Decorator** for the live delegate swap and for degradation fail-over (`DelegatingRateLimiter` forwards to the active backend; `RedisRateLimiter` forwards to the local limiter when Redis is unusable), **Observer** for degradation telemetry (`onDegraded` → `rateLimiterMetrics.ts` registry, exposed via `system.rateLimiterStatus`), **Registry** for per-limiter stats, **Repository** for all data access (`server/repositories/`), **Result** at the router boundary (`shared/result.ts` pure validation → `unwrapOrThrow` converts to a transport error only at the edge), and **versioned envelopes** for PII encryption key rotation.
 
 ## Getting Started
 
@@ -158,23 +159,32 @@ pnpm dev
 │   │   ├── context.ts         # Request context (auth)
 │   │   ├── systemRouter.ts    # Built-in system procedures
 │   │   ├── heartbeat.ts       # Liveness heartbeat
+│   │   ├── listenPort.ts      # Port resolution (production fails fast, never drifts)
 │   │   ├── env.ts             # Environment validation
 │   │   ├── oauth.ts           # OAuth callback handler
 │   │   ├── cookies.ts         # Cookie helpers
 │   │   ├── notification.ts    # Notifications
 │   │   └── vite.ts            # Vite dev integration
-│   ├── routers.ts             # tRPC app router (all API endpoints)
+│   ├── routers/               # tRPC app router split by domain
+│   │   ├── index.ts           # Assembly point (7 domain sub-routers + system)
+│   │   └── admin|appointments|auth|clinic|queueRouter.ts
+│   ├── routers.ts             # Deprecated re-export shim for old imports
+│   ├── repositories/          # Data access (appointment, clinic, queue, user)
+│   ├── schemas/               # Shared Zod input schemas
+│   ├── services/              # Pure validation (clinic schedule rules)
 │   ├── db.ts                  # Database queries and business logic
 │   ├── auditLog.ts            # Audit logging utility
 │   ├── rateLimiter.ts         # Pluggable rate limiter interface
 │   ├── redisRateLimiter.ts    # Redis sorted-set sliding-window limiter
-│   ├── rateLimiterFactory.ts  # Selects limiter via REDIS_URL
+│   ├── rateLimiterFactory.ts  # Selects limiter via REDIS_URL (local = fail-over target)
+│   ├── rateLimiterMetrics.ts  # Per-limiter registry (Registry pattern)
+│   ├── rateLimiterAlerts.ts   # Edge-triggered degradation emails
 │   ├── encryption.ts          # AES-256-GCM field encryption (HKDF)
 │   ├── appointmentRequest.ts  # Spam protection, rate limiting
 │   ├── clinicSchedule.ts      # Schedule validation helpers
 │   ├── turnstile.ts           # Cloudflare Turnstile CAPTCHA
 │   ├── storage.ts             # S3/Forge presigned uploads
-│   └── *.test.ts              # 18 test files
+│   └── *.test.ts              # 20 test files (incl. README↔router contract)
 ├── shared/                     # Shared between client & server
 │   ├── clinicSchedule.ts      # Schedule data (single source of truth)
 │   ├── const.ts               # Constants, error messages
@@ -194,7 +204,9 @@ pnpm dev
 │   ├── backfillPiiEncryption.ts
 │   ├── restoreDrillCheck.mts
 │   ├── setAdminPassword.mjs
-│   └── hashPassword.mjs
+│   ├── hashPassword.mjs
+│   ├── verifyReadme.mjs       # Static README drift guard (pnpm docs:verify)
+│   └── updateReadmeChanges.mjs # Regenerates the Recent Changes block
 ├── .env.example                # Environment template
 ├── LICENSE                     # MIT License
 ├── package.json
@@ -382,7 +394,7 @@ This application implements **defense-in-depth** with multiple security layers:
 |-------|---------------|
 | **CAPTCHA** | Cloudflare Turnstile on appointment form (admin-toggleable) |
 | **Honeypot** | Hidden `website` field silently drops automated submissions |
-| **IP Rate Limiting** | True sliding window, 3 requests / 60s per IP (pluggable `RateLimiter` interface) — enforced before the outbound CAPTCHA call; upgrades to a shared Redis-backed limiter when `REDIS_URL` is set (fail-open with throttled warnings) |
+| **IP Rate Limiting** | True sliding window, 3 requests / 60s per IP (pluggable `RateLimiter` interface) — enforced before the outbound CAPTCHA call; upgrades to a shared Redis-backed limiter when `REDIS_URL` is set, and **fails over** to the per-instance limiter if Redis is unusable (the quota is never removed, only un-sharded) |
 | **Upload Rate Limiting** | 20 uploads / 5 min per user (same pluggable interface) |
 | **Input Validation** | Zod schemas on all tRPC inputs with regex patterns |
 | **RBAC** | Three procedure levels: `public`, `protected`, `admin` |
@@ -398,11 +410,13 @@ This application implements **defense-in-depth** with multiple security layers:
 ## Testing
 
 ```bash
-pnpm test        # Run all tests (vitest run)
-pnpm check       # TypeScript type checking
+pnpm test          # Run all tests (vitest run)
+pnpm check         # TypeScript type checking
+pnpm docs:verify   # Fail when README claims drift from the codebase
+pnpm docs:changes  # Regenerate the README "Recent Changes" block
 ```
 
-**162 tests passing (1 skipped) across 20 test files**, covering:
+**176 tests passing (1 skipped) across 22 test files**, covering:
 - Role resolution and admin management logic
 - Rate limiter behavior (window expiry, eviction; in-memory and Redis sorted-set)
 - Appointment request validation (honeypot, note normalization, rate limits)
@@ -414,6 +428,9 @@ pnpm check       # TypeScript type checking
 - PII encryption envelopes (AES-256-GCM, capacity contracts)
 - Rate limiter degradation observability (metrics registry, observer hook)
 - Rate limiter degradation alerting (episode edge-triggering, cooldown, kill switch)
+- Rate limiter fail-over (Redis outage keeps enforcing the local quota; recovery returns to the shared window)
+- Production listen-port discipline (fails fast instead of binding another port)
+- README ↔ router contract (documented procedure count and per-table endpoint list)
 - Schedule validation (client + server)
 
 ## Deployment
@@ -434,6 +451,11 @@ pnpm build
 NODE_ENV=production node dist/index.js
 ```
 
+Two startup behaviours matter operationally:
+
+- **Port discipline**: production binds `PORT` (default 3000) or **refuses to start** (`server/_core/listenPort.ts`). Development alone scans forward for a free port. Silently binding another port would leave the reverse proxy and the deploy health check talking to a *previous* process — a false-green deploy that serves nothing.
+- **Exit codes**: a failed startup logs one structured `component: "startup"` line and exits non-zero, so systemd's restart policy and the post-boot self-check both see a real failure instead of a clean-looking shutdown.
+
 ### Production Operations (systemd)
 
 The `deploy/` directory ships production systemd units — the app is supervised, backed up, and self-checked without manual intervention:
@@ -446,13 +468,13 @@ The `deploy/` directory ships production systemd units — the app is supervised
 | `primecare-watchdog.service` + `.timer` | periodic | Uptime watchdog |
 | `primecare-bootcheck.service` | on boot | Post-boot self-check of the production stack |
 
-A CI **production-audit gate** additionally blocks releases that fail the audit checklist, and Dependabot merges are batched and verified before landing.
+A separate [`dependencies.yml`](.github/workflows/dependencies.yml) workflow runs the same gate on dependency PRs and on a weekly sweep (new advisories are published against unchanged lockfiles), and [`readme-changes.yml`](.github/workflows/readme-changes.yml) keeps the [Recent Changes](#recent-changes) block below current on every push to `main`.
 
 ### Continuous Deployment (GitHub Actions → VM)
 
 Production deploys are triggered by pushes to `main` (or a manual `workflow_dispatch`) via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
 
-1. **verify** job — `pnpm install --frozen-lockfile` → `pnpm check` → `pnpm test` → `pnpm build`.
+1. **verify** job — `pnpm install --frozen-lockfile` → `pnpm check` → `pnpm test` → `pnpm docs:verify` → `pnpm audit --prod` → `pnpm build`. The README drift guard and the production dependency audit are part of the release gate, so stale documentation or a newly published advisory blocks the deploy rather than shipping.
 2. **deploy** job — on a green gate, SSHes into the production VM and runs [`scripts/deploy.sh`](scripts/deploy.sh): `git reset --hard origin/main` → `pnpm install --frozen-lockfile` → `pnpm build` → `systemctl restart primecare` → poll `/healthz`.
 
 `deploy.sh` refuses to run over a dirty working tree, treats HTTP 200/503 on `/healthz` as "serving" (a database outage must not trigger a code rollback), and **auto-rolls-back** to the previously running commit if the app fails to come up. Every attempt appends one line to `/var/log/primecare-deploy.log` (UTC timestamp, `result`, prev/new commit, health code, `trigger=ci|manual`), so each deploy — including CI-triggered ones — is traceable on the VM independently of the Actions UI.
@@ -475,7 +497,7 @@ GitHub is the single source of truth: the VM mirrors `origin/main` and carries n
 | `BUILT_IN_FORGE_API_KEY` | ✅ | Forge storage API key |
 | `TURNSTILE_SECRET_KEY` | ✅ | Cloudflare Turnstile secret |
 | `PII_ENCRYPTION_KEY` | ✅ | ≥ 32 chars; AES-256-GCM key for patient PII encryption at rest. Launch without it only by setting `ALLOW_PLAINTEXT_PII=true` (warns loudly) |
-| `REDIS_URL` | — | Optional; enables the shared Redis-backed rate limiter for multi-instance deployments |
+| `REDIS_URL` | — | Optional; enables the shared Redis-backed rate limiter for multi-instance deployments. If Redis becomes unreachable the limiter **fails over** to the local per-instance quota (never fail-open) and emails ops once per degradation episode |
 
 > ⚠️ **Never** set `TURNSTILE_ALLOW_TEST_KEY` in production — it bypasses CAPTCHA verification.
 >
@@ -492,21 +514,22 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 
 ### Strengths
 - **End-to-End Type Safety & Contract Integrity**: Strict TypeScript 7 + tRPC 11 + Zod 4 + Drizzle 0.45 ensures compile-time and runtime validation spanning database entities to React UI components.
-- **Multi-Tiered Defense-in-Depth**: Six defensive layers protect public endpoints, ordered cheapest-first: honeypot, sliding-window IP rate limiting (bounding even the outbound CAPTCHA call), pure-function schedule validation, Cloudflare Turnstile CAPTCHA, authenticated upload throttling, and hardened HTTP security headers (CSP, HSTS, X-Frame-Options).
+- **Multi-Tiered Defense-in-Depth**: Six defensive layers protect public endpoints, ordered cheapest-first: honeypot, sliding-window IP rate limiting (bounding even the outbound CAPTCHA call, and failing over to a local quota instead of vanishing when Redis is unavailable), pure-function schedule validation, Cloudflare Turnstile CAPTCHA, authenticated upload throttling, and hardened HTTP security headers (CSP, HSTS, X-Frame-Options).
 - **Privacy-by-Design Architecture**: Strict data minimization avoids persisting clinical diagnosis notes in the web layer; patient names are dynamically redacted on public waiting-room displays, and WhatsApp follow-up logs preserve only telemetry/metadata. Sensitive PII columns are AES-256-GCM encrypted at rest with fail-fast production enforcement.
 - **Comprehensive Immutable Audit Trail**: Admin actions (user role alterations, queue resets, clinic profile updates, media uploads) are recorded with actor ID, entity reference, mutation detail, and remote IP address.
 - **Self-Healing Production Operations**: Daily encrypted MySQL backups, monthly automated restore drills, an uptime watchdog, post-boot self-checks, and a CI production-audit gate — backup restorability is *proven*, not assumed.
-- **Robust Automated Verification**: 162 tests passing across 20 suites provide high confidence in scheduling logic, role guards, failover behavior, encryption envelopes, ciphertext capacity, PII key-ring rotation, limiter degradation observability, and degradation alerting.
+- **Robust Automated Verification**: 176 tests passing across 22 suites provide high confidence in scheduling logic, role guards, fail-over and fail-closed behaviour, production port discipline, encryption envelopes, ciphertext capacity, PII key-ring rotation, limiter degradation observability, degradation alerting, and the README↔router contract.
 
 ### Weaknesses
-- **Operational Dependency for Distributed Rate Limiting**: The Redis-backed limiter shares quota across instances but depends on a reachable Redis; a Redis outage degrades to per-instance fail-open limits with throttled warnings until connectivity returns.
+- **Operational Dependency for Distributed Rate Limiting**: The Redis-backed limiter shares quota across instances but depends on a reachable Redis. **Addressed 2026-10-15**: an outage now fails *over* — `RedisRateLimiter` delegates to the process-local sliding window (`fallback`, wired by the factory), so each instance keeps enforcing 3 requests / 60 s per IP instead of the previous fail-open behaviour that removed the limit altogether. Residual: while Redis is down the quota is per instance (N instances ⇒ N× the quota) and Redis health remains a dependency for *shared*, not total, protection.
+- **Runtime Version Gap Between CI and Production**: CI typechecks, tests and builds on Node 22 while production runs Node 26, so a Node-26-only behaviour would first be exercised on the VM. (Related drift resolved 2026-10-15: the redundant `devDependencies.pnpm` entry requesting pnpm 12 was removed, leaving `packageManager: pnpm@10.4.1` as the single source of truth — the mismatch only invited lockfile churn, since no script invokes that binary.)
 - **Platform & Vendor Coupling**: Auth callbacks and file storage are tightly coupled to Forge/Manus platform APIs; self-hosted S3/MinIO or generic OIDC requires adapter refactoring.
 - **Static Clinic Schedule**: Operating hours and poli availability are defined in code (`shared/clinicSchedule.ts`), requiring code redeployment rather than dynamic CMS modification. (The `clinicians` / `opening_schedules` tables exist but are deprecated and unused.)
 - **Plaintext PII Residuals Outside Encrypted Columns**: The remaining plaintext columns are low-sensitivity (`agama`, `instagramUrl`, doctor/poli labels) — but backup security still reduces to PII encryption-key custody. Key rotation is now supported (2026-10-03): `PII_ENCRYPTION_KEYS` ring (first key encrypts, retired keys kept for decryption), `scripts/rotatePiiKey.ts` re-encryption tooling, and the rotation/break-glass runbook in `SECRETS_RECOVERY.md`.
 
 ### Opportunities
 - **Official WhatsApp Business Platform (Cloud API)**: Transition from desktop URI links (`wa.me`) to verified template messaging with automated webhooks and bi-directional status tracking.
-- **Rate-Limiter Observability**: Implemented — every degradation event is counted via an Observer hook (`onDegraded` → `rateLimiterMetrics.ts` registry) and exposed to admins through `system.rateLimiterStatus` (backend, degradation count, last event per limiter). Degradation alerting implemented 2026-10-06: the first failure of each episode emails the ops address via the shared alert channel (`rateLimiterAlerts.ts` — edge-triggered, 30-minute reminders while failures continue, 5-minute process-wide cooldown; disable with `RATE_LIMITER_ALERTS_DISABLED=true`).
+- **Rate-Limiter Observability & Degradation Handling**: Implemented — every degradation event is counted via an Observer hook (`onDegraded` → `rateLimiterMetrics.ts` registry) and exposed to admins through `system.rateLimiterStatus` (backend, degradation count, last event per limiter). Degradation alerting implemented 2026-10-06: the first failure of each episode emails the ops address via the shared alert channel (`rateLimiterAlerts.ts` — edge-triggered, 30-minute reminders while failures continue, 5-minute process-wide cooldown; disable with `RATE_LIMITER_ALERTS_DISABLED=true`). Fail-over implemented 2026-10-15: while Redis is unusable each instance keeps enforcing its own window, so an outage costs quota *scope* rather than the limit itself. Next: managed Redis with automatic failover so the local limiter stays a rare fallback.
 - **Indonesian UU PDP Compliance Hardening**: Extend encryption coverage to backups and add explicit consent logs and patient data deletion workflows on top of the existing field-level AES-256-GCM.
 - **PWA & Offline Queue Display**: Enable Progressive Web App caching and service workers for the clinic waiting-room TV display to survive intermittent internet drops.
 - **Key Management Maturity**: Implemented 2026-10-03 — PII key rotation via the `PII_ENCRYPTION_KEYS` ring (decryption tries each key in order; `v1:` envelope retained), `scripts/rotatePiiKey.ts` idempotent re-encryption, and the rotation/break-glass runbook in `SECRETS_RECOVERY.md`. Next: versioned envelopes beyond `v1:` and multi-admin recovery.
@@ -516,7 +539,7 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 - **Single Owner Bootstrap Vulnerability**: Administrative root privileges rely on a single environment variable (`OWNER_OPEN_ID`); loss or compromise of this identity provider credential locks or jeopardizes admin control.
 - **Third-Party Infrastructure Outages**: Concurrent dependency on Cloudflare Turnstile, YouTube OSD embeds, and external OAuth means third-party downtime degrades critical user journeys.
 - **Healthcare Operational Impact**: Incorrect queue states or missed follow-ups directly affect real-world clinical operations and patient care continuity.
-- **Documentation Drift**: The README previously carried stale dependency versions and test counts for multiple release cycles — a leading indicator that operational runbooks can silently diverge from the system they describe unless verification is automated.
+- **Documentation Drift**: The README previously carried stale dependency versions and test counts for multiple release cycles — a leading indicator that operational runbooks can silently diverge from the system they describe unless verification is automated. Confirmed again on 2026-10-15, when the fact table still claimed **30** tRPC procedures while the assembled router exposed **32**. Mitigation now: the static guards (`pnpm docs:verify`) run inside the deploy gate, a runtime contract test (`server/readmeFacts.test.ts`) holds the documented procedure count and per-endpoint tables to the real router, and the [Recent Changes](#recent-changes) block regenerates itself from git history on every push to `main`.
 
 ### Strategic Initiatives Matrix
 
@@ -524,27 +547,32 @@ GET /healthz → { status: "ok", db: "connected", timestamp: "..." }
 |----------|-------|-------------|
 | **SO (Strengths + Opportunities)** | Type Safety & WhatsApp API | Leverage end-to-end Zod schemas to build fully automated, typed WhatsApp Cloud API outbound queues. |
 | **ST (Strengths + Threats)** | Audit Trail & PDP Compliance | Extend audit logging to patient PII read events, demonstrating regulatory accountability under UU PDP. |
-| **WO (Weaknesses + Opportunities)** | Redis Rate Limiting | Observability implemented (`system.rateLimiterStatus`); next: alerting thresholds on degradation spikes. |
+| **WO (Weaknesses + Opportunities)** | Redis Rate Limiting | Observability and alerting implemented, and degradation now fails over to the local limiter (2026-10-15) rather than fail-open; next: managed Redis failover so the fallback stays exceptional. |
+| **SO (Strengths + New)** | Release-Gate Integrity | Every documented claim that can be derived from code (versions, table/test counts, procedure count, endpoint tables) is guarded in CI, so drift blocks a deploy instead of misleading an operator mid-incident. |
 | **WT (Weaknesses + Threats)** | Encryption & Key Recovery | `fullName`/`note`/queue names encrypted; key rotation implemented (`PII_ENCRYPTION_KEYS` ring + `rotatePiiKey.ts`) — exercise the rotation runbook on schedule and keep key storage isolated from backups. |
 
 ---
 
 ## Fact Verification & System Integrity
 
-A codebase verification pass was executed against the live repository on **2026-10-02**, re-verified **2026-10-03** after the security remediation (session TTL, PII key rotation, README drift guard):
+A codebase verification pass was executed against the live repository on **2026-10-02**, re-verified **2026-10-03** after the security remediation (session TTL, PII key rotation, README drift guard), and re-run **2026-10-15** against the commit this README describes (rate-limiter fail-over, port discipline, expanded release gate):
 
 | Claim / Specification | Target in Codebase | Verification Method | Status | Notes |
 |-----------------------|--------------------|---------------------|:------:|-------|
-| **Unit & Integration Tests** | 162 passing, 1 skipped (20 files) | `vitest run` | ✅ **Verified** | 162 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 20 test files, in ~12s. |
+| **Unit & Integration Tests** | 176 passing, 1 skipped (22 files) | `vitest run` | ✅ **Verified** | 176 passed, 1 skipped (`turnstile.secret.test.ts` requiring live secret key) across 22 test files, in ~11s. |
 | **Type Checking** | Strict TypeScript 7 | `tsc --noEmit` | ✅ **Verified** | 0 errors across frontend and backend modules. |
 | **Production Build** | Client + Server bundles | `pnpm build` | ✅ **Verified** | Vite client bundle (`dist/public/`) and esbuild ESM server (`dist/index.js`) generate cleanly. |
 | **Database Schema** | 12 MySQL tables | `drizzle/schema.ts` | ✅ **Verified** | Exactly 12 tables: `users`, `clinic_profiles`, `clinicians` (deprecated), `services`, `media_assets`, `appointment_requests`, `whatsapp_follow_up_activities`, `whatsapp_signature_templates`, `queue_entries`, `opening_schedules` (deprecated), `osd_settings`, `audit_logs`. |
-| **tRPC API Procedures** | 30 API procedures | `server/routers.ts` | ✅ **Verified** | 30 procedures across 7 domain sub-routers (`schedule`, `captcha`, `auth`, `appointments`, `clinic`, `queue`, `admin`) plus the system router (`health`, `notifyOwner`, `rateLimiterStatus`). |
-| **Rate Limiter Design** | Pluggable interface | `server/rateLimiter.ts`, `server/redisRateLimiter.ts`, `server/rateLimiterFactory.ts` | ✅ **Verified** | In-memory **true sliding window** (per-key event logs, bounded memory, LRU-style eviction) plus a Redis sorted-set adapter sharing identical semantics; `REDIS_URL` selects the distributed one via the factory. |
+| **tRPC API Procedures** | 32 API procedures (29 domain + 3 system) | `server/routers/` | ✅ **Verified** | 29 procedures across 7 domain sub-routers (`schedule`, `captcha`, `auth`, `appointments`, `clinic`, `queue`, `admin`) plus the system router (`health`, `notifyOwner`, `rateLimiterStatus`). Counted from the assembled `appRouter` and asserted against this table by `server/readmeFacts.test.ts`. |
+| **Rate Limiter Design** | Pluggable interface, fail-over degradation | `server/rateLimiter.ts`, `server/redisRateLimiter.ts`, `server/rateLimiterFactory.ts` | ✅ **Verified** | In-memory **true sliding window** (per-key event logs, bounded memory, LRU-style eviction) plus a Redis sorted-set adapter sharing identical semantics; `REDIS_URL` selects the distributed one via the factory, which keeps the local limiter as its fail-over target — a Redis outage degrades the quota's *scope*, never its *existence*. |
 | **Security Headers** | CSP, HSTS, X-Frame-Options | `server/_core/index.ts` | ✅ **Verified** | Hardened custom middleware enforcing zero iframe embedding, strict CSP, and nosniff. |
 | **PII Encryption** | AES-256-GCM field encryption | `server/encryption.ts` + repositories | ✅ **Verified** | HKDF-SHA256 key derivation, `v1:` versioned envelope, pass-through when unconfigured, fail-fast enforced in production; columns widened (migration 0009) and envelope-capacity contract-tested. Key-ring rotation supported (`PII_ENCRYPTION_KEYS`, first key primary). |
 | **Production Operations** | systemd units | `deploy/` | ✅ **Verified** | `primecare.service`, daily encrypted backup timer, monthly restore-drill timer, uptime watchdog timer, and post-boot self-check service all present. |
-| **Dependency Versions** | `package.json` | manifest inspection | ✅ **Verified** | TypeScript 7.0.2, Vite 8.3.1, Vitest 5.0.2, Drizzle 0.45.3, tRPC 11, React 19, Node 26 runtime. |
+| **Release Gate** | typecheck, tests, README, audit, build | `.github/workflows/deploy.yml` | ✅ **Verified** | The deploy workflow's `verify` job runs `pnpm check`, `pnpm test`, `pnpm docs:verify`, `pnpm audit --prod` and `pnpm build` before the `deploy` job may SSH to the VM; `pnpm audit --prod` reports no known vulnerabilities. |
+| **Startup Port Discipline** | production binds `PORT` or refuses to start | `server/_core/listenPort.ts` | ✅ **Verified** | 5 unit tests cover the decision table: preferred port free → bind; taken in production → throw with remediation guidance; taken in development → scan forward. Startup failures exit non-zero. |
+| **Dependency Versions** | `package.json` | manifest inspection | ✅ **Verified** | TypeScript 7.0.2, Vite 8.3.1, Vitest 5.0.2, Drizzle 0.45.3, tRPC 11, React 19, Node 26 runtime; single package-manager pin (`packageManager: pnpm@10.4.1`) with no duplicate pnpm devDependency. |
+| **Fail-over Rate Limiting** | Redis outage keeps the local quota | live dev server + `dead REDIS_URL` | ✅ **Verified** | With `REDIS_URL` pointed at a closed port, `appointments.create` answered 4× within the window: attempts 1–3 passed the limiter, attempts 4–5 were rejected **429 TOO_MANY_REQUESTS**, and the log recorded `failing over to the local limiter` — i.e. the quota survives the backend outage. |
+| **Production Port Discipline (behaviour)** | second instance refuses to start | two `node dist/index.js` processes on one port | ✅ **Verified** | First instance served; second exited **1** with `Port 3459 is already in use. Refusing to start in production…` instead of silently binding 3460. |
 
 ---
 
@@ -558,6 +586,7 @@ A comprehensive adversarial security evaluation identified the following threat 
 - **Adversarial Bypasses**:
   - Rotating IP pools (residential proxies) bypass the single-IP rate limit (3 requests / 60 seconds).
   - Programmatic headless browsers executing JavaScript can solve or bypass CAPTCHA if `captchaEnabled` is toggled off by an administrator.
+  - **Denial of protection via the limiter's own dependency**: under the previous fail-open policy, stalling or blackholing Redis removed the per-IP limit outright while the form kept answering — an availability-first design that doubled as a way to disable the last line of defence. **Mitigated 2026-10-15**: the limiter now fails over to the process-local sliding window, so an attacker can at most shard the quota (N instances ⇒ N×), never remove it.
 - **Mitigation & Hardening**:
   - Multi-layered filter: Hidden honeypot trap (`website` input field) silently drops non-human submissions without error reflection.
   - Strict Zod validation on Indonesian phone format (`08...` or `+62...`), date format (`YYYY-MM-DD`), and clinic schedule slot limits.
@@ -591,21 +620,50 @@ A comprehensive adversarial security evaluation identified the following threat 
 ### 5. Dependency Supply Chain Audit
 - **Findings**: Package audit previously identified vulnerabilities concentrated in transitive documentation/diagramming dependencies (`streamdown` > `mermaid` > `dompurify`).
 - **Production Impact Assessment**: None of these packages are exposed to unauthenticated user input on the server API layer.
-- **Remediation**: `pnpm.overrides` in `package.json` now pins patched floors (`dompurify >= 3.4.8`, `mermaid >= 11.16.1`, `tar >= 7.5.21`, `lodash >= 4.17.23`, among others), enforced by the CI production-audit gate — run `pnpm audit --prod` on each maintenance cycle to confirm.
+- **Remediation**: `pnpm.overrides` in `package.json` pins patched floors (`dompurify >= 3.4.8`, `mermaid >= 11.16.1`, `tar >= 7.5.21`, `lodash >= 4.17.23`, among others). `pnpm audit --prod` runs on dependency PRs, weekly, **and inside this repository's deploy gate** before the VM is touched; it currently reports no known vulnerabilities. Production installs use `--frozen-lockfile`, so a lockfile that disagrees with `package.json` fails the gate rather than resolving something new at deploy time.
 
 ### 6. Documentation & Operational Drift (New)
 - **Threat Vector**: Stale runbooks and README claims (dependency versions, test counts, table inventories) silently diverge from the deployed system, causing operators to trust wrong rollback/verification steps during incidents.
 - **Evidence**: Prior to this refresh, the README listed TypeScript 5.9 / Vite 7 / Vitest 2 (actual: 7.0.2 / 8.3.1 / 5.0.2), claimed 14–15 test files (actual: 18), named two tables that do not exist (`clinic_schedules`, `presigned_urls`) while omitting two that do (`clinicians`, `opening_schedules`), and documented none of the backup/restore/watchdog systemd units.
-- **Mitigation**: Implemented 2026-10-03 — `scripts/verifyReadme.mjs` (run via `pnpm docs:verify`, wired into the CI `verify` job in `.github/workflows/dependencies.yml`) fails when README claims drift: dependency versions vs `package.json`, drizzle table count vs `drizzle/schema.ts`, and test-file count vs the vitest include set. The fact-verification table above is dated and reproducible.
+- **Mitigation**: Implemented 2026-10-03 — `scripts/verifyReadme.mjs` (run via `pnpm docs:verify`) fails when README claims drift: dependency versions vs `package.json`, drizzle table count vs `drizzle/schema.ts`, test-file count vs the vitest include set, and test-count badge vs body. Extended 2026-10-15 — the guard runs inside the **deploy gate** (not only on dependency PRs, whose path filter never saw source changes), the API surface is covered by a runtime contract test (`server/readmeFacts.test.ts` walks the assembled `appRouter`), and the change log regenerates itself (`scripts/updateReadmeChanges.mjs` + `.github/workflows/readme-changes.yml`). The fact-verification table above is dated and reproducible.
+
+### 7. Availability & Deployment Integrity (New)
+- **Threat Vector**: A deploy that reports success while the new code never actually serves — or a crash on boot that looks like a clean shutdown — leaves the clinic on stale (or no) code while every dashboard stays green.
+- **Attack/Accident Surface**: startup port selection, process exit codes, and the `deploy.sh` health check.
+- **Pathways found**:
+  - **Port drift**: the previous "scan forward for a free port" behaviour applied to production too. A surviving old process on 3000 pushed the new build to 3001, and the health check then received HTTP 200 from the *old* process — `deploy.sh` recorded `result=SUCCESS` for a build that served nothing.
+  - **Swallowed startup failure**: `startServer().catch(console.error)` exited **0** on failure. systemd's restart policy sees a clean exit, so a misconfigured release could sit dead with no restart and no alert.
+- **Mitigation (2026-10-15)**: production binds `PORT` or refuses to start with remediation guidance (`server/_core/listenPort.ts`, covered by `server/listenPort.test.ts`); development alone scans forward. Startup failures now log one structured `component: "startup"` line and exit non-zero, so systemd restarts and `deploy.sh` rolls back.
+- **Residual Risk**: `deploy.sh` deliberately accepts HTTP **503** as "serving" (a database outage must not trigger a code rollback), so a DB outage coinciding with a broken build can still produce a green audit line; the watchdog and boot self-check monitor the process, not query results.
+
+## Recent Changes
+
+<!-- recent-changes:start -->
+
+_Auto-generated from the last commits on `main` by `pnpm docs:changes` — do not edit by hand._
+
+- `d0d5f2c` · 2026-10-15 · docs: document the CI/CD deploy pipeline; guard the test-count badge
+- `a17099f` · 2026-10-15 · ci(deploy): bump webfactory/ssh-agent to v0.10.0 for Node 24
+- `4e8426b` · 2026-10-15 · ci(deploy): append a structured audit line per deploy attempt
+- `bf8fd7a` · 2026-10-15 · ci: add push-to-main deploy workflow with SSH + rollback
+- `c8560db` · 2026-10-14 · chore(home): route the clinic-room photo through a new assets.clinicRoom key
+- `9be8fd4` · 2026-10-14 · chore(home): route the welcome image through a new assets.welcome key
+- `bf9d829` · 2026-10-11 · chore(home): remove the floating "Datang dengan tenang" card
+- `a13c79a` · 2026-10-11 · chore(home): relabel the last two service tabs to match their content
+- `1079a17` · 2026-10-11 · chore(home): focus the IGD tab copy on the emergency department
+- `939878f` · 2026-10-11 · chore(home): rename the Radiology tab to IGD, extend the Laboratorium copy
+<!-- recent-changes:end -->
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Run tests (`pnpm test`) and type checking (`pnpm check`)
+3. Run tests (`pnpm test`), type checking (`pnpm check`) and the docs guard (`pnpm docs:verify`)
 4. Format code (`pnpm format`)
 5. Commit with descriptive messages
 6. Open a pull request
+
+If your change moves any number the README states (dependency versions, table or test counts, procedures), update the README in the same commit — or run `pnpm docs:changes` for the change log — and let `pnpm docs:verify` prove it. A stale README fails the release gate.
 
 ## License
 
