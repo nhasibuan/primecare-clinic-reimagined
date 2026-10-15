@@ -17,7 +17,8 @@ export interface LimiterStats {
   backend: LimiterBackend;
   /**
    * True when Redis was selected but is currently unusable (init failed or a
-   * runtime command failed and the limiter fell back to fail-open/closed).
+   * runtime command failed). The limiter then serves from its local fallback
+   * — or from the explicit fail-open/closed posture when none is configured.
    */
   degraded: boolean;
   /** Total degradation events observed by this process. */
@@ -53,7 +54,7 @@ export function setLimiterBackend(name: string, backend: LimiterBackend): void {
   }
 }
 
-/** Record one degradation event (Redis init failure or fail-open/fail-closed). */
+/** Record one degradation event (Redis init failure or a failed Redis command). */
 export function recordLimiterDegradation(name: string): void {
   registerLimiter(name);
   const stats = registry.get(name)!;

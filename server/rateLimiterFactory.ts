@@ -10,6 +10,11 @@
  * in-memory implementation and upgrades to the Redis-backed one once the
  * client connects — a request or two during startup may be counted by the
  * temporary in-memory limiter, which is harmless.
+ *
+ * The in-memory limiter is not discarded on upgrade: it is handed to the Redis
+ * limiter as its `fallback`, so a Redis outage degrades to fail-over (each
+ * instance keeps enforcing its own quota) instead of fail-open, which would
+ * silently remove the only protection in front of the public write endpoints.
  */
 
 import { ENV } from "./_core/env";
@@ -57,7 +62,10 @@ export function createRateLimiter(
   name: string
 ): RateLimiter {
   registerLimiter(name);
-  const wrapper = new DelegatingRateLimiter(new InMemoryRateLimiter(config));
+  // Kept for the lifetime of the process: it is both the startup delegate and
+  // the fail-over target whenever Redis is unusable.
+  const localLimiter = new InMemoryRateLimiter(config);
+  const wrapper = new DelegatingRateLimiter(localLimiter);
 
   if (!ENV.redisUrl) {
     return wrapper;
@@ -83,6 +91,10 @@ export function createRateLimiter(
       wrapper.upgradeTo(
         new RedisRateLimiter(client as unknown as RedisLike, config, {
           namespace: name,
+          // Fail-over, not fail-open: while Redis is unusable each instance
+          // keeps enforcing the same quota locally, so stalling Redis is not
+          // a way to disable rate limiting (see redisRateLimiter.ts header).
+          fallback: localLimiter,
           failOpen: true,
           // Observer: every fail-open/fail-closed event is counted in the
           // metrics registry (the log line stays cooldown-throttled) and

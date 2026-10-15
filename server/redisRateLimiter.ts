@@ -17,11 +17,24 @@
  * worst case slightly over-admits under simultaneous same-key load, which is
  * acceptable for this application's traffic profile.
  *
- * Degradation policy: when Redis is unreachable or a command fails, the
- * limiter fails OPEN by default (availability first — the clinic booking form
- * must keep working) and logs a rate-limited warning. Pass `failOpen: false`
- * for a fail-closed posture. The choice is explicit at the call site, never
- * silent.
+ * Degradation policy (three levels, checked in order when a Redis command
+ * fails):
+ *
+ *   1. `fallback` supplied → FAIL OVER: the attempt is delegated to that
+ *      limiter (in production: the process-local InMemoryRateLimiter created
+ *      by the composition root). Availability is preserved AND the per-
+ *      instance quota still applies, so a Redis outage cannot be used to
+ *      disable rate limiting altogether — the previous behaviour, and the
+ *      reason a stalled Redis used to be a cheap way to defeat the only
+ *      protection in front of `appointments.create`.
+ *   2. no fallback, `failOpen: true` (default) → allow the request. Correct
+ *      only for callers that genuinely prefer unlimited traffic to any
+ *      rejection; use it deliberately, never by accident.
+ *   3. no fallback, `failOpen: false` → deny the request.
+ *
+ * Every degradation is logged with a cooldown and reported to `onDegraded`,
+ * and the delegate that answered is never hidden from observability: the
+ * factory's observer already counts each event and drives the ops email.
  */
 
 import { randomBytes } from "crypto";
@@ -61,7 +74,13 @@ export interface RedisLike {
 export type RedisRateLimiterOptions = {
   /** Namespace for this limiter's keys (e.g. "appointments:create"). */
   namespace: string;
-  /** When Redis errors occur: true → allow the request (default), false → deny. */
+  /**
+   * Local limiter to delegate to when Redis is unusable (fail-over). When
+   * supplied it takes precedence over `failOpen`/`failOpen: false`: the
+   * request is still rate limited, just per instance instead of shared.
+   */
+  fallback?: RateLimiter;
+  /** When Redis errors occur and there is no `fallback`: true → allow the request (default), false → deny. */
   failOpen?: boolean;
   /**
    * Observer callback invoked on every degradation event (Redis command
@@ -77,6 +96,7 @@ export class RedisRateLimiter implements RateLimiter {
   private readonly maxRequests: number;
   private readonly windowMs: number;
   private readonly failOpen: boolean;
+  private readonly fallback: RateLimiter | undefined;
   private readonly namespace: string;
   private readonly onDegraded: (() => void) | undefined;
   /** Redis set of this limiter's active window keys (for reset + activeKeyCount). */
@@ -97,6 +117,7 @@ export class RedisRateLimiter implements RateLimiter {
     this.maxRequests = config.maxRequests;
     this.windowMs = config.windowMs;
     this.failOpen = options.failOpen ?? true;
+    this.fallback = options.fallback;
     this.namespace = options.namespace;
     this.onDegraded = options.onDegraded;
     this.indexKey = `rl:${this.namespace}:__keys__`;
@@ -134,10 +155,27 @@ export class RedisRateLimiter implements RateLimiter {
     } catch (error) {
       this.logDegraded(error);
       this.notifyDegraded();
-      return this.failOpen
-        ? { allowed: true, retryAfterMs: 0 }
-        : { allowed: false, retryAfterMs: this.windowMs };
+      return await this.degradeTo(key, now);
     }
+  }
+
+  /**
+   * Degradation ladder (see the file header): fail over to the local limiter
+   * when one is configured, otherwise honour the explicit fail-open/closed
+   * posture. A fallback that itself throws must never break the request — it
+   * collapses to the configured posture, exactly as if it were absent.
+   */
+  private async degradeTo(key: string, now: number): Promise<RateLimitResult> {
+    if (this.fallback) {
+      try {
+        return await this.fallback.attempt(key, now);
+      } catch {
+        // A broken local fallback is not a reason to lose the request.
+      }
+    }
+    return this.failOpen
+      ? { allowed: true, retryAfterMs: 0 }
+      : { allowed: false, retryAfterMs: this.windowMs };
   }
 
   /** Best-effort synchronous reset; resolves asynchronously in the background. */
@@ -191,6 +229,12 @@ export class RedisRateLimiter implements RateLimiter {
     }
   }
 
+  /** Human-readable description of what happens while Redis is unusable. */
+  private degradationPosture(): string {
+    if (this.fallback) return "failing over to the local limiter";
+    return `failing ${this.failOpen ? "open" : "closed"}`;
+  }
+
   /** Cooldown-throttled warning so a Redis outage doesn't flood the logs. */
   private logDegraded(error: unknown): void {
     const now = Date.now();
@@ -201,7 +245,7 @@ export class RedisRateLimiter implements RateLimiter {
         timestamp: new Date(now).toISOString(),
         level: "warn",
         component: "rateLimiter",
-        message: `Redis rate limiter degraded (namespace=${this.namespace}); failing ${this.failOpen ? "open" : "closed"}.`,
+        message: `Redis rate limiter degraded (namespace=${this.namespace}); ${this.degradationPosture()}.`,
         error: error instanceof Error ? error.message : "Unknown",
       })
     );

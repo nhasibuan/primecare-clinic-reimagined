@@ -7,6 +7,7 @@
  */
 
 import { describe, expect, it } from "vitest";
+import { InMemoryRateLimiter, type RateLimiter } from "./rateLimiter";
 import { RedisRateLimiter, type RedisLike } from "./redisRateLimiter";
 
 /** Minimal sorted-set fake implementing exactly the commands the limiter uses. */
@@ -16,6 +17,8 @@ class FakeRedis implements RedisLike {
   // plain sets (only the index key uses this)
   private sets = new Map<string, Set<string>>();
   failNextCommand = false;
+  /** When true every command fails, modelling a Redis outage that persists. */
+  offline = false;
 
   private zset(key: string): Map<string, number> {
     let z = this.zsets.get(key);
@@ -27,6 +30,7 @@ class FakeRedis implements RedisLike {
   }
 
   private shouldFail(): boolean {
+    if (this.offline) throw new Error("Connection refused");
     if (this.failNextCommand) {
       this.failNextCommand = false;
       throw new Error("Connection refused");
@@ -211,5 +215,126 @@ describe("RedisRateLimiter", () => {
     limiter.reset();
     await new Promise(resolve => setTimeout(resolve, 0));
     expect((await limiter.attempt("ip-a", 2_000)).allowed).toBe(true);
+  });
+});
+
+/**
+ * Fail-over behaviour: a Redis outage must degrade the quota, never remove it.
+ * These tests are the regression guard for the previous fail-open posture,
+ * under which stalling Redis disabled rate limiting entirely.
+ */
+describe("RedisRateLimiter fail-over degradation", () => {
+  function makeWithFallback(
+    fake: FakeRedis,
+    fallback = new InMemoryRateLimiter({
+      maxRequests: 3,
+      windowMs: 60_000,
+    })
+  ) {
+    return new RedisRateLimiter(
+      fake,
+      { maxRequests: 3, windowMs: 60_000 },
+      { namespace: "failover", fallback, failOpen: true }
+    );
+  }
+
+  it("keeps enforcing the quota from the local limiter when Redis fails", async () => {
+    const fake = new FakeRedis();
+    const limiter = makeWithFallback(fake);
+    fake.offline = true;
+
+    // Redis is down for every call: the local limiter still caps the key at 3.
+    expect((await limiter.attempt("ip", 0)).allowed).toBe(true);
+    expect((await limiter.attempt("ip", 1_000)).allowed).toBe(true);
+    expect((await limiter.attempt("ip", 2_000)).allowed).toBe(true);
+
+    const blocked = await limiter.attempt("ip", 3_000);
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.retryAfterMs).toBeGreaterThan(0);
+  });
+
+  it("reports the local limiter's retryAfter instead of a fixed window", async () => {
+    const fake = new FakeRedis();
+    const fallback = new InMemoryRateLimiter({
+      maxRequests: 1,
+      windowMs: 60_000,
+    });
+    const limiter = new RedisRateLimiter(
+      fake,
+      { maxRequests: 1, windowMs: 60_000 },
+      { namespace: "failover-retry", fallback, failOpen: true }
+    );
+    fake.offline = true;
+
+    expect((await limiter.attempt("ip", 1_000)).allowed).toBe(true);
+    const blocked = await limiter.attempt("ip", 11_000);
+    expect(blocked.allowed).toBe(false);
+    // Oldest local attempt at 1_000 → slot frees at 61_000, i.e. 50s later.
+    expect(blocked.retryAfterMs).toBe(50_000);
+  });
+
+  it("falls back to the configured posture when the local limiter itself throws", async () => {
+    const fake = new FakeRedis();
+    const broken: RateLimiter = {
+      attempt: async () => {
+        throw new Error("fallback exploded");
+      },
+      reset: () => undefined,
+      activeKeyCount: 0,
+    };
+    const limiter = new RedisRateLimiter(
+      fake,
+      { maxRequests: 3, windowMs: 60_000 },
+      { namespace: "failover-broken", fallback: broken, failOpen: true }
+    );
+    fake.offline = true;
+
+    // The broken fallback collapses to the configured posture (fail-open here).
+    const result = await limiter.attempt("ip", 0);
+    expect(result.allowed).toBe(true);
+    expect(result.retryAfterMs).toBe(0);
+  });
+
+  it("counts every delegated attempt as a degradation event", async () => {
+    const fake = new FakeRedis();
+    let degraded = 0;
+    const limiter = new RedisRateLimiter(
+      fake,
+      { maxRequests: 3, windowMs: 60_000 },
+      {
+        namespace: "failover-metrics",
+        fallback: new InMemoryRateLimiter({ maxRequests: 3, windowMs: 60_000 }),
+        failOpen: true,
+        onDegraded: () => {
+          degraded += 1;
+        },
+      }
+    );
+    fake.offline = true;
+
+    await limiter.attempt("ip", 0);
+    expect(degraded).toBe(1);
+  });
+
+  it("uses Redis again once it recovers", async () => {
+    const fake = new FakeRedis();
+    const fallback = new InMemoryRateLimiter({
+      maxRequests: 1,
+      windowMs: 60_000,
+    });
+    const limiter = new RedisRateLimiter(
+      fake,
+      { maxRequests: 1, windowMs: 60_000 },
+      { namespace: "failover-recover", fallback, failOpen: true }
+    );
+
+    fake.offline = true;
+    expect((await limiter.attempt("ip", 0)).allowed).toBe(true); // served locally
+
+    // Redis is healthy again: the attempt lands in the shared window again.
+    fake.offline = false;
+    expect(await fake.zcard("rl:failover-recover:ip")).toBe(0);
+    await limiter.attempt("ip", 0);
+    expect(await fake.zcard("rl:failover-recover:ip")).toBe(1);
   });
 });

@@ -85,7 +85,9 @@ describe("notifyLimiterDegraded episode rules", () => {
     expect(subject).toContain("DEGRADED");
     expect(subject).toContain("appointments:create");
     expect(body).toContain("appointments:create");
-    expect(body).toContain("fail-open");
+    // The body must state the real posture: fail-over keeps enforcing the
+    // local quota, rather than the old fail-open "no limit at all" behaviour.
+    expect(body).toContain("local per-instance window");
   });
 
   it("sends a STILL DEGRADED reminder once DEGRADE_REPEAT_MS has passed", () => {

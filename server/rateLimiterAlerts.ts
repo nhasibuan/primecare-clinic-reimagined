@@ -134,7 +134,7 @@ function buildBody(name: string, at: number, reminder: boolean): string {
       : "No registry telemetry available for this limiter yet.",
     reminder
       ? "Failures are still occurring — this is the scheduled 30-minute reminder."
-      : "Posture is fail-open: requests keep working without the shared quota limit.",
+      : "Requests keep being served. In production the limiter fails over to the local per-instance window, so the quota still applies (degraded scope, not a removed limit).",
     "The limiter recovers automatically once Redis commands succeed again.",
     "Investigate with: journalctl -u primecare | grep rateLimiter, and the admin system.rateLimiterStatus procedure (per-limiter telemetry).",
   ];
