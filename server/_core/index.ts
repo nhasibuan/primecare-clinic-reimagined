@@ -14,6 +14,7 @@ import { getClientIp } from "../appointmentRequest";
 import { getSessionCookieName, getSessionCookieOptions } from "./cookies";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { resolveListenPort } from "./listenPort";
 import { serveStatic, setupVite } from "./vite";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -24,15 +25,6 @@ function isPortAvailable(port: number): Promise<boolean> {
     });
     server.on("error", () => resolve(false));
   });
-}
-
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
-  }
-  throw new Error(`No available port found starting from ${startPort}`);
 }
 
 async function startServer() {
@@ -156,8 +148,15 @@ async function startServer() {
     serveStatic(app);
   }
 
+  // Production never drifts to another port: the reverse proxy, the systemd
+  // unit and the deploy health check all target the configured one, so
+  // binding elsewhere would report a healthy deploy that serves nothing.
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const port = await resolveListenPort({
+    preferredPort,
+    isProduction: process.env.NODE_ENV === "production",
+    probe: isPortAvailable,
+  });
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
@@ -168,4 +167,18 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+// Startup failures (bad environment, port collision, unhandled boot error) must
+// exit non-zero: a zero exit looks like a clean shutdown to systemd's restart
+// policy and to the post-boot self-check, hiding a service that never served.
+startServer().catch((error: unknown) => {
+  console.error(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: "error",
+      component: "startup",
+      message: "Server failed to start; exiting non-zero.",
+      error: error instanceof Error ? error.message : String(error),
+    })
+  );
+  process.exit(1);
+});
