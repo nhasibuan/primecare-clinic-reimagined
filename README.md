@@ -642,6 +642,9 @@ A comprehensive adversarial security evaluation identified the following threat 
 
 _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do not edit by hand._
 
+- `1620f39` · 2026-10-15 · ci(docs): automate the README change log and enforce it at release time
+- `e8415d7` · 2026-10-15 · fix(ops): stop production from silently binding another port or exiting 0
+- `966bc7d` · 2026-10-15 · fix(security): fail over to local rate limiting instead of fail-open
 - `d0d5f2c` · 2026-10-15 · docs: document the CI/CD deploy pipeline; guard the test-count badge
 - `a17099f` · 2026-10-15 · ci(deploy): bump webfactory/ssh-agent to v0.10.0 for Node 24
 - `4e8426b` · 2026-10-15 · ci(deploy): append a structured audit line per deploy attempt
@@ -649,9 +652,6 @@ _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do no
 - `c8560db` · 2026-10-14 · chore(home): route the clinic-room photo through a new assets.clinicRoom key
 - `9be8fd4` · 2026-10-14 · chore(home): route the welcome image through a new assets.welcome key
 - `bf9d829` · 2026-10-11 · chore(home): remove the floating "Datang dengan tenang" card
-- `a13c79a` · 2026-10-11 · chore(home): relabel the last two service tabs to match their content
-- `1079a17` · 2026-10-11 · chore(home): focus the IGD tab copy on the emergency department
-- `939878f` · 2026-10-11 · chore(home): rename the Radiology tab to IGD, extend the Laboratorium copy
 <!-- recent-changes:end -->
 
 ## Contributing
