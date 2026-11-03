@@ -31,8 +31,11 @@ async function startServer() {
   validateProductionEnv();
   const app = express();
   const server = createServer(app);
-  // The production gateway is the single trusted proxy that resolves req.ip.
-  app.set("trust proxy", 1);
+  // Only the loopback ingress (the Cloudflare tunnel on 127.0.0.1) is trusted
+  // to set X-Forwarded-For. Trusting a hop count ("1") let a client that
+  // reached the origin port directly forge its own IP and escape the per-IP
+  // rate limits and pollute the audit trail.
+  app.set("trust proxy", "loopback");
   // ── Request ID for tracing ──
   app.use((req, _res, next) => {
     req.headers["x-request-id"] =
@@ -162,8 +165,16 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  // In production bind loopback only: the Cloudflare tunnel reaches the app
+  // over 127.0.0.1, so listening on all interfaces would expose the origin
+  // directly (bypassing Cloudflare) as a public attack surface — which is how
+  // the origin port was reachable on the host's public IP. Development keeps
+  // the default binding so local/LAN preview still works.
+  const listenHost =
+    process.env.NODE_ENV === "production" ? "127.0.0.1" : undefined;
+
+  server.listen(port, listenHost, () => {
+    console.log(`Server running on http://${listenHost ?? "localhost"}:${port}/`);
   });
 }
 

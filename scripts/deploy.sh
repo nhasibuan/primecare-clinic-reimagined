@@ -15,7 +15,7 @@ set -euo pipefail
 APP_DIR="/g/primecare-clinic-reimagined"
 SERVICE="primecare.service"
 BRANCH="main"
-HEALTH_URL="http://localhost:3000/healthz"
+HEALTH_URL="http://127.0.0.1:3000/healthz"
 HEALTH_TIMEOUT=30 # seconds to wait for the app to come up after restart
 
 # Non-interactive SSH has a minimal PATH; make sure the toolchain is found.
