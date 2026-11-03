@@ -59,9 +59,23 @@ log "Currently running: ${PREV_COMMIT:0:7}"
 # --- Pull the exact state of origin/<branch> ----------------------------------
 log "Fetching origin/${BRANCH}..."
 git fetch origin "$BRANCH"
+
+# --- Safety: never discard commits that are not on origin/<branch> ------------
+# The dirty-tree guard above only catches uncommitted changes. A local commit
+# that was never pushed would be silently discarded by the reset below, so
+# refuse to run unless HEAD is already contained in origin/<branch>.
+if ! git merge-base --is-ancestor HEAD "origin/$BRANCH"; then
+  log "ERROR: HEAD is not on origin/${BRANCH}; refusing to deploy."
+  log "  HEAD:            $(git rev-parse --short HEAD)"
+  log "  origin/${BRANCH}: $(git rev-parse --short "origin/$BRANCH")"
+  log "  Push the commit(s) first (or reset intentionally), then retry."
+  audit "ABORTED_UNPUSHED"
+  exit 1
+fi
+
 # reset --hard (not pull): the VM is production and must mirror origin/main
-# exactly, with no merge or divergence. The clean-tree check above guarantees
-# nothing local is lost.
+# exactly, with no merge or divergence. The two guards above guarantee nothing
+# local (uncommitted or unpushed) is lost.
 git reset --hard "origin/$BRANCH"
 NEW_COMMIT="$(git rev-parse HEAD)"
 log "Deploying: ${NEW_COMMIT:0:7}"
