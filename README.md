@@ -470,6 +470,8 @@ The `deploy/` directory ships production systemd units — the app is supervised
 
 A separate [`dependencies.yml`](.github/workflows/dependencies.yml) workflow runs the same gate on dependency PRs and on a weekly sweep (new advisories are published against unchanged lockfiles), and [`readme-changes.yml`](.github/workflows/readme-changes.yml) keeps the [Recent Changes](#recent-changes) block below current on every push to `main`.
 
+**Hardened service account & secrets location.** `primecare.service` runs as the unprivileged `primecare` user (not root) and loads its environment from `/root/secrets/primecare.env` (mode 600, outside the deploy working tree), which systemd reads as root and injects — the service user never reads the file. The repository's `.env` therefore holds only the public `VITE_*` build-time variables. Node runs from `/opt/primecare/node` because the toolchain under `/root` (mode 700) is not reachable by the service user. The effect: a repository write (a compromised dependency, or a bad deploy) can neither read the secrets nor gain root.
+
 ### Continuous Deployment (GitHub Actions → VM)
 
 Production deploys are triggered by pushes to `main` (or a manual `workflow_dispatch`) via [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml):
@@ -621,7 +623,7 @@ A comprehensive adversarial security evaluation identified the following threat 
 ### 5. Dependency Supply Chain Audit
 - **Findings**: Package audit previously identified vulnerabilities concentrated in transitive documentation/diagramming dependencies (`streamdown` > `mermaid` > `dompurify`).
 - **Production Impact Assessment**: None of these packages are exposed to unauthenticated user input on the server API layer.
-- **Remediation**: `pnpm.overrides` in `package.json` pins patched floors (`dompurify >= 3.4.8`, `mermaid >= 11.16.1`, `tar >= 7.5.21`, `lodash >= 4.17.23`, among others). `pnpm audit --prod` runs on dependency PRs, weekly, **and inside this repository's deploy gate** before the VM is touched; it currently reports no known vulnerabilities. Production installs use `--frozen-lockfile`, so a lockfile that disagrees with `package.json` fails the gate rather than resolving something new at deploy time.
+- **Remediation**: `pnpm.overrides` in `package.json` pins patched floors (`dompurify >= 3.4.17`, `follow-redirects >= 1.16.2`, `body-parser >= 1.20.9`, `qs >= 6.16.1`, `zod >= 4.6.6`, `mermaid >= 11.16.1`, `tar >= 7.5.21`, `lodash >= 4.17.23`, among others). `pnpm audit --prod` runs on dependency PRs, weekly, **and inside this repository's deploy gate** before the VM is touched; it currently reports no known vulnerabilities. Production installs use `--frozen-lockfile`, so a lockfile that disagrees with `package.json` fails the gate rather than resolving something new at deploy time.
 
 ### 6. Documentation & Operational Drift (New)
 - **Threat Vector**: Stale runbooks and README claims (dependency versions, test counts, table inventories) silently diverge from the deployed system, causing operators to trust wrong rollback/verification steps during incidents.

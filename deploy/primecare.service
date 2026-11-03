@@ -4,9 +4,8 @@
 #   sudo systemctl daemon-reload
 #   sudo systemctl enable --now primecare
 #
-# DO NOT switch the live site to this unit until the production env is
-# complete — see deploy/README.md. NODE_ENV=production makes startup
-# fail-fast on missing OAUTH_SERVER_URL / OWNER_OPEN_ID / BUILT_IN_FORGE_API_URL.
+# NODE_ENV=production makes startup fail-fast on missing
+# OAUTH_SERVER_URL / OWNER_OPEN_ID / BUILT_IN_FORGE_API_URL.
 
 [Unit]
 Description=PrimeCare Clinic server (production)
@@ -15,17 +14,23 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=root
+# Runs as an unprivileged user: a repository write (a compromised dependency,
+# or a bad deploy) must not yield root, and this user cannot read the secrets
+# file below.
+User=primecare
+Group=primecare
 WorkingDirectory=/g/primecare-clinic-reimagined
-# Loads every KEY="value" line from .env (quotes are stripped by systemd).
-EnvironmentFile=/g/primecare-clinic-reimagined/.env
+# Secrets live OUTSIDE the deploy working tree. systemd reads this file as root
+# and injects the variables; the service user never reads it.
+EnvironmentFile=/root/secrets/primecare.env
 Environment=NODE_ENV=production
 Environment=PORT=3000
-ExecStart=/usr/local/bin/node dist/index.js
+# Node is copied to a world-accessible path because the toolchain under /root
+# (mode 700) is not reachable by the unprivileged service user.
+ExecStart=/opt/primecare/node dist/index.js
 Restart=on-failure
 RestartSec=5
-# Hardening: .env and /root/secrets must stay readable; keep root for now
-# and tighten later if a dedicated service user is introduced.
+# Hardening.
 NoNewPrivileges=true
 ProtectKernelTunables=true
 ProtectControlGroups=true
