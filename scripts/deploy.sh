@@ -3,8 +3,9 @@
 # Production deploy for PrimeCare Clinic (primecare.service).
 #
 # Pulls the exact state of origin/<branch>, installs dependencies, rebuilds,
-# restarts the systemd service, and verifies the app is serving. On a failed
-# health check it rolls back to the previously running commit.
+# syncs the systemd unit if it changed, restarts the service, and verifies the
+# app is serving. On a failed health check it rolls back to the previously
+# running commit (and the previous unit).
 #
 # Invoked over SSH by .github/workflows/deploy.yml. Must run as a user that can
 # restart primecare.service (root, or a user with passwordless sudo).
@@ -17,6 +18,11 @@ SERVICE="primecare.service"
 BRANCH="main"
 HEALTH_URL="http://127.0.0.1:3000/healthz"
 HEALTH_TIMEOUT=30 # seconds to wait for the app to come up after restart
+# systemd unit: the repo file is the source of truth; it is installed only when
+# it differs from what is currently on disk.
+UNIT_SRC="$APP_DIR/deploy/primecare.service"
+UNIT_DST="/etc/systemd/system/primecare.service"
+UNIT_BACKUP="/run/primecare.service.prev.$$"
 
 # Non-interactive SSH has a minimal PATH; make sure the toolchain is found.
 export PATH="/usr/local/bin:/usr/bin:/bin:${PATH:-}"
@@ -67,6 +73,23 @@ pnpm install --frozen-lockfile
 log "Building..."
 pnpm build
 
+# --- Sync the systemd unit (only when the repo unit changed) ------------------
+# This script only restarts the service; a change to deploy/primecare.service
+# would otherwise sit unapplied until someone copied it by hand. Compare the
+# repo unit with the installed one and reload systemd only when they differ.
+unit_changed=false
+if [ -f "$UNIT_SRC" ]; then
+  if ! cmp -s "$UNIT_SRC" "$UNIT_DST"; then
+    cp -p "$UNIT_DST" "$UNIT_BACKUP" 2>/dev/null || true
+    log "systemd unit changed; installing $UNIT_DST and reloading"
+    cp "$UNIT_SRC" "$UNIT_DST"
+    systemctl daemon-reload
+    unit_changed=true
+  else
+    log "systemd unit unchanged"
+  fi
+fi
+
 # --- Restart ------------------------------------------------------------------
 log "Restarting ${SERVICE}..."
 systemctl restart "$SERVICE"
@@ -94,6 +117,7 @@ done
 if [ -n "$healthy" ]; then
   log "Healthy (HTTP ${healthy}). Deployed ${NEW_COMMIT:0:7}."
   audit "SUCCESS" "$PREV_COMMIT" "$NEW_COMMIT" "$healthy"
+  rm -f "$UNIT_BACKUP" 2>/dev/null || true
   exit 0
 fi
 
@@ -102,6 +126,13 @@ log "Health check failed after restart. Rolling back to ${PREV_COMMIT:0:7}..."
 git reset --hard "$PREV_COMMIT"
 pnpm install --frozen-lockfile
 pnpm build
+# If this deploy installed a new unit, restore the previous one so the rollback
+# reverts the unit alongside the code.
+if [ "$unit_changed" = true ] && [ -f "$UNIT_BACKUP" ]; then
+  log "restoring previous systemd unit"
+  cp -p "$UNIT_BACKUP" "$UNIT_DST"
+  systemctl daemon-reload
+fi
 systemctl restart "$SERVICE"
 
 rb=""
@@ -121,4 +152,5 @@ else
   log "CRITICAL: rollback did not restore the service. Manual intervention required."
   audit "CRITICAL_ROLLBACK_FAILED" "$PREV_COMMIT" "$NEW_COMMIT" ""
 fi
+rm -f "$UNIT_BACKUP" 2>/dev/null || true
 exit 1
