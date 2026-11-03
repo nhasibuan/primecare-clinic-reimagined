@@ -652,6 +652,7 @@ A comprehensive adversarial security evaluation identified the following threat 
 
 _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do not edit by hand._
 
+- `9a4ef48` · 2026-11-04 · fix(ops): refuse to deploy when HEAD is not on origin/main
 - `a98a149` · 2026-11-04 · feat(ops): install the systemd unit from the repo during deploy when it changes
 - `4d1c00d` · 2026-11-03 · fix(ops): run the service unprivileged with secrets outside the tree; unblock CI
 - `de183f4` · 2026-11-03 · fix(security): bind loopback and trust only the loopback proxy
@@ -660,8 +661,6 @@ _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do no
 - `1620f39` · 2026-10-15 · ci(docs): automate the README change log and enforce it at release time
 - `e8415d7` · 2026-10-15 · fix(ops): stop production from silently binding another port or exiting 0
 - `966bc7d` · 2026-10-15 · fix(security): fail over to local rate limiting instead of fail-open
-- `d0d5f2c` · 2026-10-15 · docs: document the CI/CD deploy pipeline; guard the test-count badge
-- `a17099f` · 2026-10-15 · ci(deploy): bump webfactory/ssh-agent to v0.10.0 for Node 24
 <!-- recent-changes:end -->
 
 ## Contributing
