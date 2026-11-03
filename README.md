@@ -650,6 +650,7 @@ A comprehensive adversarial security evaluation identified the following threat 
 
 _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do not edit by hand._
 
+- `2142d18` · 2026-11-03 · fix(audit): stop logging patient names, and audit the remaining admin mutations
 - `c62b34b` · 2026-10-17 · docs: record 2026-10-17 fact re-verification and storage-proxy residual risk
 - `1620f39` · 2026-10-15 · ci(docs): automate the README change log and enforce it at release time
 - `e8415d7` · 2026-10-15 · fix(ops): stop production from silently binding another port or exiting 0
@@ -659,7 +660,6 @@ _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do no
 - `4e8426b` · 2026-10-15 · ci(deploy): append a structured audit line per deploy attempt
 - `bf8fd7a` · 2026-10-15 · ci: add push-to-main deploy workflow with SSH + rollback
 - `c8560db` · 2026-10-14 · chore(home): route the clinic-room photo through a new assets.clinicRoom key
-- `9be8fd4` · 2026-10-14 · chore(home): route the welcome image through a new assets.welcome key
 <!-- recent-changes:end -->
 
 ## Contributing
