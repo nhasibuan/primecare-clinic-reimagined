@@ -57,7 +57,10 @@ export const queueRouter = router({
         action: "queue.add",
         entityType: "queue",
         entityId: result.queueNumber,
-        detail: `${input.patientName} → ${input.poli}`,
+        // Never write the patient name here: audit_logs.detail is an
+        // unencrypted column, so a plain-text name would bypass the PII
+        // encryption that queue_entries.patientName gets.
+        detail: `queue #${result.queueNumber} → ${input.poli}`,
         ipAddress: getClientIp(ctx.req),
       });
       return result;

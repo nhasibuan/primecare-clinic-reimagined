@@ -67,12 +67,31 @@ export const clinicRouter = router({
   /** Admin: update the clinic profile fields. */
   updateProfile: adminProcedure
     .input(profileInput)
-    .mutation(({ input }) => saveClinicProfile(input)),
+    .mutation(async ({ ctx, input }) => {
+      await saveClinicProfile(input);
+      await recordAuditLog({
+        actorId: ctx.user.id,
+        action: "clinic.updateProfile",
+        entityType: "clinic_profile",
+        detail: "clinic profile updated",
+        ipAddress: getClientIp(ctx.req),
+      });
+    }),
 
   /** Admin: create or update a service listing. */
   saveService: adminProcedure
     .input(serviceInput)
-    .mutation(({ input }) => saveService(input)),
+    .mutation(async ({ ctx, input }) => {
+      await saveService(input);
+      await recordAuditLog({
+        actorId: ctx.user.id,
+        action: "clinic.saveService",
+        entityType: "service",
+        entityId: input.id ?? null,
+        detail: `service "${input.name}" saved`,
+        ipAddress: getClientIp(ctx.req),
+      });
+    }),
 
   /**
    * Admin: upload a media asset (image or PDF).

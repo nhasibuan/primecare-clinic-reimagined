@@ -172,15 +172,23 @@ export const appointmentsRouter = router({
   /** Admin: update the WhatsApp message signature template. */
   updateSignatureTemplate: adminProcedure
     .input(z.object({ content: z.string().trim().min(2).max(1000) }))
-    .mutation(({ ctx, input }) =>
-      saveWhatsAppSignatureTemplate(input.content, ctx.user.id)
-    ),
+    .mutation(async ({ ctx, input }) => {
+      await saveWhatsAppSignatureTemplate(input.content, ctx.user.id);
+      await recordAuditLog({
+        actorId: ctx.user.id,
+        action: "signature.update",
+        entityType: "whatsapp_signature_template",
+        // Length only — never the template body.
+        detail: `signature template updated (length ${input.content.length})`,
+        ipAddress: getClientIp(ctx.req),
+      });
+    }),
 
   /** Admin: enrich an appointment request with patient demographic data. */
   updatePatientData: adminProcedure
     .input(updatePatientDataInput)
-    .mutation(({ input }) =>
-      updatePatientData(input.id, {
+    .mutation(async ({ ctx, input }) => {
+      await updatePatientData(input.id, {
         nik: input.nik ?? undefined,
         tempatLahir: input.tempatLahir ?? undefined,
         tanggalLahir: input.tanggalLahir ?? undefined,
@@ -188,6 +196,23 @@ export const appointmentsRouter = router({
         agama: input.agama ?? undefined,
         email: input.email ?? undefined,
         instagramUrl: input.instagramUrl ?? undefined,
-      })
-    ),
+      });
+      // Record which fields changed, never their values — they are PII.
+      const changed: string[] = [];
+      if (input.nik !== undefined) changed.push("nik");
+      if (input.tempatLahir !== undefined) changed.push("tempatLahir");
+      if (input.tanggalLahir !== undefined) changed.push("tanggalLahir");
+      if (input.alamatLengkap !== undefined) changed.push("alamatLengkap");
+      if (input.agama !== undefined) changed.push("agama");
+      if (input.email !== undefined) changed.push("email");
+      if (input.instagramUrl !== undefined) changed.push("instagramUrl");
+      await recordAuditLog({
+        actorId: ctx.user.id,
+        action: "appointment.updatePatientData",
+        entityType: "appointment_request",
+        entityId: input.id,
+        detail: `patient data updated: ${changed.join(", ") || "no fields"}`,
+        ipAddress: getClientIp(ctx.req),
+      });
+    }),
 });
