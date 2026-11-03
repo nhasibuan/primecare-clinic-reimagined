@@ -652,6 +652,7 @@ A comprehensive adversarial security evaluation identified the following threat 
 
 _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do not edit by hand._
 
+- `4d1c00d` · 2026-11-03 · fix(ops): run the service unprivileged with secrets outside the tree; unblock CI
 - `de183f4` · 2026-11-03 · fix(security): bind loopback and trust only the loopback proxy
 - `2142d18` · 2026-11-03 · fix(audit): stop logging patient names, and audit the remaining admin mutations
 - `c62b34b` · 2026-10-17 · docs: record 2026-10-17 fact re-verification and storage-proxy residual risk
@@ -661,7 +662,6 @@ _Auto-generated from the last commits on `main` by `pnpm docs:changes` — do no
 - `d0d5f2c` · 2026-10-15 · docs: document the CI/CD deploy pipeline; guard the test-count badge
 - `a17099f` · 2026-10-15 · ci(deploy): bump webfactory/ssh-agent to v0.10.0 for Node 24
 - `4e8426b` · 2026-10-15 · ci(deploy): append a structured audit line per deploy attempt
-- `bf8fd7a` · 2026-10-15 · ci: add push-to-main deploy workflow with SSH + rollback
 <!-- recent-changes:end -->
 
 ## Contributing
