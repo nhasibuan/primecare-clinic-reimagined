@@ -118,20 +118,20 @@ importers:
         specifier: ^1.2.16
         version: 1.2.16(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/react-query':
-        specifier: ^5.104.0
-        version: 5.104.0(react@19.3.0)
+        specifier: ^5.108.3
+        version: 5.108.3(@types/react@19.3.0)(react@19.3.0)
       '@trpc/client':
-        specifier: ^11.19.0
-        version: 11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2)
+        specifier: ^11.29.7
+        version: 11.29.7(@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2))(typescript@7.0.2)
       '@trpc/react-query':
-        specifier: ^11.19.0
-        version: 11.19.0(@tanstack/react-query@5.104.0(react@19.3.0))(@trpc/client@11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2))(@trpc/server@11.19.0(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)
+        specifier: ^11.28.5
+        version: 11.28.5(@tanstack/react-query@5.108.3(@types/react@19.3.0)(react@19.3.0))(@trpc/client@11.29.7(@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2))(typescript@7.0.2))(@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)
       '@trpc/server':
-        specifier: ^11.19.0
-        version: 11.19.0(typescript@7.0.2)
+        specifier: ^11.29.7
+        version: 11.29.7(@types/express@4.17.21)(typescript@7.0.2)
       axios:
-        specifier: ^1.20.0
-        version: 1.20.0
+        specifier: ^1.21.1
+        version: 1.21.1
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -151,8 +151,8 @@ importers:
         specifier: ^17.2.2
         version: 17.4.2
       drizzle-orm:
-        specifier: ^0.45.3
-        version: 0.45.3(mysql2@3.24.2(@types/node@26.6.3))
+        specifier: ^0.45.4
+        version: 0.45.4(mysql2@3.24.2(@types/node@26.6.3))
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.3.0)
@@ -208,8 +208,8 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0(@types/react@19.3.0)(react@19.3.0)
       superjson:
-        specifier: ^2.2.6
-        version: 2.2.6
+        specifier: ^2.2.7
+        version: 2.2.7
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.3.1
@@ -1792,6 +1792,9 @@ packages:
   '@smithy/core@3.33.3':
     resolution: {integrity: sha512-CsOeKq/9kA3y6VJHt+/+VTCtBaxJ4OTFpgrjIUhPpDIKxBci1k2bJaQASF2h/ELWrulGp+t97DZ0mevfAD8idg==}
     engines: {node: '>=18.0.0'}
+    deprecated: |-
+      Deprecated due to a bug in custom logger data redaction. Upgrade to the latest version. If you used a custom logger with this
+        version, review your logs and rotate any credentials or other secrets. See https://github.com/aws/aws-sdk-js-v3/issues/8393.
 
   '@smithy/credential-provider-imds@4.5.2':
     resolution: {integrity: sha512-A9uSdn72ozbRUSit0eib0TW7nXuNPlaeM0zcGkJ+nE6tFcSDbnmtwoxbTCFBukVQcszDAyvsd7+rTduPTXpygg==}
@@ -1911,35 +1914,53 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7
 
-  '@tanstack/query-core@5.104.0':
-    resolution: {integrity: sha512-JrC2r/JQlXt7khBSdUpsgxNvybzOg+aITa+ARRMlP2AFo93Y8vIqz077rp+e61mJetSZ0T6AJbwW1JHer1vrPQ==}
+  '@tanstack/query-core@5.108.3':
+    resolution: {integrity: sha512-Lh8fyLDlHOdZXfUB+G1M5bKxfQ1Y0/mfydFP+pMjFKweAU4OUiC4MyIBTcW7Ck+Iwt6K3/pzvADrJi2Dc1lwuQ==}
 
-  '@tanstack/react-query@5.104.0':
-    resolution: {integrity: sha512-e1TZmDCQnWIfiDVryIHeA6Idj+Lfx1hORLOhXS/l5wcgvtVD4yYqbTDl378sGQKIi2cSgb0TEMC9cKK8GGoJEw==}
+  '@tanstack/react-query@5.108.3':
+    resolution: {integrity: sha512-dd9eDuqr6hvoTycO+wwuIgdA10S9gRA5EYsJCByhiATp/Xy0D51XgJUCRYJONgKs3URKApbBfNl8mgAe5wI0+Q==}
     peerDependencies:
+      '@types/react': ^18 || ^19
       react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
-  '@trpc/client@11.19.0':
-    resolution: {integrity: sha512-0MKkPq6MejsKB5Opca1Rl22KVIaqo2+A1EiXyZ8EGUsl9TLrPdpGn+Usux20TZKFwnSC2+wI/WilqNJaP4ODfw==}
-    hasBin: true
+  '@trpc/client@11.29.7':
+    resolution: {integrity: sha512-cW/8uDPDBEzSBdEoV0fLb6JL5U/YTOZRktLI7/bJJVsb9dz+qhYJST6YJEaI8yM6oz4MfnpCKf7Sk609zvjNxA==}
     peerDependencies:
-      '@trpc/server': 11.19.0
+      '@trpc/server': 11.29.7
       typescript: '>=5.7.2'
 
-  '@trpc/react-query@11.19.0':
-    resolution: {integrity: sha512-TrqZBa/6weXX27mf0P2dMCI65duqO3B/wf9BkP1MezUWSUg7SRGJrIv6K8vjgjeHdafFBI1mmcqPEYXHF4AlVQ==}
+  '@trpc/react-query@11.28.5':
+    resolution: {integrity: sha512-ddf/Pu+TQU+CbTUaNr3aK1fCx8bcfWGw0TW9M36mni1fHWDQlrdaScMYzSbw/jBqMutOm0kzMsqvChTvILjKdg==}
     peerDependencies:
       '@tanstack/react-query': ^5.80.3
-      '@trpc/client': 11.19.0
-      '@trpc/server': 11.19.0
+      '@trpc/client': 11.28.5
+      '@trpc/server': 11.28.5
       react: '>=18.2.0'
       typescript: '>=5.7.2'
 
-  '@trpc/server@11.19.0':
-    resolution: {integrity: sha512-7C1goiDurz82yFKtZUbEzjXd0Rg/jyisaIZQhdvus+1l7E6mwcEYZXjZ1US/HF8kOyz1LERL8UN3bcboJtjcyQ==}
-    hasBin: true
+  '@trpc/server@11.29.7':
+    resolution: {integrity: sha512-9chUuB0abOfVkCm87lFQ3PTUJzPlErlf5HOBzvwtiGl7B0YdPBul1O597NTzjUcF1XDTsRqdnQfrz7BeptzSXQ==}
     peerDependencies:
+      '@types/aws-lambda': '*'
+      '@types/express': '*'
+      '@types/ws': '*'
+      fastify: '*'
+      next: '*'
       typescript: '>=5.7.2'
+    peerDependenciesMeta:
+      '@types/aws-lambda':
+        optional: true
+      '@types/express':
+        optional: true
+      '@types/ws':
+        optional: true
+      fastify:
+        optional: true
+      next:
+        optional: true
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -2323,8 +2344,8 @@ packages:
     resolution: {integrity: sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g==}
     engines: {node: '>= 6.0.0'}
 
-  axios@1.20.0:
-    resolution: {integrity: sha512-r8aOh8j9cGKpgQAqpzrUHnSIc6a59Y3Xf/cv8sy1DrHCkZHzQGEuoq1tARk6qSyDdtQGSDgpb9kFlruzPvrgwg==}
+  axios@1.21.1:
+    resolution: {integrity: sha512-6eI5Q/Y4u/Um9dDlsRoq5pY2rxnUTv+L4PpLitnbk/i4jb3MxLZ5CsN5Ih3IysbeRYK4pR+P7qfMsOQl9fwwFQ==}
 
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
@@ -2715,8 +2736,8 @@ packages:
     resolution: {integrity: sha512-7OZcmQUrdGI+DUNNsKBn1aW8qSoKuTH7d0mYgSP8bAzdFzKoovxEFnoGQp2dVs82EOJeYycqRtciopszwUf8bw==}
     hasBin: true
 
-  drizzle-orm@0.45.3:
-    resolution: {integrity: sha512-CAloER21cDdcgZ1OmjrZX82EeRNsdP+y0onX/eyoYDaYzki/adrAa91lzM5jWh7zZPK4qUbw/6LGv9J+A+uizA==}
+  drizzle-orm@0.45.4:
+    resolution: {integrity: sha512-NiM1YZpJ2UxyeE67DpDDZ+Tsw4YLX3trSlkNT7Tm9eKoUNb1LvaAaQzXgYQsWs+AQ9TUmmwMmBOCXuqqxUWKKQ==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -2955,8 +2976,8 @@ packages:
     resolution: {integrity: sha512-kWyh8ADvHBFz6ua5xYOPnUroZTT/bwWfrCeL0Wj1dzG4/YOmOcfJ99W8dOVyyynJN35rZ9aCOtHChqQovV7yog==}
     engines: {node: '>=6'}
 
-  follow-redirects@1.16.2:
-    resolution: {integrity: sha512-/kVP2U8z596Ia0gwFrwyIeo74ta5aVmSeU1FfAUMAmcEP5EP7zydmag3SLiN64NaRKef3lxsq7i/g7ltJQDGow==}
+  follow-redirects@1.16.3:
+    resolution: {integrity: sha512-toOSoqN6d51Wjf1aOFJYcoVv1aND9rj/CwjLU0Vz40oDuSpWDayCeKe4JpL5NL0WdFvoOOCI3BRo69HahjbR1A==}
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -3990,8 +4011,8 @@ packages:
   stylis@4.3.6:
     resolution: {integrity: sha512-yQ3rwFWRfwNUY7H5vpU0wfdkNSnvnJinhF9830Swlaxl03zsOjCfmX0ugac+3LtK0lYSgwL/KXc8oYL3mG4YFQ==}
 
-  superjson@2.2.6:
-    resolution: {integrity: sha512-H+ue8Zo4vJmV2nRjpx86P35lzwDT3nItnIsocgumgr0hHMQ+ZGq5vrERg9kJBo5AWGmxZDhzDo+WVIJqkB0cGA==}
+  superjson@2.2.7:
+    resolution: {integrity: sha512-QK/H+tosbovdRvIuGqcWn8g3IxPZY7B8ZPowCAmWsV8bPvCk+bGMlZt90C4AxZjnzMO2WBRDacr1+0i1AOy/5g==}
     engines: {node: '>=16'}
 
   tailwind-merge@3.3.1:
@@ -5792,29 +5813,33 @@ snapshots:
       tailwindcss: 4.1.14
       vite: 8.3.2(@types/node@26.6.3)(esbuild@0.28.2)(jiti@2.6.1)(tsx@4.23.15)
 
-  '@tanstack/query-core@5.104.0': {}
+  '@tanstack/query-core@5.108.3': {}
 
-  '@tanstack/react-query@5.104.0(react@19.3.0)':
+  '@tanstack/react-query@5.108.3(@types/react@19.3.0)(react@19.3.0)':
     dependencies:
-      '@tanstack/query-core': 5.104.0
+      '@tanstack/query-core': 5.108.3
       react: 19.3.0
+    optionalDependencies:
+      '@types/react': 19.3.0
 
-  '@trpc/client@11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2)':
+  '@trpc/client@11.29.7(@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2))(typescript@7.0.2)':
     dependencies:
-      '@trpc/server': 11.19.0(typescript@7.0.2)
+      '@trpc/server': 11.29.7(@types/express@4.17.21)(typescript@7.0.2)
       typescript: 7.0.2
 
-  '@trpc/react-query@11.19.0(@tanstack/react-query@5.104.0(react@19.3.0))(@trpc/client@11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2))(@trpc/server@11.19.0(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)':
+  '@trpc/react-query@11.28.5(@tanstack/react-query@5.108.3(@types/react@19.3.0)(react@19.3.0))(@trpc/client@11.29.7(@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2))(typescript@7.0.2))(@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2))(react@19.3.0)(typescript@7.0.2)':
     dependencies:
-      '@tanstack/react-query': 5.104.0(react@19.3.0)
-      '@trpc/client': 11.19.0(@trpc/server@11.19.0(typescript@7.0.2))(typescript@7.0.2)
-      '@trpc/server': 11.19.0(typescript@7.0.2)
+      '@tanstack/react-query': 5.108.3(@types/react@19.3.0)(react@19.3.0)
+      '@trpc/client': 11.29.7(@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2))(typescript@7.0.2)
+      '@trpc/server': 11.29.7(@types/express@4.17.21)(typescript@7.0.2)
       react: 19.3.0
       typescript: 7.0.2
 
-  '@trpc/server@11.19.0(typescript@7.0.2)':
+  '@trpc/server@11.29.7(@types/express@4.17.21)(typescript@7.0.2)':
     dependencies:
       typescript: 7.0.2
+    optionalDependencies:
+      '@types/express': 4.17.21
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -6178,9 +6203,9 @@ snapshots:
 
   aws-ssl-profiles@1.1.2: {}
 
-  axios@1.20.0:
+  axios@1.21.1:
     dependencies:
-      follow-redirects: 1.16.2
+      follow-redirects: 1.16.3
       form-data: 4.0.6
       https-proxy-agent: 5.0.1
       proxy-from-env: 2.1.0
@@ -6567,7 +6592,7 @@ snapshots:
       esbuild: 0.25.10
       tsx: 4.23.15
 
-  drizzle-orm@0.45.3(mysql2@3.24.2(@types/node@26.6.3)):
+  drizzle-orm@0.45.4(mysql2@3.24.2(@types/node@26.6.3)):
     optionalDependencies:
       mysql2: 3.24.2(@types/node@26.6.3)
 
@@ -6790,7 +6815,7 @@ snapshots:
 
   flru@1.0.2: {}
 
-  follow-redirects@1.16.2: {}
+  follow-redirects@1.16.3: {}
 
   form-data@4.0.6:
     dependencies:
@@ -8166,7 +8191,7 @@ snapshots:
 
   stylis@4.3.6: {}
 
-  superjson@2.2.6:
+  superjson@2.2.7:
     dependencies:
       copy-anything: 4.1.5
 
